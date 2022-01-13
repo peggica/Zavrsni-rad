@@ -1,11 +1,12 @@
 package klijent;
 
-import javafx.application.Application;
+import javafx.application.*;
 import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
@@ -17,6 +18,13 @@ import java.net.*;
  *  @author Biljana Stanojevic  */
 
 public class Klijent extends Application {
+
+    private static Stage stage;
+
+    public static Stage getStage() {
+
+        return stage;
+    }
 
     @Override
     public void start(Stage loginStage) throws Exception {
@@ -34,6 +42,7 @@ public class Klijent extends Application {
         root.add(lblUserName, 0, 0);
 
         TextField txtInput = new TextField();
+        txtInput.setPromptText("Unesite korisničko ime");
         root.add(txtInput, 1, 0);
 
         Label lblPassword = new Label("Lozinka: ");
@@ -41,6 +50,7 @@ public class Klijent extends Application {
         root.add(lblPassword, 0, 1);
 
         PasswordField pfPassword = new PasswordField();
+        pfPassword.setPromptText("Unesite lozinku");
         root.add(pfPassword, 1, 1);
 
         HBox hBox = new HBox();
@@ -53,10 +63,27 @@ public class Klijent extends Application {
 
                 //TODO: provera na Serveru u bazi za login i pozivanje odgovarajuće forme u zavisnosti od tipa korisnika
                 //prosledjeni uneti podaci sa forme na klik dugmeta
-                Thread runnableKlijent = new Thread(new RunnableKlijent(txtInput.getText(), pfPassword.getText()));
-                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                //runnableKlijent.setDaemon(true);
-                runnableKlijent.start();
+                if(txtInput.getText() != "" && pfPassword.getText() != "") {
+
+                    Thread runnableKlijent = new Thread(new RunnableKlijent(txtInput.getText(), pfPassword.getText()));
+                    //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                    runnableKlijent.setDaemon(true);
+                    runnableKlijent.start();
+
+                } else {
+
+                    //update na JavaFx application niti
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            Stage dialog = new Dialog(getStage(), "Molimo vas unesite podatke!");
+                            dialog.sizeToScene();
+                            dialog.show();
+                        }
+                    });
+                }
+
             }
         });
 
@@ -68,6 +95,7 @@ public class Klijent extends Application {
         loginStage.setScene(scene);
         loginStage.setResizable(false);
         loginStage.setTitle("Login");
+        stage = loginStage;
         loginStage.show();
 
     }
@@ -100,35 +128,113 @@ public class Klijent extends Application {
 
             //OTVARANJE KONEKCIJE
             try {
+
                 InetAddress addr = InetAddress.getByName("127.0.0.1");
                 socket = new Socket(addr, TCP_PORT);
 
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
 
-                //procitati podatke sa forme
                 out.println(korisnickoIme + " " + lozinka);
 
                 odgovor = in.readLine();
+                System.out.println("odgovor " + odgovor);
 
             } catch (UnknownHostException e) {
                 e.printStackTrace();
+
             } catch (IOException e) {
-                e.printStackTrace();
+
+                //e.printStackTrace();
+                //update na JavaFx application niti
+                Platform.runLater(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                        dialog.sizeToScene();
+                        dialog.show();
+                    }
+                });
+
             } finally {
 
-                //ZATVARANJE KONEKCIJE
-                try {
+                //ZATVARANJE KONEKCIJE - ovo treba tek kad se ide na X
+                if(socket != null) {
 
-                    socket.close();
-                    in.close();
-                    out.close();
+                    try {
 
-                } catch (IOException e) {
-                    e.printStackTrace();
+                        socket.close();
+                        in.close();
+                        out.close();
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
-
             }
+        }
+    }
+
+    /** Klasa Dialog namenjena za prikaz poruke korisniku,
+     *  ukoliko server nije podignut ili ukoliko nisu uneti podaci
+     *  @author Biljana Stanojevic  */
+
+    private class Dialog extends Stage {
+
+        String poruka1;
+        String poruka2;
+
+        public Dialog(Stage loginStage, String poruka1) {
+
+            super();
+            this.poruka1 = poruka1;
+            initOwner(loginStage);
+            setTitle("Info");
+            GridPane root = new GridPane();
+            Scene scene = new Scene(root, 280, 40);
+            setScene(scene);
+
+            root.setAlignment(Pos.CENTER);
+            root.setPadding(new Insets(10, 0, 10, 0));
+            root.setHgap(10);
+            root.setVgap(10);
+
+            Font font = new Font("Arial", 15);
+
+            Label lblInfo1 = new Label(poruka1);
+            lblInfo1.setTextFill(Color.RED);
+            lblInfo1.setFont(font);
+
+            root.add(lblInfo1, 0,0);
+        }
+
+        public Dialog(Stage stage, String poruka1, String poruka2) {
+
+            super();
+            this.poruka1 = poruka1;
+            this.poruka2 = poruka2;
+            initOwner(stage);
+            setTitle("Info");
+            GridPane root = new GridPane();
+            Scene scene = new Scene(root, 280, 80);
+            setScene(scene);
+
+            root.setAlignment(Pos.CENTER);
+            root.setPadding(new Insets(10, 0, 10, 0));
+            root.setHgap(10);
+            root.setVgap(10);
+
+            Font font = new Font("Arial", 15);
+
+            Label lblInfo1 = new Label(poruka1);
+            lblInfo1.setFont(font);
+            Label lblInfo2 = new Label(poruka2);
+            lblInfo2.setFont(font);
+
+            root.add(lblInfo1, 0,0);
+            root.add(lblInfo2,0,1);
+
         }
     }
 }
