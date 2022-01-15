@@ -8,6 +8,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.Font;
 import javafx.stage.*;
+import server.model.*;
 
 import java.io.*;
 import java.net.*;
@@ -64,35 +65,35 @@ public class Server extends Application {
         serverThread.setDaemon(true);
         serverThread.start();
 
-        Thread sqlConnectionThread = new Thread(new SQLConnectionThread(connection));
+        Thread sqlKonekcijaThread = new Thread(new SQLKonekcijaThread(connection));
         //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-        sqlConnectionThread.setDaemon(true);
-        sqlConnectionThread.start();
+        sqlKonekcijaThread.setDaemon(true);
+        sqlKonekcijaThread.start();
 
         serverStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
             @Override
             public void handle(WindowEvent windowEvent) {
 
-                Thread sqlCloseThread = null;
+                Thread sqlZatvaranjeThread = null;
                 try {
-                    sqlCloseThread = new Thread(new SQLCloseThread(connection));
+                    sqlZatvaranjeThread = new Thread(new SQLZatvaranjeThread(connection));
                 } catch (SQLException throwables) {
                     throwables.printStackTrace();
                 }
 
                 //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                sqlCloseThread.setDaemon(true);
-                sqlCloseThread.start();
+                sqlZatvaranjeThread.setDaemon(true);
+                sqlZatvaranjeThread.start();
             }
         });
 
     }
 
-    private class SQLConnectionThread extends Thread {
+    private class SQLKonekcijaThread extends Thread {
 
         private Connection conn;
 
-        SQLConnectionThread(Connection connection) throws SQLException {
+        SQLKonekcijaThread(Connection connection) throws SQLException {
 
             this.conn = connection;
         }
@@ -102,6 +103,7 @@ public class Server extends Application {
 
                 conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/studentskasluzba", "root", "");
                 Server.connection = conn;
+
                 //update na JavaFx application niti
                 Platform.runLater(new Runnable() {
 
@@ -120,11 +122,11 @@ public class Server extends Application {
 
     }
 
-    private class SQLCloseThread extends Thread {
+    private class SQLZatvaranjeThread extends Thread {
 
         private Connection conn;
 
-        SQLCloseThread(Connection connection) throws SQLException {
+        SQLZatvaranjeThread(Connection connection) throws SQLException {
 
             this.conn = connection;
         }
@@ -169,7 +171,7 @@ public class Server extends Application {
                     socket = serverSocket.accept();
 
                     //pokretanje nove niti da ne bi doslo do blokiranja od strane praznog inputstreama
-                    Thread acceptedThread = new Thread(new ServerSocketAcceptedThread(socket, socket.getInetAddress().getHostName()));
+                    Thread acceptedThread = new Thread(new ServerSocketThreadPrihvatanje(socket, socket.getInetAddress().getHostName()));
                     //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
                     acceptedThread.setDaemon(true);
                     acceptedThread.start();
@@ -183,16 +185,16 @@ public class Server extends Application {
         }
     }
 
-    private class ServerSocketAcceptedThread extends Thread {
+    private class ServerSocketThreadPrihvatanje extends Thread {
 
         private Socket socket = null;
-        private BufferedReader in;
-        private PrintWriter out;
-        private String zahtev = "";
+        private ObjectInputStream inObj;
+        private ObjectOutputStream outObj;
+        private Object zahtev = "";
         private String odgovor = "";
         private String adresa;
 
-        ServerSocketAcceptedThread(Socket socket, String adresa) {
+        ServerSocketThreadPrihvatanje(Socket socket, String adresa) {
 
             this.socket = socket;
             this.adresa = adresa;
@@ -202,8 +204,10 @@ public class Server extends Application {
         public void run() {
 
             try {
-                    in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+
+                    outObj = new ObjectOutputStream(socket.getOutputStream());
+                    //in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    inObj = new ObjectInputStream(socket.getInputStream());
 
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
@@ -214,20 +218,21 @@ public class Server extends Application {
                         }
                     });
 
-                    while (true) {
+                while (zahtev.toString().length() == 0) {
 
-                        //RAZMENA SA KLIJENTOM
-                        zahtev = in.readLine();
+                    //RAZMENA SA KLIJENTOM
+                    zahtev = inObj.readObject().toString();
+                    System.out.println(zahtev);
+                    if (zahtev.equals("login")) {
 
-                        if (zahtev == null) {
-                            break;
-                        }
+                        Login login = (Login) inObj.readObject();
+                        System.out.println(login.toString());
 
                         //TODO: ovo u objekte ne stringove i prvo provera za login - loop ako ne unese ispravno i vraca gresku
                         //TODO: proveriti u bazi da li postoji korisnik za primljene podatke
-                        String korisnickoIme = zahtev.split(" ")[0];
-                        String lozinka = zahtev.split(" ")[1];
-                        String query = "SELECT * FROM Login WHERE korisnickoIme= '" + korisnickoIme + "' AND lozinka = '" + lozinka + "'";
+                        String korisnickoIme = login.getKorisnickoIme();
+                        String lozinka = login.getLozinka();
+                        String query = "SELECT * FROM Login WHERE korisnickoIme = '" + korisnickoIme + "' AND lozinka = '" + lozinka + "'";
                         Statement statement = connection.createStatement();
                         ResultSet resultset = statement.executeQuery(query);
 
@@ -237,28 +242,43 @@ public class Server extends Application {
 
                         } else {
                             do {
-                                //System.out.println(resultset.getInt("idZaposlenog") + resultset.getInt("idStudenta") + resultset.getString("smer") + resultset.getInt("godinaUpisa"));
+                                System.out.println(resultset.getInt("idZaposlenog") + resultset.getInt("idStudenta") + resultset.getString("smer") + resultset.getInt("godinaUpisa"));
                                 odgovor = "Uspeh";
                             } while (resultset.next());
 
                         }
 
-                        out.println(odgovor);
-
-                        //System.out.println(resultset.getInt("idZaposlenog") + resultset.getInt("idStudenta") + resultset.getString("smer") + resultset.getInt("godinaUpisa"));
-                        //TODO: poslati podatke o korisniku klijentu ako postoji
-
+                        outObj.writeObject(odgovor);
+                        outObj.flush();
                     }
 
-                //ZATVARANJE KONEKCIJE
-                in.close();
-                out.close();
-                socket.close();
-                ispis("Prekinuta veza sa klijentom: " + adresa);
+                    //System.out.println(resultset.getInt("idZaposlenog") + resultset.getInt("idStudenta") + resultset.getString("smer") + resultset.getInt("godinaUpisa"));
+                    //TODO: poslati podatke o korisniku klijentu ako postoji
 
-            } catch (IOException | SQLException e) {
+                }
+
+            } catch (IOException | SQLException | ClassNotFoundException e) {
 
                 e.printStackTrace();
+
+            }
+
+            finally {
+
+                //ZATVARANJE KONEKCIJE - ovo treba tek kad se ide na X
+                if(socket != null) {
+
+                    try {
+
+                        socket.close();
+                        inObj.close();
+                        outObj.close();
+                        ispis("Prekinuta veza sa klijentom: " + adresa);
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
 
             }
         }

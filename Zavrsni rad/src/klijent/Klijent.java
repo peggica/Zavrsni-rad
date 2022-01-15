@@ -9,6 +9,7 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import server.model.Login;
 
 import java.io.*;
 import java.net.*;
@@ -110,10 +111,9 @@ public class Klijent extends Application {
 
         public static final int TCP_PORT = 9000;
         private Socket socket = null;
-        private BufferedReader in;
-        private PrintWriter out;
-        private String zahtev;
-        private String odgovor;
+        private ObjectInputStream inObj;
+        private ObjectOutputStream outObj;
+        private Object odgovor;
         private String korisnickoIme;
         private String lozinka;
 
@@ -132,12 +132,17 @@ public class Klijent extends Application {
                 InetAddress addr = InetAddress.getByName("127.0.0.1");
                 socket = new Socket(addr, TCP_PORT);
 
-                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
+                inObj = new ObjectInputStream(socket.getInputStream());
+                outObj = new ObjectOutputStream(socket.getOutputStream());
 
-                out.println(korisnickoIme + " " + lozinka);
+                Login login = new Login(korisnickoIme, lozinka);
+                outObj.writeObject("login");
+                outObj.flush();
+                outObj.writeObject(login);
+                outObj.flush();
 
-                odgovor = in.readLine();
+                odgovor = inObj.readObject().toString();
+
                 System.out.println("odgovor " + odgovor);
 
             } catch (UnknownHostException e) {
@@ -157,16 +162,18 @@ public class Klijent extends Application {
                     }
                 });
 
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
             } finally {
 
                 //ZATVARANJE KONEKCIJE - ovo treba tek kad se ide na X
-                if(socket != null) {
+                if(socket != null && (inObj != null || outObj != null)) {
 
                     try {
 
                         socket.close();
-                        in.close();
-                        out.close();
+                        inObj.close();
+                        outObj.close();
 
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -206,7 +213,7 @@ public class Klijent extends Application {
             lblInfo1.setTextFill(Color.RED);
             lblInfo1.setFont(font);
 
-            root.add(lblInfo1, 0,0);
+            root.add(lblInfo1, 0, 0);
         }
 
         public Dialog(Stage stage, String poruka1, String poruka2) {
@@ -232,8 +239,8 @@ public class Klijent extends Application {
             Label lblInfo2 = new Label(poruka2);
             lblInfo2.setFont(font);
 
-            root.add(lblInfo1, 0,0);
-            root.add(lblInfo2,0,1);
+            root.add(lblInfo1, 0, 0);
+            root.add(lblInfo2, 0, 1);
 
         }
     }
