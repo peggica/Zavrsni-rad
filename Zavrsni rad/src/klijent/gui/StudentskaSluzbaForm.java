@@ -1,23 +1,26 @@
 package klijent.gui;
 
-import javafx.application.Application;
+import javafx.collections.ObservableList;
 import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import model.*;
 
 /** Klasa namenjena za prikaz Forme za korisnike Studentske Sluzbe u JavaFx-u
  *  @author Biljana Stanojevic  */
-public class StudentskaSluzbaForm extends Application {
+
+public class StudentskaSluzbaForm extends Stage {
 
     //TODO: umesto <nesto> tipa za table column i view da ide klasa
 
     private static Font font15 = new Font("Arial", 15);
     private static Font font20 = new Font("Arial", 20);
 
-    /** Postavlja prikaz za stavku Pocetna iz Menija  */
+    /** Postavlja prikaz za stavku Pocetna iz Menija    */
     private static void pocetniPrikaz(BorderPane root){
 
         Label lblPrikaz = new Label("Ispitni rok: ");
@@ -26,7 +29,7 @@ public class StudentskaSluzbaForm extends Application {
         root.setLeft(lblPrikaz);
     }
 
-    /** Cisti sve strane Border Pane-a, pre prebacivanja na sledeci prikaz iz Menija  */
+    /** Cisti sve strane Border Pane-a, pre prebacivanja na sledeci prikaz iz Menija    */
     private static void ocistiPane(BorderPane root){
 
         root.setLeft(null);
@@ -35,14 +38,21 @@ public class StudentskaSluzbaForm extends Application {
         root.setCenter(null);
     }
 
-    @Override
-    public void start(Stage sluzbaStage) {
+    public StudentskaSluzbaForm(Stage stage, ObservableList<Student> sviStudenti, ObservableList<Zaposleni> sviZaposleni, ObservableList<Predmet> sviPredmeti) {
+
+        super();
+        initOwner(stage);
 
         BorderPane root = new BorderPane();
         MenuBar menuBar = new MenuBar();
-        menuBar.prefWidthProperty().bind(sluzbaStage.widthProperty());
+        menuBar.prefWidthProperty().bind(stage.widthProperty());
         root.setTop(menuBar);
         pocetniPrikaz(root);
+
+        Scene scene = new Scene(root, 1200, 600);
+        setScene(scene);
+        setResizable(false);
+        setTitle("Studentska služba");
 
         //Klikom na stavku POČETNA iz Menija poziva se metoda ocistiPane() za ciscenje svih strana BorderPane-a i poziva prikaz za pocetnu stranu
         Label lblPocetna = new Label("POČETNA");
@@ -76,25 +86,34 @@ public class StudentskaSluzbaForm extends Application {
             btnPretrazi.setFont(font15);
             hBoxPretraga.getChildren().addAll(lblPretraga, txtPretraga, btnPretrazi);
 
-            TableView<String> tableStudenti = new TableView<String>();
+            TableView<Student> tableStudenti = new TableView<>();
             tableStudenti.setEditable(true);
             tableStudenti.getColumns().clear();
 
-            TableColumn<String, String> colIme = new TableColumn("Ime");    //TODO: nazive kolona dobiti iz baze
+            TableColumn colIme = new TableColumn("Ime");
+            colIme.setCellValueFactory(new PropertyValueFactory<Student, String>("ime"));
             colIme.setMinWidth(100);
-            TableColumn<String, String> colPrezime = new TableColumn("Prezime");
+            TableColumn colPrezime = new TableColumn("Prezime");
+            colPrezime.setCellValueFactory(new PropertyValueFactory<Student, String>("prezime"));
             colPrezime.setMinWidth(150);
-            TableColumn<String, String> colIndex = new TableColumn("Broj indeksa");
+            TableColumn colIndex = new TableColumn("Broj indeksa");
+            colIndex.setCellValueFactory(new PropertyValueFactory<Student, String>("smer"));
             colIndex.setMinWidth(50);
-            TableColumn<String, String> colFinansiranje = new TableColumn("Finansiranje");
+            TableColumn colFinansiranje = new TableColumn("Finansiranje");
+            colFinansiranje.setCellValueFactory(new PropertyValueFactory<Student, String>("finansiranje"));
             colFinansiranje.setMinWidth(50);
-            TableColumn<String, String> colAdresa = new TableColumn("Adresa");
+            TableColumn colAdresa = new TableColumn("Adresa");
+            colAdresa.setCellValueFactory(new PropertyValueFactory<Student, String>("adresa"));
             colAdresa.setMinWidth(150);
-            TableColumn<String, String> colEmail = new TableColumn("E-mail");
+            TableColumn colEmail = new TableColumn("E-mail");
+            colEmail.setCellValueFactory(new PropertyValueFactory<Student, String>("email"));
             colEmail.setMinWidth(150);
-            TableColumn<String, String> colTelefon = new TableColumn("Broj telefona");
-            colTelefon.setMinWidth(100);    //TODO: ovo dole sreduje problem - za dodatnu kolonu
+            TableColumn colTelefon = new TableColumn("Broj telefona");
+            colTelefon.setCellValueFactory(new PropertyValueFactory<Student, String>("brojTelefona"));
+            colTelefon.setMinWidth(100);
 
+            tableStudenti.setItems(sviStudenti);
+            //sredjuje problem za dodatu kolonu
             tableStudenti.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableStudenti.setPrefHeight(500);
             tableStudenti.getColumns().addAll(colIme, colPrezime, colIndex, colFinansiranje, colAdresa, colEmail, colTelefon);
@@ -114,8 +133,8 @@ public class StudentskaSluzbaForm extends Application {
             Label lblFinansiranje = new Label("Finansiranje: ");
             lblFinansiranje.setMinWidth(Region.USE_PREF_SIZE);
             ComboBox cmbFinansiranje = new ComboBox();
-            cmbFinansiranje.getItems().addAll("SAF", "BUDZ");   //TODO: da ucita iz baze
-            cmbFinansiranje.setValue("SAF");
+            cmbFinansiranje.getItems().addAll(Student.tipFinansiranja.values());
+            cmbFinansiranje.setValue(Student.tipFinansiranja.budzet);
             cmbFinansiranje.setMinWidth(Region.USE_PREF_SIZE);
             cmbFinansiranje.setStyle("-fx-font: 12px \"Arial\";");
 
@@ -169,23 +188,31 @@ public class StudentskaSluzbaForm extends Application {
             btnPretrazi.setFont(font15);
             hBoxPretraga.getChildren().addAll(lblPretraga, txtPretraga, btnPretrazi);
 
-            TableView<String> tableZaposleni = new TableView<String>();
+            TableView<Zaposleni> tableZaposleni = new TableView<>();
             tableZaposleni.setEditable(true);
             tableZaposleni.getColumns().clear();
 
-            TableColumn<String, String> colPozicija = new TableColumn("Pozicija");  //TODO: nazive kolona dobiti iz baze
+            TableColumn colPozicija = new TableColumn("Pozicija");
+            colPozicija.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("pozicija"));
             colPozicija.setMinWidth(100);
-            TableColumn<String, String> colIme = new TableColumn("Ime");
+            TableColumn colIme = new TableColumn("Ime");
+            colIme.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("ime"));
             colIme.setMinWidth(125);
-            TableColumn<String, String> colPrezime = new TableColumn("Prezime");
+            TableColumn colPrezime = new TableColumn("Prezime");
+            colPrezime.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("prezime"));
             colPrezime.setMinWidth(225);
-            TableColumn<String, String> colAdresa = new TableColumn("Adresa");
+            TableColumn colAdresa = new TableColumn("Adresa");
+            colAdresa.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("adresa"));
             colAdresa.setMinWidth(150);
-            TableColumn<String, String> colEmail = new TableColumn("E-mail");
+            TableColumn colEmail = new TableColumn("E-mail");
+            colEmail.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("email"));
             colEmail.setMinWidth(250);
-            TableColumn<String, String> colTelefon = new TableColumn("Broj telefona"); //TODO: ovo dole sreduje problem - za dodatnu kolonu
+            TableColumn colTelefon = new TableColumn("Broj telefona");
+            colTelefon.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("brojTelefona"));
             colTelefon.setMinWidth(150);
 
+            tableZaposleni.setItems(sviZaposleni);
+            //sredjuje problem za dodatu kolonu
             tableZaposleni.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableZaposleni.setPrefHeight(500);
             tableZaposleni.getColumns().addAll(colPozicija, colIme, colPrezime, colAdresa, colEmail, colTelefon);
@@ -193,8 +220,8 @@ public class StudentskaSluzbaForm extends Application {
             Label lblPozicija = new Label("Pozicija: ");
             lblPozicija.setMinWidth(Region.USE_PREF_SIZE);
             ComboBox cmbPozicija = new ComboBox();
-            cmbPozicija.getItems().addAll("Profesor", "Asistent", "Saradnik"); //da ucita iz baze
-            cmbPozicija.setValue("Profesor");
+            cmbPozicija.getItems().addAll(Zaposleni.tipZaposlenog.values());
+            cmbPozicija.setValue(Zaposleni.tipZaposlenog.profesor);
             cmbPozicija.setMinWidth(Region.USE_PREF_SIZE);
             cmbPozicija.setStyle("-fx-font: 12px \"Arial\";");
 
@@ -257,23 +284,30 @@ public class StudentskaSluzbaForm extends Application {
             btnPretrazi.setFont(font15);
             hBoxPretraga.getChildren().addAll(lblPretraga, txtPretraga, btnPretrazi);
 
-            TableView<String> tablePredmeti = new TableView<String>();
+            TableView<Predmet> tablePredmeti = new TableView<>();
             tablePredmeti.setEditable(true);
             tablePredmeti.getColumns().clear();
 
-            TableColumn<String, String> colSifra = new TableColumn("Šifra");    //TODO: nazive kolona dobiti iz baze
+            TableColumn colSifra = new TableColumn("Šifra");
+            colSifra.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("idPredmeta"));
             colSifra.setMinWidth(75);
-            TableColumn<String, String> colNaziv = new TableColumn("Naziv");
+            TableColumn colNaziv = new TableColumn("Naziv");
+            colNaziv.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("naziv"));
             colNaziv.setMinWidth(250);
-            TableColumn<String, String> colProfesor = new TableColumn("Profesor");
+            TableColumn colProfesor = new TableColumn("Profesor");
             colProfesor.setMinWidth(250);
-            TableColumn<String, String> colSmer = new TableColumn("Smer");
+            TableColumn colSmer = new TableColumn("Smer");
+            colSmer.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("studijskiSmer"));
             colSmer.setMinWidth(50);
-            TableColumn<String, String> colSemestar = new TableColumn("Semestar");
+            TableColumn colSemestar = new TableColumn("Semestar");
+            colSemestar.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("semestar"));
             colSemestar.setMinWidth(50);
-            TableColumn<String, String> colEspb = new TableColumn("ESPB"); //TODO: ovo dole sreduje problem - za dodatnu kolonu
+            TableColumn colEspb = new TableColumn("ESPB");
+            colEspb.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("espb"));
             colEspb.setMinWidth(50);
 
+            tablePredmeti.setItems(sviPredmeti);
+            //sredjuje problem za dodatu kolonu
             tablePredmeti.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tablePredmeti.setPrefHeight(500);
             tablePredmeti.getColumns().addAll(colSifra, colNaziv, colProfesor, colSmer, colSemestar, colEspb);
@@ -293,8 +327,8 @@ public class StudentskaSluzbaForm extends Application {
             ComboBox cmbSmer = new ComboBox();
             Label lblSmer = new Label("Smer: ");
             lblSmer.setMinWidth(Region.USE_PREF_SIZE);
-            cmbSmer.getItems().addAll("AVT", "ASUV", "EKO", "ELITE", "EPO", "IST", "NET", "NRT", "RT"); //TODO: da ucita iz baze
-            cmbSmer.setValue("AVT");
+            cmbSmer.getItems().addAll(Predmet.tipSmera.values());
+            cmbSmer.setValue(Predmet.tipSmera.avt);
             cmbSmer.setMinWidth(Region.USE_PREF_SIZE);
             cmbSmer.setStyle("-fx-font: 12px \"Arial\";");
 
@@ -488,16 +522,6 @@ public class StudentskaSluzbaForm extends Application {
         menuBar.setStyle("-fx-padding: 3 6 3 6;");
         menuBar.getMenus().addAll(pocetnaMenu, studentiMenu, zaposleniMenu, predmetiMenu, ispitniRokMenu);
 
-        Scene scene = new Scene(root, 1200, 600);
-        sluzbaStage.setScene(scene);
-        sluzbaStage.setResizable(false);
-        sluzbaStage.setTitle("Studentska služba");
-        sluzbaStage.show();
-
     }
 
-    public void createGUI(String[] args) {
-
-        launch(args);
-    }
 }

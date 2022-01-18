@@ -1,6 +1,5 @@
 package klijent.gui;
 
-import javafx.application.Application;
 import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -11,7 +10,7 @@ import javafx.stage.Stage;
 /** Klasa namenjena za prikaz Studentske Forme u JavaFx-u
  *   @author Biljana Stanojevic  */
 
-public class StudentForm extends Application {
+public class StudentForm extends Stage {
 
     private static Font font15 = new Font("Arial", 15);
     private static Font font20 = new Font("Arial", 20);
@@ -34,14 +33,21 @@ public class StudentForm extends Application {
         root.setCenter(null);
     }
 
-    @Override
-    public void start(Stage studentStage) throws Exception {
+    public StudentForm(Stage stage) {
+
+        super();
+        initOwner(stage);
 
         BorderPane root = new BorderPane();
         MenuBar menuBar = new MenuBar();
-        menuBar.prefWidthProperty().bind(studentStage.widthProperty());
+        menuBar.prefWidthProperty().bind(stage.widthProperty());
         root.setTop(menuBar);
         pocetniPrikaz(root);
+
+        Scene scene = new Scene(root, 900, 700);
+        setScene(scene);
+        setResizable(false);
+        setTitle("Student");
 
         //Klikom na stavku Pocetna iz Menija poziva se metoda ocistiPane() za ciscenje svih strana BorderPane-a i poziva prikaz za pocetnu stranu
         Label lblPocetna = new Label("POČETNA");
@@ -246,17 +252,6 @@ public class StudentForm extends Application {
         menuBar.setStyle("-fx-padding: 3 6 3 6;");
         menuBar.getMenus().addAll(pocetnaMenu, predmetiMenu, prijavaMenu, skolarineMenu, podaciMenu);
 
-        Scene scene = new Scene(root, 900, 700);
-        studentStage.setScene(scene);
-        studentStage.setResizable(false);
-        studentStage.setTitle("Student");
-        studentStage.show();
-
-    }
-
-    public void createGUI(String[] args) {
-
-        launch(args);
     }
 
 }

@@ -1,6 +1,7 @@
 package klijent;
 
 import javafx.application.*;
+import javafx.collections.*;
 import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.Scene;
@@ -9,7 +10,8 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
-import server.model.Login;
+import klijent.gui.*;
+import model.*;
 
 import java.io.*;
 import java.net.*;
@@ -84,7 +86,6 @@ public class Klijent extends Application {
                         }
                     });
                 }
-
             }
         });
 
@@ -116,6 +117,9 @@ public class Klijent extends Application {
         private Object odgovor;
         private String korisnickoIme;
         private String lozinka;
+        private ObservableList<Student> sviStudenti = FXCollections.observableArrayList();
+        private ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
+        private ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
 
         public RunnableKlijent(String korisnickoIme, String lozinka) {
 
@@ -128,7 +132,6 @@ public class Klijent extends Application {
 
             //OTVARANJE KONEKCIJE
             try {
-
                 InetAddress addr = InetAddress.getByName("127.0.0.1");
                 socket = new Socket(addr, TCP_PORT);
 
@@ -141,9 +144,103 @@ public class Klijent extends Application {
                 outObj.writeObject(login);
                 outObj.flush();
 
-                odgovor = inObj.readObject().toString();
+                odgovor = inObj.readObject();
 
-                System.out.println("odgovor " + odgovor);
+                if(odgovor.toString().equals("sluzba")) {
+
+                    //ovde treba da ucita sve podatke od sluzbe
+                    try {
+                        odgovor = inObj.readObject();
+                        if(odgovor.toString().equals("svistudenti")) {
+
+                            while (true) { //nisam sigurna za ovu proveru
+                                odgovor = inObj.readObject();
+                                if(odgovor.toString().equals("svizaposleni")) {
+                                    break;
+                                } else {
+                                    Student student = (Student) odgovor;
+                                    sviStudenti.add(student);
+                                }
+                            }
+                            if(odgovor.toString().equals("svizaposleni")) {
+
+                                while (true) { //nisam sigurna za ovu proveru
+                                    odgovor = inObj.readObject();
+                                    if (odgovor.toString().equals("svipredmeti")) {
+                                        break;
+                                    } else {
+                                        Zaposleni zaposleni = (Zaposleni) odgovor;
+                                        sviZaposleni.add(zaposleni);
+                                    }
+                                }
+                            }
+                            if(odgovor.toString().equals("svipredmeti")) {
+
+                                while (true) { //nisam sigurna za ovu proveru
+                                    odgovor = inObj.readObject();
+                                    if (odgovor.toString().equals("kraj")) {
+                                        break;
+                                    } else {
+                                        Predmet predmet = (Predmet) odgovor;
+                                        sviPredmeti.add(predmet);
+                                    }
+                                }
+                            }
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+                    //update na JavaFx application niti
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+
+                            StudentskaSluzbaForm studentskaSluzbaForm = new StudentskaSluzbaForm(getStage(), sviStudenti, sviZaposleni, sviPredmeti);
+                            getStage().close();
+                            studentskaSluzbaForm.show();
+
+                        }
+                    });
+                } else if(odgovor.toString().equals("nepostoji")) {
+                    //update na JavaFx application niti
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            Stage dialog = new Dialog(getStage(), "Pogrešno uneto korisničko ime ili lozinka");
+                            dialog.sizeToScene();
+                            dialog.show();
+                        }
+                    });
+                } else {
+                    //update na JavaFx application niti
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            try {
+                                Student student = (Student) odgovor;
+                                StudentForm studentForm = new StudentForm(getStage());
+                                getStage().close();
+                                studentForm.show();
+                            } catch (Exception e) {
+                                // e.printStackTrace();
+                            }
+                            try {
+                                Zaposleni zaposleni = (Zaposleni) odgovor;
+                                ZaposleniForm zaposleniForm = new ZaposleniForm(getStage());
+                                getStage().close();
+                                zaposleniForm.show();
+                            } catch (Exception e) {
+                                // e.printStackTrace();
+                            }
+                        }
+                    });
+                }
 
             } catch (UnknownHostException e) {
                 e.printStackTrace();
@@ -170,11 +267,9 @@ public class Klijent extends Application {
                 if(socket != null && (inObj != null || outObj != null)) {
 
                     try {
-
                         socket.close();
                         inObj.close();
                         outObj.close();
-
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -198,6 +293,7 @@ public class Klijent extends Application {
             this.poruka1 = poruka1;
             initOwner(loginStage);
             setTitle("Info");
+            setResizable(false);
             GridPane root = new GridPane();
             Scene scene = new Scene(root, 280, 40);
             setScene(scene);
@@ -223,6 +319,7 @@ public class Klijent extends Application {
             this.poruka2 = poruka2;
             initOwner(stage);
             setTitle("Info");
+            setResizable(false);
             GridPane root = new GridPane();
             Scene scene = new Scene(root, 280, 80);
             setScene(scene);

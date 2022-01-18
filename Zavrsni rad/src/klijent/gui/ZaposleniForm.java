@@ -1,6 +1,5 @@
 package klijent.gui;
 
-import javafx.application.Application;
 import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -12,7 +11,7 @@ import javafx.stage.Stage;
  *  Ukoliko je tip zaposlenog profesor u Meniju je dostupna i opcija za snimanje ocena u zapisnik - DODAJ U ZAPISNIK
  *  @author Biljana Stanojevic  */
 
-public class ZaposleniForm extends Application {
+public class ZaposleniForm extends Stage {
 
     private static Font font15 = new Font("Arial", 15);
     private static Font font20 = new Font("Arial", 20);
@@ -35,14 +34,21 @@ public class ZaposleniForm extends Application {
         root.setCenter(null);
     }
 
-    @Override
-    public void start(Stage zaposleniStage) {
+    public ZaposleniForm(Stage stage) {
+
+        super();
+        initOwner(stage);
 
         BorderPane root = new BorderPane();
         MenuBar menuBar = new MenuBar();
-        menuBar.prefWidthProperty().bind(zaposleniStage.widthProperty());
+        menuBar.prefWidthProperty().bind(stage.widthProperty());
         root.setTop(menuBar);
         pocetniPrikaz(root);
+
+        Scene scene = new Scene(root, 650, 400);
+        setScene(scene);
+        setResizable(false);
+        setTitle("Profesor");
 
         //Klikom na stavku POČETNA iz Menija poziva se metoda ocistiPane() za ciscenje svih strana BorderPane-a i poziva prikaz za pocetnu stranu
         Label lblPocetna = new Label("POČETNA");
@@ -216,17 +222,6 @@ public class ZaposleniForm extends Application {
         menuBar.setStyle("-fx-padding: 3 6 3 6;");
         menuBar.getMenus().addAll(pocetnaMenu, zakaziSaluMenu, dodajUZapisnikMenu);
 
-        Scene scene = new Scene(root, 650, 400);
-        zaposleniStage.setScene(scene);
-        zaposleniStage.setResizable(false);
-        zaposleniStage.setTitle("Profesor");
-        zaposleniStage.show();
-
-    }
-
-    public void createGUI(String[] args) {
-
-        launch(args);
     }
 
 }

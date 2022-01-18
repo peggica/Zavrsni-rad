@@ -8,12 +8,11 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.Font;
 import javafx.stage.*;
-import server.model.*;
+import model.*;
 
 import java.io.*;
 import java.net.*;
 import java.sql.*;
-
 
 /** Klase Server i ServerThread namenjene za podizanje servera i prihvatanje konekcija klijenata
  *  i razmenu zahteva/odgovora sa njima prikaz u JavaFx formi
@@ -103,6 +102,10 @@ public class Server extends Application {
 
                 conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/studentskasluzba", "root", "");
                 Server.connection = conn;
+                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                /*SQLOsveziThread sqlOsveziThread = new SQLOsveziThread(conn);
+                sqlOsveziThread.setDaemon(true);
+                sqlOsveziThread.start();*/
 
                 //update na JavaFx application niti
                 Platform.runLater(new Runnable() {
@@ -190,8 +193,8 @@ public class Server extends Application {
         private Socket socket = null;
         private ObjectInputStream inObj;
         private ObjectOutputStream outObj;
-        private Object zahtev = "";
-        private String odgovor = "";
+        private Object zahtev;
+        private Object odgovor;
         private String adresa;
 
         ServerSocketThreadPrihvatanje(Socket socket, String adresa) {
@@ -204,9 +207,7 @@ public class Server extends Application {
         public void run() {
 
             try {
-
                     outObj = new ObjectOutputStream(socket.getOutputStream());
-                    //in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                     inObj = new ObjectInputStream(socket.getInputStream());
 
                     //update na JavaFx application niti
@@ -218,58 +219,148 @@ public class Server extends Application {
                         }
                     });
 
-                while (zahtev.toString().length() == 0) {
+                do {
+
+                    String query = "";
+                    Statement statement = connection.createStatement();
+                    ResultSet resultset;
 
                     //RAZMENA SA KLIJENTOM
-                    zahtev = inObj.readObject().toString();
-                    System.out.println(zahtev);
-                    if (zahtev.equals("login")) {
+                    zahtev = inObj.readObject();
+                    if (zahtev.toString().equals("login")) {
 
                         Login login = (Login) inObj.readObject();
-                        System.out.println(login.toString());
-
-                        //TODO: ovo u objekte ne stringove i prvo provera za login - loop ako ne unese ispravno i vraca gresku
-                        //TODO: proveriti u bazi da li postoji korisnik za primljene podatke
+                        //provera u bazi da li postoji korisnik za primljene podatke
                         String korisnickoIme = login.getKorisnickoIme();
                         String lozinka = login.getLozinka();
-                        String query = "SELECT * FROM Login WHERE korisnickoIme = '" + korisnickoIme + "' AND lozinka = '" + lozinka + "'";
-                        Statement statement = connection.createStatement();
-                        ResultSet resultset = statement.executeQuery(query);
+                        query = "SELECT * FROM Login WHERE korisnickoIme = '" + korisnickoIme + "' AND lozinka = '" + lozinka + "'";
+                        resultset = statement.executeQuery(query);
 
                         if (!resultset.next()) {
 
-                            odgovor = "Nema podudaranja u bazi";
-
+                            odgovor = "nepostoji";
+                            outObj.writeObject(odgovor);
+                            outObj.flush();
                         } else {
-                            do {
-                                System.out.println(resultset.getInt("idZaposlenog") + resultset.getInt("idStudenta") + resultset.getString("smer") + resultset.getInt("godinaUpisa"));
-                                odgovor = "Uspeh";
-                            } while (resultset.next());
+                            // do {
+                            int idZaposlenog = resultset.getInt("idZaposlenog");
+                            int idStudenta = resultset.getInt("idStudenta");
+                            String smer = resultset.getString("smer");
+                            int godinaUpisa = resultset.getInt("godinaUpisa");
 
+                            if (idZaposlenog != 0) {
+
+                                query = "SELECT * FROM Zaposleni WHERE idZaposlenog = '" + idZaposlenog + "'";
+                                resultset = statement.executeQuery(query);
+                                if (resultset.next()) {
+                                    String pozicija = resultset.getString("pozicija");
+                                    String ime = resultset.getString("ime");
+                                    String prezime = resultset.getString("prezime");
+                                    String adresa = resultset.getString("adresa");
+                                    String email = resultset.getString("email");
+                                    String telefon = resultset.getString("telefon");
+                                    Zaposleni zaposleni = new Zaposleni(idZaposlenog, Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, telefon);
+                                    odgovor = zaposleni;
+                                    outObj.writeObject(odgovor);
+                                    outObj.flush();
+                                }
+
+                            } else if (idStudenta != 0 && smer != null && godinaUpisa != 0) {
+
+                                query = "SELECT * FROM Student WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "'";
+                                resultset = statement.executeQuery(query);
+                                if (resultset.next()) {
+                                    String ime = resultset.getString("ime");
+                                    String prezime = resultset.getString("prezime");
+                                    String finansiranje = resultset.getString("finansiranje");
+                                    String adresa = resultset.getString("adresa");
+                                    String email = resultset.getString("email");
+                                    String telefon = resultset.getString("telefon");
+                                    Student student = new Student(idStudenta, godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, telefon);
+                                    odgovor = student;
+                                    outObj.writeObject(odgovor);
+                                    outObj.flush();
+                                }
+                            } else {
+                                //onda je korisnik sluzbe
+                                odgovor = "sluzba";
+                                outObj.writeObject(odgovor);
+                                outObj.flush();
+
+                                odgovor = "svistudenti";
+                                outObj.writeObject(odgovor);
+                                outObj.flush();
+                                query = "SELECT * FROM Student";
+                                resultset = statement.executeQuery(query);
+
+                                while (resultset.next()) {
+                                    idStudenta = resultset.getInt("idStudenta");
+                                    smer = resultset.getString("smer");
+                                    godinaUpisa = resultset.getInt("godinaUpisa");
+                                    String ime = resultset.getString("ime");
+                                    String prezime = resultset.getString("prezime");
+                                    String finansiranje = resultset.getString("finansiranje");
+                                    String adresa = resultset.getString("adresa");
+                                    String email = resultset.getString("email");
+                                    String telefon = resultset.getString("telefon");
+                                    Student student = new Student(idStudenta, godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, telefon);
+                                    odgovor = student;
+                                    outObj.writeObject(odgovor);
+                                    outObj.flush();
+                                }
+
+                                odgovor = "svizaposleni";
+                                outObj.writeObject(odgovor);
+                                outObj.flush();
+                                query = "SELECT * FROM Zaposleni";
+                                resultset = statement.executeQuery(query);
+
+                                while (resultset.next()) {
+                                    idZaposlenog = resultset.getInt("idZaposlenog");
+                                    String pozicija = resultset.getString("pozicija");
+                                    String ime = resultset.getString("ime");
+                                    String prezime = resultset.getString("prezime");
+                                    String adresa = resultset.getString("adresa");
+                                    String email = resultset.getString("email");
+                                    String telefon = resultset.getString("telefon");
+                                    Zaposleni zaposleni = new Zaposleni(idZaposlenog, Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, telefon);
+                                    odgovor = zaposleni;
+                                    outObj.writeObject(odgovor);
+                                    outObj.flush();
+                                }
+
+                                odgovor = "svipredmeti";
+                                outObj.writeObject(odgovor);
+                                outObj.flush();
+                                query = "SELECT * FROM Predmet";
+                                resultset = statement.executeQuery(query);
+
+                                while (resultset.next()) {
+                                    int idPredmeta = resultset.getInt("idPredmeta");
+                                    String naziv = resultset.getString("naziv");
+                                    String studijskiSmer = resultset.getString("studijskiSmer");
+                                    int semestar = resultset.getInt("semestar");
+                                    int espb = resultset.getInt("Espb");
+                                    //TODO: POSLATI I PROFESORE NEKAKO + UPIT*
+                                    Predmet predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
+                                    odgovor = predmet;
+                                    outObj.writeObject(odgovor);
+                                    outObj.flush();
+                                }
+                                outObj.writeObject("kraj");
+                            }
                         }
-
-                        outObj.writeObject(odgovor);
-                        outObj.flush();
                     }
-
-                    //System.out.println(resultset.getInt("idZaposlenog") + resultset.getInt("idStudenta") + resultset.getString("smer") + resultset.getInt("godinaUpisa"));
-                    //TODO: poslati podatke o korisniku klijentu ako postoji
-
-                }
-
+                } while (zahtev.toString().length()==0);
             } catch (IOException | SQLException | ClassNotFoundException e) {
 
                 e.printStackTrace();
-
-            }
-
-            finally {
+            } finally {
 
                 //ZATVARANJE KONEKCIJE - ovo treba tek kad se ide na X
                 if(socket != null) {
 
                     try {
-
                         socket.close();
                         inObj.close();
                         outObj.close();
@@ -279,9 +370,7 @@ public class Server extends Application {
                         e.printStackTrace();
                     }
                 }
-
             }
         }
-
     }
 }
