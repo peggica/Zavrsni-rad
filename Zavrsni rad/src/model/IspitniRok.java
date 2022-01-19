@@ -1,24 +1,18 @@
 package model;
 
+import java.io.Serializable;
 import java.sql.*;
 
-public class IspitniRok {
+public class IspitniRok implements Serializable {
 
-    private int idRoka = 0;
-    private static int ID = 0;
+    private static final long serialVersionUID = 6L;
+    private int idRoka;
     private String naziv;
     private Date datumPocetka;
     private Date datumKraja;
     private boolean aktivnost;
 
-    public int getIdRoka() {
-
-        return idRoka;
-
-    }
-
     public IspitniRok(int idRoka, String naziv, boolean aktivnost) {
-
 
         this.idRoka = idRoka;
         this.naziv = naziv;
@@ -36,8 +30,9 @@ public class IspitniRok {
 
     }
 
-    public static int getID() {
-        return ID;
+
+    public int getIdRoka() {
+        return idRoka;
     }
 
     public String getNaziv() {

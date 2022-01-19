@@ -38,7 +38,7 @@ public class StudentskaSluzbaForm extends Stage {
         root.setCenter(null);
     }
 
-    public StudentskaSluzbaForm(Stage stage, ObservableList<Student> sviStudenti, ObservableList<Zaposleni> sviZaposleni, ObservableList<Predmet> sviPredmeti) {
+    public StudentskaSluzbaForm(Stage stage, ObservableList<Student> sviStudenti, ObservableList<Zaposleni> sviZaposleni, ObservableList<Predmet> sviPredmeti, ObservableList<Sala> sveSale, ObservableList<IspitniRok> sviIspitniRokovi) {
 
         super();
         initOwner(stage);
@@ -382,17 +382,22 @@ public class StudentskaSluzbaForm extends Stage {
             VBox vbox = new VBox();
             vbox.setPadding(new Insets(5,10,10,10));
 
-            TableView<String> tableSale = new TableView<String>();
+            TableView<Sala> tableSale = new TableView<>();
             tableSale.setEditable(true);
             tableSale.getColumns().clear();
 
-            TableColumn<String, String> colNaziv = new TableColumn("Naziv");    //TODO: nazive kolona dobiti iz baze
+            TableColumn colNaziv = new TableColumn("Naziv");
+            colNaziv.setCellValueFactory(new PropertyValueFactory<Sala, String>("naziv"));
             colNaziv.setMinWidth(200);
-            TableColumn<String, String> colKapacitet = new TableColumn("Broj mesta");
+            TableColumn colKapacitet = new TableColumn("Broj mesta");
+            colKapacitet.setCellValueFactory(new PropertyValueFactory<Sala, String>("brojMesta"));
             colKapacitet.setMinWidth(100);
-            TableColumn<String, String> colOprema = new TableColumn("Oprema");
+            TableColumn colOprema = new TableColumn("Oprema");
+            colOprema.setCellValueFactory(new PropertyValueFactory<Sala, String>("oprema"));
             colOprema.setMinWidth(200);
 
+            tableSale.setItems(sveSale);
+            //sredjuje problem za dodatu kolonu
             tableSale.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableSale.setPrefHeight(550);
             tableSale.getColumns().addAll(colNaziv, colKapacitet, colOprema);
@@ -406,8 +411,8 @@ public class StudentskaSluzbaForm extends Stage {
             txtKapacitet.setMinWidth(100);
 
             ComboBox cmbOprema = new ComboBox();
-            cmbOprema.getItems().addAll("Računari", "/"); //da ucita iz baze
-            cmbOprema.setValue("Računari");
+            cmbOprema.getItems().addAll(Sala.tipOpreme.values());
+            cmbOprema.setValue(Sala.tipOpreme.računari);
             cmbOprema.setMinWidth(Region.USE_PREF_SIZE);
             cmbOprema.setStyle("-fx-font: 12px \"Arial\";");
 
@@ -427,19 +432,26 @@ public class StudentskaSluzbaForm extends Stage {
         aktivirajMenuItem.setOnAction(event -> {
 
             ocistiPane(root);
-            TableView<String> tableIspitniRokovi = new TableView<String>();
+            TableView<IspitniRok> tableIspitniRokovi = new TableView<>();
             tableIspitniRokovi.setEditable(true);
 
             tableIspitniRokovi.getColumns().clear();
-            TableColumn<String, String> colNaziv = new TableColumn("Naziv");    //TODO: nazive kolona dobiti iz baze
+            TableColumn colNaziv = new TableColumn("Naziv");
+            colNaziv.setCellValueFactory(new PropertyValueFactory<Sala, String>("naziv"));
             colNaziv.setMinWidth(200);
-            TableColumn<String, String> colPocetak = new TableColumn("Početak");
+            TableColumn colPocetak = new TableColumn("Početak");
+            colPocetak.setCellValueFactory(new PropertyValueFactory<Sala, String>("datumPocetka"));
             colPocetak.setMinWidth(100);
-            TableColumn<String, String> colKraj = new TableColumn("Kraj");
+            TableColumn colKraj = new TableColumn("Kraj");
+            colKraj.setCellValueFactory(new PropertyValueFactory<Sala, String>("datumKraja"));
             colKraj.setMinWidth(100);
-            TableColumn<String, String> colAktivan = new TableColumn("Aktivan");    //true ili false, moze samo 1!
+            TableColumn colAktivan = new TableColumn("Aktivan");
+            //TODO: Staviti checkbox umesto true/false
+            colAktivan.setCellValueFactory(new PropertyValueFactory<Sala, String>("aktivnost"));
             colAktivan.setMinWidth(200);
 
+            tableIspitniRokovi.setItems(sviIspitniRokovi);
+            //sredjuje problem za dodatu kolonu
             tableIspitniRokovi.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableIspitniRokovi.setPrefHeight(550);
             tableIspitniRokovi.getColumns().addAll(colNaziv, colPocetak, colKraj, colAktivan);

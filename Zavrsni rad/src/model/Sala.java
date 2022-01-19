@@ -1,8 +1,16 @@
 package model;
 
-public class Sala {
+import java.io.Serializable;
 
-    public enum tipOpreme { racunari { public String toString() { return "računari"; }}, nista { public String toString() { return "/"; }}};
+public class Sala implements Serializable {
+
+    private static final long serialVersionUID = 5L;
+    public enum tipOpreme { računari, ništa {
+        @Override
+        public String toString() {
+            return "/";
+        }
+    }}
     private int idSale;
     private String naziv;
     private int brojMesta;

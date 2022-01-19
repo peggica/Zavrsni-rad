@@ -120,6 +120,8 @@ public class Klijent extends Application {
         private ObservableList<Student> sviStudenti = FXCollections.observableArrayList();
         private ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
         private ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
+        private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
+        private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
 
         public RunnableKlijent(String korisnickoIme, String lozinka) {
 
@@ -178,11 +180,35 @@ public class Klijent extends Application {
 
                                 while (true) { //nisam sigurna za ovu proveru
                                     odgovor = inObj.readObject();
-                                    if (odgovor.toString().equals("kraj")) {
+                                    if (odgovor.toString().equals("svesale")) {
                                         break;
                                     } else {
                                         Predmet predmet = (Predmet) odgovor;
                                         sviPredmeti.add(predmet);
+                                    }
+                                }
+                            }
+                            if(odgovor.toString().equals("svesale")) {
+
+                                while (true) { //nisam sigurna za ovu proveru
+                                    odgovor = inObj.readObject();
+                                    if (odgovor.toString().equals("sviispitnirokovi")) {
+                                        break;
+                                    } else {
+                                        Sala sala = (Sala) odgovor;
+                                        sveSale.add(sala);
+                                    }
+                                }
+                            }
+                            if(odgovor.toString().equals("sviispitnirokovi")) {
+
+                                while (true) { //nisam sigurna za ovu proveru
+                                    odgovor = inObj.readObject();
+                                    if (odgovor.toString().equals("kraj")) {
+                                        break;
+                                    } else {
+                                        IspitniRok ispitniRok = (IspitniRok) odgovor;
+                                        sviIspitniRokovi.add(ispitniRok);
                                     }
                                 }
                             }
@@ -199,7 +225,7 @@ public class Klijent extends Application {
                         @Override
                         public void run() {
 
-                            StudentskaSluzbaForm studentskaSluzbaForm = new StudentskaSluzbaForm(getStage(), sviStudenti, sviZaposleni, sviPredmeti);
+                            StudentskaSluzbaForm studentskaSluzbaForm = new StudentskaSluzbaForm(getStage(), sviStudenti, sviZaposleni, sviPredmeti, sveSale, sviIspitniRokovi);
                             getStage().close();
                             studentskaSluzbaForm.show();
 
