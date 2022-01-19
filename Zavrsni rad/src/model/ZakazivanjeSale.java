@@ -1,9 +1,11 @@
 package model;
 
+import java.io.Serializable;
 import java.sql.*;
 
-public class ZakazivanjeSale {
+public class ZakazivanjeSale implements Serializable {
 
+    private static final long serialVersionUID = 9L;
     private int idSale;
     private int idPredmeta;
     private Date datum;

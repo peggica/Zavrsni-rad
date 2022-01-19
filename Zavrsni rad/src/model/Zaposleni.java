@@ -4,9 +4,9 @@ import java.io.Serializable;
 
 public class Zaposleni implements Serializable {
 
-    private static final long serialVersionUID = 3L;
+    private static final long serialVersionUID = 11L;
     private int idZaposlenog;
-    public enum tipZaposlenog { profesor, asistent, saradnik };
+    public enum tipZaposlenog { profesor, asistent, saradnik }
     private String pozicija;
     private String ime;
     private String prezime;

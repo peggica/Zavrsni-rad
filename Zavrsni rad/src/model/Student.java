@@ -4,11 +4,11 @@ import java.io.Serializable;
 
 public class Student implements Serializable {
 
-    private static final long serialVersionUID = 2L;
+    private static final long serialVersionUID = 8L;
     private String brojIndeksa;
     private int idStudenta;
     private int godinaUpisa;
-    public enum tipSmera { avt, asuv, eko, elite, epo, ist, net, nrt, rt };
+    public enum tipSmera { avt, asuv, eko, elite, epo, ist, net, nrt, rt }
     private String smer;
     private String ime;
     private String prezime;

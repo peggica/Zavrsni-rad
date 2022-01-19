@@ -5,7 +5,7 @@ import java.sql.*;
 
 public class IspitniRok implements Serializable {
 
-    private static final long serialVersionUID = 6L;
+    private static final long serialVersionUID = 1L;
     private int idRoka;
     private String naziv;
     private Date datumPocetka;

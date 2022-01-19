@@ -1,9 +1,11 @@
 package model;
 
+import java.io.Serializable;
 import java.sql.*;
 
-public class Zapisnik {
+public class Zapisnik implements Serializable {
 
+    private static final long serialVersionUID = 10L;
     private int idPredmeta;
     private Date datum;
     private int ocena;

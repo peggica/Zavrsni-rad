@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class Sala implements Serializable {
 
-    private static final long serialVersionUID = 5L;
+    private static final long serialVersionUID = 7L;
     public enum tipOpreme { računari, ništa {
         @Override
         public String toString() {

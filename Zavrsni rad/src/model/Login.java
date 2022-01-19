@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class Login implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 3L;
     private int idZaposlenog;
     private String korisnickoIme;
     private String lozinka;

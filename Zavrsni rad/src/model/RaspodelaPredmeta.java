@@ -1,7 +1,10 @@
 package model;
 
-public class RaspodelaPredmeta {
+import java.io.Serializable;
 
+public class RaspodelaPredmeta implements Serializable {
+
+    private static final long serialVersionUID = 6L;
     private int idPredmeta;
     private int idZaposlenog;
 
