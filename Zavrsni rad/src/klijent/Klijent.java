@@ -117,11 +117,11 @@ public class Klijent extends Application {
         private Object odgovor;
         private String korisnickoIme;
         private String lozinka;
+        private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
         private ObservableList<Student> sviStudenti = FXCollections.observableArrayList();
         private ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
         private ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
         private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
-        private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
 
         public RunnableKlijent(String korisnickoIme, String lozinka) {
 
@@ -153,6 +153,18 @@ public class Klijent extends Application {
                     //ovde treba da ucita sve podatke od sluzbe
                     try {
                         odgovor = inObj.readObject();
+                        if(odgovor.toString().equals("sviispitnirokovi")) {
+
+                            while (true) { //nisam sigurna za ovu proveru
+                                odgovor = inObj.readObject();
+                                if (odgovor.toString().equals("svistudenti")) {
+                                    break;
+                                } else {
+                                    IspitniRok ispitniRok = (IspitniRok) odgovor;
+                                    sviIspitniRokovi.add(ispitniRok);
+                                }
+                            }
+                        }
                         if(odgovor.toString().equals("svistudenti")) {
 
                             while (true) { //nisam sigurna za ovu proveru
@@ -192,23 +204,11 @@ public class Klijent extends Application {
 
                                 while (true) { //nisam sigurna za ovu proveru
                                     odgovor = inObj.readObject();
-                                    if (odgovor.toString().equals("sviispitnirokovi")) {
+                                    if (odgovor.toString().equals("kraj")) {
                                         break;
                                     } else {
                                         Sala sala = (Sala) odgovor;
                                         sveSale.add(sala);
-                                    }
-                                }
-                            }
-                            if(odgovor.toString().equals("sviispitnirokovi")) {
-
-                                while (true) { //nisam sigurna za ovu proveru
-                                    odgovor = inObj.readObject();
-                                    if (odgovor.toString().equals("kraj")) {
-                                        break;
-                                    } else {
-                                        IspitniRok ispitniRok = (IspitniRok) odgovor;
-                                        sviIspitniRokovi.add(ispitniRok);
                                     }
                                 }
                             }
@@ -225,7 +225,7 @@ public class Klijent extends Application {
                         @Override
                         public void run() {
 
-                            StudentskaSluzbaForm studentskaSluzbaForm = new StudentskaSluzbaForm(getStage(), sviStudenti, sviZaposleni, sviPredmeti, sveSale, sviIspitniRokovi);
+                            StudentskaSluzbaForm studentskaSluzbaForm = new StudentskaSluzbaForm(getStage(), sviIspitniRokovi, sviStudenti, sviZaposleni, sviPredmeti, sveSale);
                             getStage().close();
                             studentskaSluzbaForm.show();
 
@@ -242,37 +242,70 @@ public class Klijent extends Application {
                             dialog.show();
                         }
                     });
-                } else {
+                } else if(odgovor.equals("zaposleni")) {
+
+                    odgovor = inObj.readObject();
+                    Zaposleni zaposleni = (Zaposleni) odgovor;
+                    odgovor = inObj.readObject();
+
+                    if (odgovor.toString().equals("sviispitnirokovi")) {
+
+                        while (true) { //nisam sigurna za ovu proveru
+                            odgovor = inObj.readObject();
+                            if (odgovor.toString().equals("kraj")) {
+                                break;
+                            } else {
+                                IspitniRok ispitniRok = (IspitniRok) odgovor;
+                                sviIspitniRokovi.add(ispitniRok);
+                            }
+                        }
+                    }
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
 
                         @Override
                         public void run() {
-                            try {
-                                Student student = (Student) odgovor;
-                                StudentForm studentForm = new StudentForm(getStage());
-                                getStage().close();
-                                studentForm.show();
-                            } catch (Exception e) {
-                                // e.printStackTrace();
+
+                            ZaposleniForm zaposleniForm = new ZaposleniForm(getStage(), sviIspitniRokovi);
+                            getStage().close();
+                            zaposleniForm.show();
+
+                        }
+                    });
+                }  else if(odgovor.equals("student")) {
+
+                    odgovor = inObj.readObject();
+                    Student student = (Student) odgovor;
+                    odgovor = inObj.readObject();
+
+                    if (odgovor.toString().equals("sviispitnirokovi")) {
+
+                        while (true) { //nisam sigurna za ovu proveru
+                            odgovor = inObj.readObject();
+                            if (odgovor.toString().equals("kraj")) {
+                                break;
+                            } else {
+                                IspitniRok ispitniRok = (IspitniRok) odgovor;
+                                sviIspitniRokovi.add(ispitniRok);
                             }
-                            try {
-                                Zaposleni zaposleni = (Zaposleni) odgovor;
-                                ZaposleniForm zaposleniForm = new ZaposleniForm(getStage());
-                                getStage().close();
-                                zaposleniForm.show();
-                            } catch (Exception e) {
-                                // e.printStackTrace();
-                            }
+                        }
+                    }
+                    //update na JavaFx application niti
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+
+                            StudentForm studentForm = new StudentForm(getStage(), sviIspitniRokovi);
+                            getStage().close();
+                            studentForm.show();
+
                         }
                     });
                 }
-
             } catch (UnknownHostException e) {
                 e.printStackTrace();
-
             } catch (IOException e) {
-
                 //e.printStackTrace();
                 //update na JavaFx application niti
                 Platform.runLater(new Runnable() {
@@ -284,7 +317,6 @@ public class Klijent extends Application {
                         dialog.show();
                     }
                 });
-
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             } finally {

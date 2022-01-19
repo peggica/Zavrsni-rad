@@ -1,11 +1,15 @@
 package klijent.gui;
 
+import javafx.collections.ObservableList;
 import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import model.IspitniRok;
+
+import java.util.List;
 
 /** Klasa namenjena za prikaz Forme za Zaposlene u JavaFx-u
  *  Ukoliko je tip zaposlenog profesor u Meniju je dostupna i opcija za snimanje ocena u zapisnik - DODAJ U ZAPISNIK
@@ -16,13 +20,28 @@ public class ZaposleniForm extends Stage {
     private static Font font15 = new Font("Arial", 15);
     private static Font font20 = new Font("Arial", 20);
 
-    /** Postavlja prikaz za stavku Pocetna iz Menija  */
-    private static void pocetniPrikaz(BorderPane root) {
+    /** Proverava da li ima aktivnih ispitnih rokova ili ne, pa postavlja prikaz za stavku Pocetna iz Menija    */
+    private static void pocetniPrikaz(BorderPane root, List<IspitniRok> sviIspitniRokovi){
 
-        Label lblPrikaz = new Label("Ispitni rok: ");
+        boolean aktivan = false;
+        for (IspitniRok ispitniRok:sviIspitniRokovi) {
+            if(ispitniRok.isAktivnost()==true) {
+                aktivan = true;
+                break;
+            }
+        }
+
+        String poruka = "";
+        if(aktivan) {
+            poruka = "Ispitni rok je u toku.";
+        } else {
+            poruka = "Nijedan ispitni rok trenutno nije u toku.";
+        }
+        Label lblPrikaz = new Label(poruka);
         lblPrikaz.setFont(font20);
-        lblPrikaz.setPadding(new Insets(5, 10, 5, 10));
+        lblPrikaz.setPadding(new Insets(5,10,5,10));
         root.setLeft(lblPrikaz);
+
     }
 
     /** Cisti sve strane Border Pane-a, pre prebacivanja na sledeci prikaz iz Menija  */
@@ -34,7 +53,7 @@ public class ZaposleniForm extends Stage {
         root.setCenter(null);
     }
 
-    public ZaposleniForm(Stage stage) {
+    public ZaposleniForm(Stage stage, ObservableList<IspitniRok> sviIspitniRokovi) {
 
         super();
         initOwner(stage);
@@ -43,7 +62,7 @@ public class ZaposleniForm extends Stage {
         MenuBar menuBar = new MenuBar();
         menuBar.prefWidthProperty().bind(stage.widthProperty());
         root.setTop(menuBar);
-        pocetniPrikaz(root);
+        pocetniPrikaz(root, sviIspitniRokovi);
 
         Scene scene = new Scene(root, 650, 400);
         setScene(scene);
@@ -55,7 +74,7 @@ public class ZaposleniForm extends Stage {
         lblPocetna.setOnMouseClicked(mouseEvent -> {
 
             ocistiPane(root);
-            pocetniPrikaz(root);
+            pocetniPrikaz(root, sviIspitniRokovi);
         });
         Menu pocetnaMenu = new Menu("", lblPocetna);
 
