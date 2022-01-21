@@ -1,7 +1,6 @@
 package klijent.gui;
 
-import javafx.application.Platform;
-import javafx.collections.ObservableList;
+import javafx.collections.*;
 import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -22,6 +21,31 @@ public class StudentskaSluzbaForm extends Stage {
 
     private static Font font15 = new Font("Arial", 15);
     private static Font font20 = new Font("Arial", 20);
+    private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
+    private ObservableList<Student> sviStudenti = FXCollections.observableArrayList();
+    private ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
+    private ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
+    private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
+
+    public void setSviIspitniRokovi(ObservableList<IspitniRok> sviIspitniRokovi) {
+        this.sviIspitniRokovi = sviIspitniRokovi;
+    }
+
+    public void setSviStudenti(ObservableList<Student> sviStudenti) {
+        this.sviStudenti = sviStudenti;
+    }
+
+    public void setSviZaposleni(ObservableList<Zaposleni> sviZaposleni) {
+        this.sviZaposleni = sviZaposleni;
+    }
+
+    public void setSviPredmeti(ObservableList<Predmet> sviPredmeti) {
+        this.sviPredmeti = sviPredmeti;
+    }
+
+    public void setSveSale(ObservableList<Sala> sveSale) {
+        this.sveSale = sveSale;
+    }
 
     /** Proverava da li ima aktivnih ispitnih rokova ili ne, pa postavlja prikaz za stavku Pocetna iz Menija    */
     private static void pocetniPrikaz(BorderPane root, List<IspitniRok> sviIspitniRokovi){
@@ -60,6 +84,11 @@ public class StudentskaSluzbaForm extends Stage {
 
         super();
         initOwner(stage);
+        setSviIspitniRokovi(sviIspitniRokovi);
+        setSviStudenti(sviStudenti);
+        setSviZaposleni(sviZaposleni);
+        setSviPredmeti(sviPredmeti);
+        setSveSale(sveSale);
 
         BorderPane root = new BorderPane();
         MenuBar menuBar = new MenuBar();

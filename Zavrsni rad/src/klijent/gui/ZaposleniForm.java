@@ -1,6 +1,6 @@
 package klijent.gui;
 
-import javafx.collections.ObservableList;
+import javafx.collections.*;
 import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -19,12 +19,17 @@ public class ZaposleniForm extends Stage {
 
     private static Font font15 = new Font("Arial", 15);
     private static Font font20 = new Font("Arial", 20);
+    private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
+
+    public void setSviIspitniRokovi(ObservableList<IspitniRok> sviIspitniRokovi) {
+        this.sviIspitniRokovi = sviIspitniRokovi;
+    }
 
     /** Proverava da li ima aktivnih ispitnih rokova ili ne, pa postavlja prikaz za stavku Pocetna iz Menija    */
-    private static void pocetniPrikaz(BorderPane root, List<IspitniRok> sviIspitniRokovi){
+    private void pocetniPrikaz(BorderPane root){
 
         boolean aktivan = false;
-        for (IspitniRok ispitniRok:sviIspitniRokovi) {
+        for (IspitniRok ispitniRok:this.sviIspitniRokovi) {
             if(ispitniRok.isAktivnost()==true) {
                 aktivan = true;
                 break;
@@ -53,7 +58,7 @@ public class ZaposleniForm extends Stage {
         root.setCenter(null);
     }
 
-    public ZaposleniForm(Stage stage, ObservableList<IspitniRok> sviIspitniRokovi) {
+    public ZaposleniForm(Stage stage) {
 
         super();
         initOwner(stage);
@@ -62,7 +67,7 @@ public class ZaposleniForm extends Stage {
         MenuBar menuBar = new MenuBar();
         menuBar.prefWidthProperty().bind(stage.widthProperty());
         root.setTop(menuBar);
-        pocetniPrikaz(root, sviIspitniRokovi);
+        pocetniPrikaz(root);
 
         Scene scene = new Scene(root, 650, 400);
         setScene(scene);
@@ -74,7 +79,7 @@ public class ZaposleniForm extends Stage {
         lblPocetna.setOnMouseClicked(mouseEvent -> {
 
             ocistiPane(root);
-            pocetniPrikaz(root, sviIspitniRokovi);
+            pocetniPrikaz(root);
         });
         Menu pocetnaMenu = new Menu("", lblPocetna);
 

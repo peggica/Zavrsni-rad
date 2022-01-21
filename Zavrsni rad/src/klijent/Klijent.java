@@ -23,6 +23,13 @@ import java.net.*;
 public class Klijent extends Application {
 
     private static Stage stage;
+    private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
+    private ObservableList<Student> sviStudenti = FXCollections.observableArrayList();
+    private ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
+    private ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
+    private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
+    private ZaposleniForm zaposleniForm;
+    private static final int TCP_PORT = 9000;
 
     public static Stage getStage() {
 
@@ -110,18 +117,14 @@ public class Klijent extends Application {
 
     private class RunnableKlijent implements Runnable {
 
-        public static final int TCP_PORT = 9000;
         private Socket socket = null;
         private ObjectInputStream inObj;
         private ObjectOutputStream outObj;
         private Object odgovor;
         private String korisnickoIme;
         private String lozinka;
-        private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
-        private ObservableList<Student> sviStudenti = FXCollections.observableArrayList();
-        private ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
-        private ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
-        private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
+        private Zaposleni ovajZaposleni;
+        private Student ovajStudent;
 
         public RunnableKlijent(String korisnickoIme, String lozinka) {
 
@@ -245,38 +248,39 @@ public class Klijent extends Application {
                 } else if(odgovor.equals("zaposleni")) {
 
                     odgovor = inObj.readObject();
-                    Zaposleni zaposleni = (Zaposleni) odgovor;
-                    odgovor = inObj.readObject();
-
-                    if (odgovor.toString().equals("sviispitnirokovi")) {
-
-                        while (true) { //nisam sigurna za ovu proveru
-                            odgovor = inObj.readObject();
-                            if (odgovor.toString().equals("kraj")) {
-                                break;
-                            } else {
-                                IspitniRok ispitniRok = (IspitniRok) odgovor;
-                                sviIspitniRokovi.add(ispitniRok);
-                            }
-                        }
-                    }
+                    ovajZaposleni = (Zaposleni) odgovor;
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
 
                         @Override
                         public void run() {
 
-                            ZaposleniForm zaposleniForm = new ZaposleniForm(getStage(), sviIspitniRokovi);
+                            //pokretanje forme za zaposlenog
+                            zaposleniForm = new ZaposleniForm(getStage());
                             getStage().close();
                             zaposleniForm.show();
 
                         }
                     });
+                    while(true) {
+
+                        Thread runnableKlijentOsveziZaposleni = new Thread(new RunnableKlijentOsveziZaposleni());
+                        //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                        runnableKlijentOsveziZaposleni.setDaemon(true);
+                        runnableKlijentOsveziZaposleni.start();
+                        //na svakih 10 sekundi da zatrazi i osvezi podatke
+                        try {
+                            Thread.sleep(10000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
                 }  else if(odgovor.equals("student")) {
 
                     odgovor = inObj.readObject();
-                    Student student = (Student) odgovor;
-                    odgovor = inObj.readObject();
+                    ovajStudent = (Student) odgovor;
+                    /*odgovor = inObj.readObject();
 
                     if (odgovor.toString().equals("sviispitnirokovi")) {
 
@@ -289,7 +293,7 @@ public class Klijent extends Application {
                                 sviIspitniRokovi.add(ispitniRok);
                             }
                         }
-                    }
+                    }*/
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
 
@@ -321,7 +325,7 @@ public class Klijent extends Application {
                 e.printStackTrace();
             } finally {
 
-                //ZATVARANJE KONEKCIJE - ovo treba tek kad se ide na X
+                //ZATVARANJE KONEKCIJE
                 if(socket != null && (inObj != null || outObj != null)) {
 
                     try {
@@ -332,6 +336,84 @@ public class Klijent extends Application {
                         e.printStackTrace();
                     }
                 }
+            }
+        }
+    }
+
+    /** Klasa RunnableKlijentOsveziZaposleni namenjena za osvezavanje tj ponovno
+     *  preuzimanje vrednosti sa servera za prikaz na formi zapoglenog. Startuje se na svakih 10 sekundi.
+     *  @author Biljana Stanojevic  */
+    private class RunnableKlijentOsveziZaposleni implements Runnable {
+
+        private Socket socket = null;
+        private ObjectInputStream inObj;
+        private ObjectOutputStream outObj;
+        private Object odgovor;
+
+        @Override
+        public void run() {
+
+            //OTVARANJE KONEKCIJE
+            try {
+                InetAddress addr = InetAddress.getByName("127.0.0.1");
+                Socket socket = new Socket(addr, TCP_PORT);
+                inObj = new ObjectInputStream(socket.getInputStream());
+                outObj = new ObjectOutputStream(socket.getOutputStream());
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                outObj.writeObject("zaposleni");
+                try {
+                    odgovor = inObj.readObject();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            if (odgovor.toString().equals("sviispitnirokovi")) {
+
+                sviIspitniRokovi.clear();
+                while (true) { //nisam sigurna za ovu proveru
+                    try {
+                        odgovor = inObj.readObject();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    } if (odgovor.toString().equals("kraj")) {
+                        break;
+                    } else {
+                        IspitniRok ispitniRok = (IspitniRok) odgovor;
+                        sviIspitniRokovi.add(ispitniRok);
+                    }
+                }
+                //ZATVARANJE KONEKCIJE
+                if(socket != null && (inObj != null || outObj != null)) {
+                    try {
+                        socket.close();
+                        inObj.close();
+                        outObj.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                //update na JavaFx application niti
+                Platform.runLater(new Runnable() {
+
+                    @Override
+                    public void run() {
+
+                        //azuriranje svihispitnihrokova
+                        zaposleniForm.setSviIspitniRokovi(sviIspitniRokovi);
+                        System.out.println("poslati novi podaci javafx");
+
+                    }
+                });
             }
         }
     }
