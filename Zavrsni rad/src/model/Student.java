@@ -1,11 +1,13 @@
 package model;
 
+import com.sun.security.jgss.GSSUtil;
+
 import java.io.Serializable;
+import java.util.Calendar;
 
 public class Student implements Serializable {
 
     private static final long serialVersionUID = 8L;
-    private String brojIndeksa;
     private int idStudenta;
     private int godinaUpisa;
     public enum tipSmera { avt, asuv, eko, elite, epo, ist, net, nrt, rt }
@@ -29,7 +31,6 @@ public class Student implements Serializable {
         this.adresa = adresa;
         this.email = email;
         this.brojTelefona = brojTelefona;
-        this.brojIndeksa = smer + "/" + idStudenta + "-" +godinaUpisa;
     }
 
     public Student(int idStudenta, int godinaUpisa, tipSmera tipSm, String ime, String prezime, tipFinansiranja tipFin) {
@@ -40,13 +41,8 @@ public class Student implements Serializable {
         this.ime = ime;
         this.prezime = prezime;
         this.finansiranje = tipFin.toString();
-        this.brojIndeksa = smer + "/" + idStudenta + "-" +godinaUpisa;
         //defaultno su adresa, email i brojTelefona null - za String ako ne dodelim
 
-    }
-
-    public String getBrojIndeksa() {
-        return brojIndeksa;
     }
 
     public int getIdStudenta() {
@@ -83,6 +79,35 @@ public class Student implements Serializable {
 
     public String getBrojTelefona() {
         return brojTelefona;
+    }
+
+    public String imePrezime() {
+        return ime + " " + prezime;
+    }
+
+    public String brojIndeksa() {
+        return smer + "/" + idStudenta + "-" + String.valueOf(godinaUpisa).substring(2);
+    }
+
+    public int getSemestar() {
+        //ovo je za sada za osnovne studije
+        int semestar = 6;   //najveci moguci je 6 semestar
+        int godine = Calendar.getInstance().get(Calendar.YEAR) - godinaUpisa;
+        int mesec = Calendar.getInstance().get(Calendar.MONTH); //0-11
+        if(godine <= 3) {
+            if (mesec >= 2 && mesec <= 8) {  //od marta do septembra, 1,2,3 godine razlike = 2,4,6 semestar
+                semestar = godine * 2;
+            } else if (mesec <= 1) {    //januar i februar, 1,2,3 godine razlike = 1,3,5 semestar
+                semestar = godine * 2 - 1;
+            } else if (mesec >= 9) {
+                if (godine < 3) {   //oktobar, novembar, decembar, 0,1,2 godine razlike = 1,3,5 semestar
+                    semestar = godine * 2 + 1;
+                } else {    //oktobar, novembar, decembar, 3 godine razlike
+                    semestar = 6;
+                }
+            }
+        }
+        return semestar;
     }
 
 }

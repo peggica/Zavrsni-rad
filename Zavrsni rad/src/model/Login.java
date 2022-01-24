@@ -9,7 +9,7 @@ public class Login implements Serializable {
     private String korisnickoIme;
     private String lozinka;
     private int idStudenta;
-    public enum tipSmera { AVT, ASUV, EKO, ELITE, EPO, IS, NET, NRT, RT };
+    public enum tipSmera { avt, asuv, eko, elite, epo, is, net, nrt, rt };
     private String smer;
     private int godinaUpisa;
 

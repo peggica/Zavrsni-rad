@@ -10,7 +10,7 @@ public class Zapisnik implements Serializable {
     private Date datum;
     private int ocena;
     private int idStudenta;
-    public enum tipSmera { AVT, ASUV, EKO, ELITE, EPO, IS, NET, NRT, RT };
+    public enum tipSmera { avt, asuv, eko, elite, epo, ist, net, nrt, rt }
     private String smer;
     private int godinaUpisa;
     private int idRoka;

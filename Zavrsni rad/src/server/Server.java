@@ -226,6 +226,38 @@ public class Server extends Application {
                                     outObj.writeObject(odgovor);
                                     outObj.flush();
                                 }
+                                //TODO: provera za polozene predmete
+                                query = "SELECT * FROM predmet WHERE idPredmeta IN (SELECT idPredmeta FROM izabranipredmeti WHERE idStudenta = '" + idStudenta +"'";
+                                resultset = statement.executeQuery(query);
+                                if (resultset.next()) {
+                                    int idPredmeta = resultset.getInt("idPredmeta");
+                                    String naziv = resultset.getString("naziv");
+                                    String studijskiSmer = resultset.getString("studijSkismer");
+                                    int semestar = resultset.getInt("semestar");
+                                    int espb = resultset.getInt("espb");
+                                    Predmet predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
+                                    odgovor = predmet;
+                                    outObj.writeObject(odgovor);
+                                    outObj.flush();
+                                }
+                                //TODO: provera za nepolozene predmete
+                                outObj.writeObject("nepolozenipredmeti");
+                                outObj.flush();
+                                query = "SELECT * FROM predmet WHERE idPredmeta = (SELECT * FROM izabranipredmeti WHERE idStudenta = '" + idStudenta +"'";
+                                resultset = statement.executeQuery(query);
+                                if (resultset.next()) {
+                                    int idPredmeta = resultset.getInt("idPredmeta");
+                                    String naziv = resultset.getString("naziv");
+                                    String studijskiSmer = resultset.getString("studijSkismer");
+                                    int semestar = resultset.getInt("semestar");
+                                    int espb = resultset.getInt("espb");
+                                    Predmet predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
+                                    odgovor = predmet;
+                                    outObj.writeObject(odgovor);
+                                    outObj.flush();
+                                }
+                                outObj.writeObject("kraj");
+                                outObj.flush();
 
                             } else {
                                 odgovor = "sluzba";

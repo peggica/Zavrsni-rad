@@ -4,10 +4,16 @@ import javafx.collections.*;
 import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import model.IspitniRok;
+import model.Predmet;
+import model.Student;
+import model.Zaposleni;
+
+import java.util.Optional;
 
 /** Klasa namenjena za prikaz Studentske Forme u JavaFx-u
  *   @author Biljana Stanojevic  */
@@ -16,10 +22,19 @@ public class StudentForm extends Stage {
 
     private static Font font15 = new Font("Arial", 15);
     private static Font font20 = new Font("Arial", 20);
+    private Student student;
     private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
+    private ObservableList<Predmet> polozeniPredmeti = FXCollections.observableArrayList();
+    private ObservableList<Predmet> nepolozeniPredmeti = FXCollections.observableArrayList();
 
-    public void setSviIspitniRokovi(ObservableList<IspitniRok> sviIspitniRokovi) {
+    public void setStudent(Student student) {
+        this.student = student;
+    }
+
+    public void setSviIspitniRokovi(ObservableList<IspitniRok> sviIspitniRokovi, ObservableList<Predmet> polozeniPredmeti, ObservableList<Predmet> nepolozeniPredmeti) {
         this.sviIspitniRokovi = sviIspitniRokovi;
+        this.polozeniPredmeti = polozeniPredmeti;
+        this.nepolozeniPredmeti = nepolozeniPredmeti;
     }
 
     /** Proverava da li ima aktivnih ispitnih rokova ili ne, pa postavlja prikaz za stavku Pocetna iz Menija    */
@@ -93,20 +108,26 @@ public class StudentForm extends Stage {
             lblPolozeni.setAlignment(Pos.CENTER_LEFT);
             lblPolozeni.setPadding(new Insets(0,10,5,0));
 
-            TableView<String> tablePolozeni = new TableView<String>();
+            TableView<Predmet> tablePolozeni = new TableView<>();
             tablePolozeni.getColumns().clear();
 
-            TableColumn<String, String> colSifra = new TableColumn("Šifra");    //TODO: nazive kolona dobiti iz baze
+            TableColumn colSifra = new TableColumn("Šifra");
+            colSifra.setCellValueFactory(new PropertyValueFactory<Predmet, String>("idPredmeta"));
             colSifra.setMinWidth(75);
-            TableColumn<String, String> colNaziv = new TableColumn("Naziv predmeta");
+            TableColumn colNaziv = new TableColumn("Naziv predmeta");
+            colNaziv.setCellValueFactory(new PropertyValueFactory<Predmet, String>("naziv"));
             colNaziv.setMinWidth(350);
-            TableColumn<String, String> colEspb = new TableColumn("ESPB");
+            TableColumn colEspb = new TableColumn("ESPB");
+            colEspb.setCellValueFactory(new PropertyValueFactory<Predmet, String>("espb"));
             colEspb.setMinWidth(75);
-            TableColumn<String, String> colSemestar = new TableColumn("Semestar");
+            TableColumn colSemestar = new TableColumn("Semestar");
+            colSemestar.setCellValueFactory(new PropertyValueFactory<Predmet, String>("semestar"));
             colSemestar.setMinWidth(75);
-            TableColumn<String, String> colOcena = new TableColumn("Ocena");    //TODO: ovo dole sreduje problem - za dodatnu kolonu
+            TableColumn colOcena = new TableColumn("Ocena");
             colOcena.setMinWidth(75);
 
+            tablePolozeni.setItems(polozeniPredmeti);
+            //sredjuje problem za dodatu kolonu
             tablePolozeni.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tablePolozeni.getColumns().addAll(colSifra, colNaziv, colEspb, colSemestar, colOcena);
 
@@ -115,18 +136,24 @@ public class StudentForm extends Stage {
             lblNepolozeni.setAlignment(Pos.CENTER_LEFT);
             lblNepolozeni.setPadding(new Insets(5,10,5,0));
 
-            TableView<String> tableNeplozeni = new TableView<String>();
+            TableView<Predmet> tableNeplozeni = new TableView<>();
             tableNeplozeni.getColumns().clear();
 
-            TableColumn<String, String> colSifraNe = new TableColumn("Šifra");  //TODO: nazive kolona dobiti iz baze
+            TableColumn colSifraNe = new TableColumn("Šifra");
+            colSifraNe.setCellValueFactory(new PropertyValueFactory<Predmet, String>("idPredmeta"));
             colSifraNe.setMinWidth(75);
-            TableColumn<String, String> colNazivNe = new TableColumn("Naziv predmeta");
+            TableColumn colNazivNe = new TableColumn("Naziv predmeta");
+            colNazivNe.setCellValueFactory(new PropertyValueFactory<Predmet, String>("naziv"));
             colNazivNe.setMinWidth(350);
-            TableColumn<String, String> colEspbNe = new TableColumn("ESPB");
+            TableColumn colEspbNe = new TableColumn("ESPB");
+            colEspbNe.setCellValueFactory(new PropertyValueFactory<Predmet, String>("espb"));
             colEspbNe.setMinWidth(75);
-            TableColumn<String, String> colSemestarNe = new TableColumn("Semestar");
+            TableColumn colSemestarNe = new TableColumn("Semestar");
+            colSemestarNe.setCellValueFactory(new PropertyValueFactory<Predmet, String>("semestar"));
             colSemestarNe.setMinWidth(75);
 
+            tableNeplozeni.setItems(nepolozeniPredmeti);
+            //sredjuje problem za dodatu kolonu
             tableNeplozeni.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableNeplozeni.getColumns().addAll(colSifraNe, colNazivNe, colEspbNe, colSemestarNe);
 
@@ -238,31 +265,31 @@ public class StudentForm extends Stage {
             Label lblPrikaz = new Label("Podaci");
             lblPrikaz.setFont(font20);
 
-            Label lblBrIndeksa = new Label("Broj indeksa: ");
+            Label lblBrIndeksa = new Label("Broj indeksa: " + student.brojIndeksa());
             lblBrIndeksa.setPadding(new Insets(20,0,0,0));
             lblBrIndeksa.setFont(font15);
 
-            Label lblImePrezime = new Label("Ime i prezime: ");
+            Label lblImePrezime = new Label("Ime i prezime: " + student.imePrezime());
             lblImePrezime.setPadding(new Insets(10,0,0,0));
             lblImePrezime.setFont(font15);
 
-            Label lblAdresa = new Label("Adresa: ");
+            Label lblAdresa = new Label("Adresa: " + Optional.ofNullable(student.getAdresa()).orElse("/"));
             lblAdresa.setPadding(new Insets(10,0,0,0));
             lblAdresa.setFont(font15);
 
-            Label lblTelefon = new Label("Broj telefona: ");
+            Label lblTelefon = new Label("Broj telefona: " + Optional.ofNullable(student.getBrojTelefona()).orElse("/"));
             lblTelefon.setPadding(new Insets(10,0,0,0));
             lblTelefon.setFont(font15);
 
-            Label lblEmail = new Label("E-mail: ");
+            Label lblEmail = new Label("E-mail: " + Optional.ofNullable(student.getEmail()).orElse("/"));
             lblEmail.setPadding(new Insets(10,0,0,0));
             lblEmail.setFont(font15);
 
-            Label lblStatus = new Label("Status: ");
+            Label lblStatus = new Label("Status: " + student.getFinansiranje());
             lblStatus.setPadding(new Insets(10,0,0,0));
             lblStatus.setFont(font15);
 
-            Label lblSemestar = new Label("Semestar: ");
+            Label lblSemestar = new Label("Semestar: " + student.getSemestar());
             lblSemestar.setPadding(new Insets(10,0,0,0));
             lblSemestar.setFont(font15);
 

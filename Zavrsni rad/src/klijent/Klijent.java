@@ -28,6 +28,8 @@ public class Klijent extends Application {
     private ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
     private ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
     private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
+    private ObservableList<Predmet> polozeniPredmeti = FXCollections.observableArrayList();
+    private ObservableList<Predmet> nepolozeniPredmeti = FXCollections.observableArrayList();
     private StudentskaSluzbaForm studentskaSluzbaForm;
     private ZaposleniForm zaposleniForm;
     private StudentForm studentForm;
@@ -229,6 +231,16 @@ public class Klijent extends Application {
 
                     odgovor = inObj.readObject();
                     ovajStudent = (Student) odgovor;
+                    do {
+                        odgovor = inObj.readObject();
+                        Predmet predmet = (Predmet) odgovor;
+                        polozeniPredmeti.add(predmet);
+                    } while (!odgovor.equals("nepolozenipredmeti"));
+                    do {
+                        odgovor = inObj.readObject();
+                        Predmet predmet = (Predmet) odgovor;
+                        nepolozeniPredmeti.add(predmet);
+                    } while (!odgovor.equals("kraj"));
 
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
@@ -238,6 +250,7 @@ public class Klijent extends Application {
 
                             //prikaz forme za studenta
                             studentForm = new StudentForm(getStage());
+                            studentForm.setStudent(ovajStudent);
                             getStage().close();
                             studentForm.show();
 
@@ -362,19 +375,19 @@ public class Klijent extends Application {
                             sviIspitniRokovi.add(ispitniRok);
                         }
                     }
-                    //update na JavaFx application niti
-                    Platform.runLater(new Runnable() {
-
-                        @Override
-                        public void run() {
-
-                            //azuriranje/ponovno popunjavanje svih listi
-                            zaposleniForm.setSviIspitniRokovi(sviIspitniRokovi);
-                            System.out.println("Osvezeni podaci sa strane servera");
-
-                        }
-                    });
                 }
+                //update na JavaFx application niti
+                Platform.runLater(new Runnable() {
+
+                    @Override
+                    public void run() {
+
+                        //azuriranje/ponovno popunjavanje svih listi
+                        zaposleniForm.setSviIspitniRokovi(sviIspitniRokovi);
+                        System.out.println("Osvezeni podaci sa strane servera");
+
+                    }
+                });
             } else if (student != null) {
 
                 //ukoliko je pozvan konstruktor za studenta
@@ -407,19 +420,20 @@ public class Klijent extends Application {
                             sviIspitniRokovi.add(ispitniRok);
                         }
                     }
-                    //update na JavaFx application niti
-                    Platform.runLater(new Runnable() {
-
-                        @Override
-                        public void run() {
-
-                            //azuriranje/ponovno popunjavanje svih listi
-                            studentForm.setSviIspitniRokovi(sviIspitniRokovi);
-                            System.out.println("Osvezeni podaci sa strane servera");
-
-                        }
-                    });
                 }
+                //update na JavaFx application niti
+                Platform.runLater(new Runnable() {
+
+                    @Override
+                    public void run() {
+
+                        //azuriranje/ponovno popunjavanje svih listi
+                        studentForm.setSviIspitniRokovi(sviIspitniRokovi, polozeniPredmeti, nepolozeniPredmeti);
+                        System.out.println("Osvezeni podaci sa strane servera");
+
+                    }
+                });
+
             } else {
 
                 //ukoliko je pozvan konstruktor za studentsku sluzbu

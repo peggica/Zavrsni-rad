@@ -7,7 +7,7 @@ public class PrijavaIspita implements Serializable {
     private static final long serialVersionUID = 4L;
     private int idPredmeta;
     private int idStudenta;
-    public enum tipSmera { AVT, ASUV, EKO, ELITE, EPO, IS, NET, NRT, RT };
+    public enum tipSmera { avt, asuv, eko, elite, epo, is, net, nrt, rt };
     private String smer;
     private int godinaUpisa;
     private int idRoka;
