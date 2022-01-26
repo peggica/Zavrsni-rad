@@ -231,16 +231,22 @@ public class Klijent extends Application {
 
                     odgovor = inObj.readObject();
                     ovajStudent = (Student) odgovor;
-                    do {
+                    while (true){
                         odgovor = inObj.readObject();
+                        if(odgovor.equals("nepolozenipredmeti")) {
+                            break;
+                        }
                         Predmet predmet = (Predmet) odgovor;
                         polozeniPredmeti.add(predmet);
-                    } while (!odgovor.equals("nepolozenipredmeti"));
-                    do {
+                    }
+                    while (true) {
                         odgovor = inObj.readObject();
+                        if (odgovor.equals("kraj")) {
+                            break;
+                        }
                         Predmet predmet = (Predmet) odgovor;
                         nepolozeniPredmeti.add(predmet);
-                    } while (!odgovor.equals("kraj"));
+                    }
 
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {

@@ -227,15 +227,20 @@ public class Server extends Application {
                                     outObj.flush();
                                 }
                                 //TODO: provera za polozene predmete
-                                query = "SELECT * FROM predmet WHERE idPredmeta IN (SELECT idPredmeta FROM izabranipredmeti WHERE idStudenta = '" + idStudenta +"'";
+                                query = "SELECT p.idPredmeta, p.naziv, p.studijskiSmer, p.semestar, p.espb, z.ocena FROM predmet AS p JOIN zapisnik AS z ON p.idPredmeta = z.idPredmeta WHERE z.idStudenta = '"  + idStudenta + "' AND z.smer = '" + smer + "' AND z.godinaUpisa = '" + godinaUpisa + "'";
                                 resultset = statement.executeQuery(query);
-                                if (resultset.next()) {
+                                while (resultset.next()) {
                                     int idPredmeta = resultset.getInt("idPredmeta");
                                     String naziv = resultset.getString("naziv");
                                     String studijskiSmer = resultset.getString("studijSkismer");
                                     int semestar = resultset.getInt("semestar");
                                     int espb = resultset.getInt("espb");
-                                    Predmet predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
+                                    Predmet predmet;
+                                    if(studijskiSmer != null) {
+                                        predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
+                                    } else {
+                                        predmet = new Predmet(idPredmeta, naziv, null, semestar, espb);
+                                    }
                                     odgovor = predmet;
                                     outObj.writeObject(odgovor);
                                     outObj.flush();
@@ -243,15 +248,20 @@ public class Server extends Application {
                                 //TODO: provera za nepolozene predmete
                                 outObj.writeObject("nepolozenipredmeti");
                                 outObj.flush();
-                                query = "SELECT * FROM predmet WHERE idPredmeta = (SELECT * FROM izabranipredmeti WHERE idStudenta = '" + idStudenta +"'";
+                                query = "SELECT * FROM predmet WHERE idPredmeta IN (SELECT idPredmeta FROM izabranipredmeti WHERE idStudenta = '"  + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "') AND idPredmeta NOT IN (SELECT idPredmeta FROM zapisnik WHERE idStudenta  = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa +"' AND ocena > 5)";
                                 resultset = statement.executeQuery(query);
-                                if (resultset.next()) {
+                                while (resultset.next()) {
                                     int idPredmeta = resultset.getInt("idPredmeta");
                                     String naziv = resultset.getString("naziv");
                                     String studijskiSmer = resultset.getString("studijSkismer");
                                     int semestar = resultset.getInt("semestar");
                                     int espb = resultset.getInt("espb");
-                                    Predmet predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
+                                    Predmet predmet;
+                                    if(studijskiSmer != null) {
+                                        predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
+                                    } else {
+                                        predmet = new Predmet(idPredmeta, naziv, null, semestar, espb);
+                                    }
                                     odgovor = predmet;
                                     outObj.writeObject(odgovor);
                                     outObj.flush();
@@ -339,8 +349,12 @@ public class Server extends Application {
                             int semestar = resultset.getInt("semestar");
                             int espb = resultset.getInt("Espb");
                             //TODO: POSLATI I PROFESORE NEKAKO + UPIT*
-                            Predmet predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
-                            odgovor = predmet;
+                            Predmet predmet;
+                            if(studijskiSmer != null) {
+                                predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
+                            } else {
+                                predmet = new Predmet(idPredmeta, naziv, null, semestar, espb);
+                            }odgovor = predmet;
                             outObj.writeObject(odgovor);
                             outObj.flush();
                         }
