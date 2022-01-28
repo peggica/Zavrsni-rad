@@ -1,6 +1,8 @@
 package server;
 
 import javafx.application.*;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableMap;
 import javafx.event.EventHandler;
 import javafx.geometry.*;
 import javafx.scene.Scene;
@@ -13,6 +15,8 @@ import model.*;
 import java.io.*;
 import java.net.*;
 import java.sql.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /** Klase Server, ServerThread i ServerPrihvatanje namenjene za podizanje servera i prihvatanje konekcija klijenata
  *  i razmenu zahteva/odgovora sa njima prikaz u JavaFx formi
@@ -229,25 +233,27 @@ public class Server extends Application {
                                 //TODO: provera za polozene predmete
                                 query = "SELECT p.idPredmeta, p.naziv, p.studijskiSmer, p.semestar, p.espb, z.ocena FROM predmet AS p JOIN zapisnik AS z ON p.idPredmeta = z.idPredmeta WHERE z.idStudenta = '"  + idStudenta + "' AND z.smer = '" + smer + "' AND z.godinaUpisa = '" + godinaUpisa + "'";
                                 resultset = statement.executeQuery(query);
+                                HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
                                 while (resultset.next()) {
                                     int idPredmeta = resultset.getInt("idPredmeta");
                                     String naziv = resultset.getString("naziv");
                                     String studijskiSmer = resultset.getString("studijSkismer");
                                     int semestar = resultset.getInt("semestar");
                                     int espb = resultset.getInt("espb");
+                                    int ocena = resultset.getInt("ocena");
                                     Predmet predmet;
                                     if(studijskiSmer != null) {
                                         predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
                                     } else {
                                         predmet = new Predmet(idPredmeta, naziv, null, semestar, espb);
                                     }
-                                    odgovor = predmet;
-                                    outObj.writeObject(odgovor);
-                                    outObj.flush();
+                                    polozeniPredmeti.put(predmet, ocena);
                                 }
-                                //TODO: provera za nepolozene predmete
-                                outObj.writeObject("nepolozenipredmeti");
+
+                                odgovor = polozeniPredmeti;
+                                outObj.writeObject(odgovor);
                                 outObj.flush();
+
                                 query = "SELECT * FROM predmet WHERE idPredmeta IN (SELECT idPredmeta FROM izabranipredmeti WHERE idStudenta = '"  + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "') AND idPredmeta NOT IN (SELECT idPredmeta FROM zapisnik WHERE idStudenta  = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa +"' AND ocena > 5)";
                                 resultset = statement.executeQuery(query);
                                 while (resultset.next()) {

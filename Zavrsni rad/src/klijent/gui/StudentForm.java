@@ -1,5 +1,7 @@
 package klijent.gui;
 
+import javafx.beans.property.*;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.*;
 import javafx.geometry.*;
 import javafx.scene.Scene;
@@ -8,12 +10,11 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 import model.IspitniRok;
-import model.Predmet;
-import model.Student;
-import model.Zaposleni;
+import model.*;
 
-import java.util.Optional;
+import java.util.*;
 
 /** Klasa namenjena za prikaz Studentske Forme u JavaFx-u
  *   @author Biljana Stanojevic  */
@@ -24,16 +25,22 @@ public class StudentForm extends Stage {
     private static Font font20 = new Font("Arial", 20);
     private Student student;
     private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
-    private ObservableList<Predmet> polozeniPredmeti = FXCollections.observableArrayList();
+    private HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
     private ObservableList<Predmet> nepolozeniPredmeti = FXCollections.observableArrayList();
 
     public void setStudent(Student student) {
         this.student = student;
     }
 
-    public void setSviIspitniRokovi(ObservableList<IspitniRok> sviIspitniRokovi, ObservableList<Predmet> polozeniPredmeti, ObservableList<Predmet> nepolozeniPredmeti) {
+    public void setSviIspitniRokovi(ObservableList<IspitniRok> sviIspitniRokovi) {
         this.sviIspitniRokovi = sviIspitniRokovi;
+    }
+
+    public void setPolozeniPredmeti(HashMap<Predmet, Integer> polozeniPredmeti) {
         this.polozeniPredmeti = polozeniPredmeti;
+    }
+
+    public void setNepolozeniPredmeti(ObservableList<Predmet> nepolozeniPredmeti) {
         this.nepolozeniPredmeti = nepolozeniPredmeti;
     }
 
@@ -70,10 +77,14 @@ public class StudentForm extends Stage {
         root.setCenter(null);
     }
 
-    public StudentForm(Stage stage) {
+    public StudentForm(Stage stage, Student student, ObservableList<IspitniRok> sviIspitniRokovi, HashMap<Predmet, Integer> polozeniPredmeti, ObservableList<Predmet> nepolozeniPredmeti) {
 
         super();
         initOwner(stage);
+        setStudent(student);
+        setSviIspitniRokovi(sviIspitniRokovi);
+        setPolozeniPredmeti(polozeniPredmeti);
+        setNepolozeniPredmeti(nepolozeniPredmeti);
 
         BorderPane root = new BorderPane();
         MenuBar menuBar = new MenuBar();
@@ -108,25 +119,63 @@ public class StudentForm extends Stage {
             lblPolozeni.setAlignment(Pos.CENTER_LEFT);
             lblPolozeni.setPadding(new Insets(0,10,5,0));
 
-            TableView<Predmet> tablePolozeni = new TableView<>();
+            TableView<HashMap.Entry<Predmet, Integer>> tablePolozeni = new TableView<>();
             tablePolozeni.getColumns().clear();
 
-            TableColumn colSifra = new TableColumn("Šifra");
-            colSifra.setCellValueFactory(new PropertyValueFactory<Predmet, String>("idPredmeta"));
+            TableColumn<Map.Entry<Predmet, Integer>, Integer> colSifra = new TableColumn<>("Šifra");
+            colSifra.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Integer>, Integer>, ObservableValue<Integer>>() {
+
+                @Override
+                public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Integer>, Integer> p) {
+                    return new SimpleObjectProperty<Integer>(p.getValue().getKey().getIdPredmeta());
+                }
+
+            });
             colSifra.setMinWidth(75);
-            TableColumn colNaziv = new TableColumn("Naziv predmeta");
-            colNaziv.setCellValueFactory(new PropertyValueFactory<Predmet, String>("naziv"));
+            TableColumn<Map.Entry<Predmet, Integer>, String> colNaziv = new TableColumn<>("Naziv predmeta");
+            colNaziv.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Integer>, String>, ObservableValue<String>>() {
+
+                @Override
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Integer>, String> p) {
+                    return new SimpleObjectProperty<String>(p.getValue().getKey().getNaziv());
+                }
+
+            });
             colNaziv.setMinWidth(350);
-            TableColumn colEspb = new TableColumn("ESPB");
-            colEspb.setCellValueFactory(new PropertyValueFactory<Predmet, String>("espb"));
+            TableColumn<Map.Entry<Predmet, Integer>, Integer> colEspb = new TableColumn<>("ESPB");
+            colEspb.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Integer>, Integer>, ObservableValue<Integer>>() {
+
+                @Override
+                public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Integer>, Integer> p) {
+                    return new SimpleObjectProperty<Integer>(p.getValue().getKey().getEspb());
+                }
+
+            });
             colEspb.setMinWidth(75);
-            TableColumn colSemestar = new TableColumn("Semestar");
-            colSemestar.setCellValueFactory(new PropertyValueFactory<Predmet, String>("semestar"));
+            TableColumn<Map.Entry<Predmet, Integer>, Integer> colSemestar = new TableColumn<>("Semestar");
+            colSemestar.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Integer>, Integer>, ObservableValue<Integer>>() {
+
+                @Override
+                public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Integer>, Integer> p) {
+                    return new SimpleObjectProperty<Integer>(p.getValue().getKey().getSemestar());
+                }
+
+            });
             colSemestar.setMinWidth(75);
-            TableColumn colOcena = new TableColumn("Ocena");
+
+            TableColumn<Map.Entry<Predmet, Integer>, Integer> colOcena = new TableColumn<>("Ocena");
+            colOcena.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Integer>, Integer>, ObservableValue<Integer>>() {
+
+                @Override
+                public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Integer>, Integer> p) {
+                    return new SimpleObjectProperty<Integer>(p.getValue().getValue());
+                }
+
+            });
             colOcena.setMinWidth(75);
 
-            tablePolozeni.setItems(polozeniPredmeti);
+            ObservableList<HashMap.Entry<Predmet, Integer>> stavke = FXCollections.observableArrayList(polozeniPredmeti.entrySet());
+            tablePolozeni.setItems(stavke);
             //sredjuje problem za dodatu kolonu
             tablePolozeni.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tablePolozeni.getColumns().addAll(colSifra, colNaziv, colEspb, colSemestar, colOcena);

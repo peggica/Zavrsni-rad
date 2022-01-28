@@ -58,10 +58,11 @@ public class ZaposleniForm extends Stage {
         root.setCenter(null);
     }
 
-    public ZaposleniForm(Stage stage) {
+    public ZaposleniForm(Stage stage, ObservableList<IspitniRok> sviIspitniRokovi) {
 
         super();
         initOwner(stage);
+        setSviIspitniRokovi(sviIspitniRokovi);
 
         BorderPane root = new BorderPane();
         MenuBar menuBar = new MenuBar();

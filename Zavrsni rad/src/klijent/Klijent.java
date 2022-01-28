@@ -10,11 +10,14 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import javafx.util.Pair;
 import klijent.gui.*;
 import model.*;
 
 import java.io.*;
 import java.net.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /** Klase Klijent i RunnableKlijent namenjene za povezivanje klijenta sa serverom i razmenu zahteva/odgovora,
  *  kao i prikaza forme za Login u JavaFx-u
@@ -28,7 +31,7 @@ public class Klijent extends Application {
     private ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
     private ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
     private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
-    private ObservableList<Predmet> polozeniPredmeti = FXCollections.observableArrayList();
+    private HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
     private ObservableList<Predmet> nepolozeniPredmeti = FXCollections.observableArrayList();
     private StudentskaSluzbaForm studentskaSluzbaForm;
     private ZaposleniForm zaposleniForm;
@@ -156,6 +159,11 @@ public class Klijent extends Application {
 
                 if(odgovor.toString().equals("sluzba")) {
 
+                    Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi());
+                    //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                    runnableKlijentOsvezi.setDaemon(true);
+                    runnableKlijentOsvezi.start();
+
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
 
@@ -163,7 +171,7 @@ public class Klijent extends Application {
                         public void run() {
 
                             //prikaz forme za studentsku sluzbu
-                            studentskaSluzbaForm = new StudentskaSluzbaForm(getStage());
+                            studentskaSluzbaForm = new StudentskaSluzbaForm(getStage(), sviIspitniRokovi, sviStudenti, sviZaposleni, sviPredmeti, sveSale);
                             getStage().close();
                             studentskaSluzbaForm.show();
 
@@ -172,16 +180,16 @@ public class Klijent extends Application {
 
                     while(true) {
 
-                        Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi());
-                        //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                        runnableKlijentOsvezi.setDaemon(true);
-                        runnableKlijentOsvezi.start();
                         //na svakih 10 sekundi da ponovo pokrene nit i na taj nacin osvezi podatke
                         try {
                             Thread.sleep(10000);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
+                        runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi());
+                        //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                        runnableKlijentOsvezi.setDaemon(true);
+                        runnableKlijentOsvezi.start();
                     }
                 } else if(odgovor.toString().equals("nepostoji")) {
 
@@ -200,6 +208,11 @@ public class Klijent extends Application {
                     odgovor = inObj.readObject();
                     ovajZaposleni = (Zaposleni) odgovor;
 
+                    Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajZaposleni));
+                    //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                    runnableKlijentOsvezi.setDaemon(true);
+                    runnableKlijentOsvezi.start();
+
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
 
@@ -207,7 +220,7 @@ public class Klijent extends Application {
                         public void run() {
 
                             //prikaz forme za zaposlenog
-                            zaposleniForm = new ZaposleniForm(getStage());
+                            zaposleniForm = new ZaposleniForm(getStage(), sviIspitniRokovi);
                             getStage().close();
                             zaposleniForm.show();
 
@@ -215,30 +228,26 @@ public class Klijent extends Application {
                     });
                     while(true) {
 
-                        Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajZaposleni));
-                        //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                        runnableKlijentOsvezi.setDaemon(true);
-                        runnableKlijentOsvezi.start();
                         //na svakih 10 sekundi da ponovo pokrene nit i na taj nacin osvezi podatke
                         try {
                             Thread.sleep(10000);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
+                        runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajZaposleni));
+                        //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                        runnableKlijentOsvezi.setDaemon(true);
+                        runnableKlijentOsvezi.start();
                     }
 
                 }  else if(odgovor.equals("student")) {
 
                     odgovor = inObj.readObject();
                     ovajStudent = (Student) odgovor;
-                    while (true){
-                        odgovor = inObj.readObject();
-                        if(odgovor.equals("nepolozenipredmeti")) {
-                            break;
-                        }
-                        Predmet predmet = (Predmet) odgovor;
-                        polozeniPredmeti.add(predmet);
-                    }
+
+                    odgovor = inObj.readObject();
+                    polozeniPredmeti = (HashMap) odgovor;
+
                     while (true) {
                         odgovor = inObj.readObject();
                         if (odgovor.equals("kraj")) {
@@ -248,6 +257,11 @@ public class Klijent extends Application {
                         nepolozeniPredmeti.add(predmet);
                     }
 
+                    Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajStudent));
+                    //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                    runnableKlijentOsvezi.setDaemon(true);
+                    runnableKlijentOsvezi.start();
+
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
 
@@ -255,8 +269,7 @@ public class Klijent extends Application {
                         public void run() {
 
                             //prikaz forme za studenta
-                            studentForm = new StudentForm(getStage());
-                            studentForm.setStudent(ovajStudent);
+                            studentForm = new StudentForm(getStage(), ovajStudent, sviIspitniRokovi, polozeniPredmeti, nepolozeniPredmeti);
                             getStage().close();
                             studentForm.show();
 
@@ -264,16 +277,16 @@ public class Klijent extends Application {
                     });
                     while(true) {
 
-                        Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajStudent));
-                        //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                        runnableKlijentOsvezi.setDaemon(true);
-                        runnableKlijentOsvezi.start();
                         //na svakih 10 sekundi da ponovo pokrene nit i na taj nacin osvezi podatke
                         try {
                             Thread.sleep(10000);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
+                        runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajStudent));
+                        //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                        runnableKlijentOsvezi.setDaemon(true);
+                        runnableKlijentOsvezi.start();
                     }
                 }
             } catch (UnknownHostException e) {
@@ -434,7 +447,10 @@ public class Klijent extends Application {
                     public void run() {
 
                         //azuriranje/ponovno popunjavanje svih listi
-                        studentForm.setSviIspitniRokovi(sviIspitniRokovi, polozeniPredmeti, nepolozeniPredmeti);
+                        //TODO: da li mi treba da se osvezavaju stalno polozeni-nepolozeni predmeti?
+                        studentForm.setSviIspitniRokovi(sviIspitniRokovi);
+                        studentForm.setPolozeniPredmeti(polozeniPredmeti);
+                        studentForm.setNepolozeniPredmeti(nepolozeniPredmeti);
                         System.out.println("Osvezeni podaci sa strane servera");
 
                     }

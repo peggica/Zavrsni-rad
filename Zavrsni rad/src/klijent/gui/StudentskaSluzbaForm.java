@@ -52,6 +52,7 @@ public class StudentskaSluzbaForm extends Stage {
 
         boolean aktivan = false;
         for (IspitniRok ispitniRok:sviIspitniRokovi) {
+
             if(ispitniRok.isAktivnost()==true) {
                 aktivan = true;
                 break;
@@ -80,10 +81,15 @@ public class StudentskaSluzbaForm extends Stage {
         root.setCenter(null);
     }
 
-    public StudentskaSluzbaForm(Stage stage) {
+    public StudentskaSluzbaForm(Stage stage, ObservableList<IspitniRok> sviIspitniRokovi, ObservableList<Student> sviStudenti, ObservableList<Zaposleni> sviZaposleni, ObservableList<Predmet> sviPredmeti, ObservableList<Sala> sveSale) {
 
         super();
         initOwner(stage);
+        setSviIspitniRokovi(sviIspitniRokovi);
+        setSviStudenti(sviStudenti);
+        setSviZaposleni(sviZaposleni);
+        setSviPredmeti(sviPredmeti);
+        setSveSale(sveSale);
 
         BorderPane root = new BorderPane();
         MenuBar menuBar = new MenuBar();
