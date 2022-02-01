@@ -1,8 +1,6 @@
 package server;
 
 import javafx.application.*;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableMap;
 import javafx.event.EventHandler;
 import javafx.geometry.*;
 import javafx.scene.Scene;
@@ -16,7 +14,6 @@ import java.io.*;
 import java.net.*;
 import java.sql.*;
 import java.util.HashMap;
-import java.util.Map;
 
 /** Klase Server, ServerThread i ServerPrihvatanje namenjene za podizanje servera i prihvatanje konekcija klijenata
  *  i razmenu zahteva/odgovora sa njima prikaz u JavaFx formi
@@ -211,6 +208,27 @@ public class Server extends Application {
                                     outObj.flush();
                                 }
 
+                                /*odgovor = "sviispitnirokovi";
+                                outObj.writeObject(odgovor);
+                                outObj.flush();*/
+                                query = "SELECT * FROM IspitniRok";
+                                resultset = statement.executeQuery(query);
+
+                                while (resultset.next()) {
+                                    int idRoka = resultset.getInt("idRoka");
+                                    String naziv = resultset.getString("naziv");
+                                    Date datumPocetka = resultset.getDate("datumPocetka");
+                                    Date datumKraja = resultset.getDate("datumKraja");
+                                    boolean aktivnost = resultset.getBoolean("aktivnost");
+                                    IspitniRok ispitniRok = new IspitniRok(idRoka, naziv, datumPocetka, datumKraja, aktivnost);
+                                    odgovor = ispitniRok;
+                                    outObj.writeObject(odgovor);
+                                    outObj.flush();
+                                }
+
+                                outObj.writeObject("kraj");
+                                outObj.flush();
+
                             } else if (idStudenta != 0 && smer != null && godinaUpisa != 0) {
 
                                 query = "SELECT * FROM Student WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "'";
@@ -230,14 +248,13 @@ public class Server extends Application {
                                     outObj.writeObject(odgovor);
                                     outObj.flush();
                                 }
-                                //TODO: provera za polozene predmete
                                 query = "SELECT p.idPredmeta, p.naziv, p.studijskiSmer, p.semestar, p.espb, z.ocena FROM predmet AS p JOIN zapisnik AS z ON p.idPredmeta = z.idPredmeta WHERE z.idStudenta = '"  + idStudenta + "' AND z.smer = '" + smer + "' AND z.godinaUpisa = '" + godinaUpisa + "'";
                                 resultset = statement.executeQuery(query);
                                 HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
                                 while (resultset.next()) {
                                     int idPredmeta = resultset.getInt("idPredmeta");
                                     String naziv = resultset.getString("naziv");
-                                    String studijskiSmer = resultset.getString("studijSkismer");
+                                    String studijskiSmer = resultset.getString("studijskiSmer");
                                     int semestar = resultset.getInt("semestar");
                                     int espb = resultset.getInt("espb");
                                     int ocena = resultset.getInt("ocena");
@@ -272,6 +289,25 @@ public class Server extends Application {
                                     outObj.writeObject(odgovor);
                                     outObj.flush();
                                 }
+
+                                odgovor = "sviispitnirokovi";
+                                outObj.writeObject(odgovor);
+                                outObj.flush();
+                                query = "SELECT * FROM IspitniRok";
+                                resultset = statement.executeQuery(query);
+
+                                while (resultset.next()) {
+                                    int idRoka = resultset.getInt("idRoka");
+                                    String naziv = resultset.getString("naziv");
+                                    Date datumPocetka = resultset.getDate("datumPocetka");
+                                    Date datumKraja = resultset.getDate("datumKraja");
+                                    boolean aktivnost = resultset.getBoolean("aktivnost");
+                                    IspitniRok ispitniRok = new IspitniRok(idRoka, naziv, datumPocetka, datumKraja, aktivnost);
+                                    odgovor = ispitniRok;
+                                    outObj.writeObject(odgovor);
+                                    outObj.flush();
+                                }
+
                                 outObj.writeObject("kraj");
                                 outObj.flush();
 
@@ -279,6 +315,111 @@ public class Server extends Application {
                                 odgovor = "sluzba";
                                 outObj.writeObject(odgovor);
                                 outObj.flush();
+
+                                odgovor = "sviispitnirokovi";
+                                outObj.writeObject(odgovor);
+                                outObj.flush();
+                                query = "SELECT * FROM IspitniRok";
+                                resultset = statement.executeQuery(query);
+
+                                while (resultset.next()) {
+                                    int idRoka = resultset.getInt("idRoka");
+                                    String naziv = resultset.getString("naziv");
+                                    Date datumPocetka = resultset.getDate("datumPocetka");
+                                    Date datumKraja = resultset.getDate("datumKraja");
+                                    boolean aktivnost = resultset.getBoolean("aktivnost");
+                                    IspitniRok ispitniRok = new IspitniRok(idRoka, naziv, datumPocetka, datumKraja, aktivnost);
+                                    odgovor = ispitniRok;
+                                    outObj.writeObject(odgovor);
+                                    outObj.flush();
+                                }
+
+                                odgovor = "svistudenti";
+                                outObj.writeObject(odgovor);
+                                outObj.flush();
+                                query = "SELECT * FROM Student";
+                                resultset = statement.executeQuery(query);
+
+                                while (resultset.next()) {
+                                    idStudenta = resultset.getInt("idStudenta");
+                                    smer = resultset.getString("smer");
+                                    godinaUpisa = resultset.getInt("godinaUpisa");
+                                    String ime = resultset.getString("ime");
+                                    String prezime = resultset.getString("prezime");
+                                    String finansiranje = resultset.getString("finansiranje");
+                                    String adresa = resultset.getString("adresa");
+                                    String email = resultset.getString("email");
+                                    String telefon = resultset.getString("telefon");
+                                    Student student = new Student(idStudenta, godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, telefon);
+                                    odgovor = student;
+                                    outObj.writeObject(odgovor);
+                                    outObj.flush();
+                                }
+
+                                odgovor = "svizaposleni";
+                                outObj.writeObject(odgovor);
+                                outObj.flush();
+                                query = "SELECT * FROM Zaposleni";
+                                resultset = statement.executeQuery(query);
+
+                                while (resultset.next()) {
+                                    idZaposlenog = resultset.getInt("idZaposlenog");
+                                    String pozicija = resultset.getString("pozicija");
+                                    String ime = resultset.getString("ime");
+                                    String prezime = resultset.getString("prezime");
+                                    String adresa = resultset.getString("adresa");
+                                    String email = resultset.getString("email");
+                                    String telefon = resultset.getString("telefon");
+                                    Zaposleni zaposleni = new Zaposleni(idZaposlenog, Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, telefon);
+                                    odgovor = zaposleni;
+                                    outObj.writeObject(odgovor);
+                                    outObj.flush();
+                                }
+
+                                odgovor = "svipredmeti";
+                                outObj.writeObject(odgovor);
+                                outObj.flush();
+                                query = "SELECT * FROM Predmet";
+                                resultset = statement.executeQuery(query);
+
+                                while (resultset.next()) {
+                                    int idPredmeta = resultset.getInt("idPredmeta");
+                                    String naziv = resultset.getString("naziv");
+                                    String studijskiSmer = resultset.getString("studijskiSmer");
+                                    int semestar = resultset.getInt("semestar");
+                                    int espb = resultset.getInt("Espb");
+                                    //TODO: POSLATI I PROFESORE NEKAKO + UPIT*
+                                    Predmet predmet;
+                                    if (studijskiSmer != null) {
+                                        predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
+                                    } else {
+                                        predmet = new Predmet(idPredmeta, naziv, null, semestar, espb);
+                                    }
+                                    odgovor = predmet;
+                                    outObj.writeObject(odgovor);
+                                    outObj.flush();
+                                }
+
+                                odgovor = "svesale";
+                                outObj.writeObject(odgovor);
+                                outObj.flush();
+                                query = "SELECT * FROM Sala";
+                                resultset = statement.executeQuery(query);
+
+                                while (resultset.next()) {
+                                    int idSale = resultset.getInt("idSale");
+                                    String naziv = resultset.getString("naziv");
+                                    int brojMesta = resultset.getInt("brojMesta");
+                                    String oprema = resultset.getString("oprema");
+                                    if (oprema.equals("/")) {
+                                        oprema = "ništa";
+                                    }
+                                    Sala sala = new Sala(idSale, naziv, brojMesta, Sala.tipOpreme.valueOf(oprema));
+                                    odgovor = sala;
+                                    outObj.writeObject(odgovor);
+                                    outObj.flush();
+                                }
+                                outObj.writeObject("kraj");
                             }
                         }
                     } else if(zahtev.equals("sluzba")){

@@ -1,6 +1,5 @@
 package klijent.gui;
 
-import javafx.beans.binding.Bindings;
 import javafx.collections.*;
 import javafx.geometry.*;
 import javafx.scene.Scene;

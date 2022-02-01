@@ -9,8 +9,6 @@ import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import model.IspitniRok;
 
-import java.util.List;
-
 /** Klasa namenjena za prikaz Forme za Zaposlene u JavaFx-u
  *  Ukoliko je tip zaposlenog profesor u Meniju je dostupna i opcija za snimanje ocena u zapisnik - DODAJ U ZAPISNIK
  *  @author Biljana Stanojevic  */

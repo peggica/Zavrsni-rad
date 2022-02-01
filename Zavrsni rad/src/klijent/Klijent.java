@@ -10,12 +10,12 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
-import javafx.util.Pair;
 import klijent.gui.*;
 import model.*;
 
 import java.io.*;
 import java.net.*;
+import java.sql.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -159,10 +159,73 @@ public class Klijent extends Application {
 
                 if(odgovor.toString().equals("sluzba")) {
 
-                    Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi());
-                    //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                    runnableKlijentOsvezi.setDaemon(true);
-                    runnableKlijentOsvezi.start();
+                    odgovor = inObj.readObject();
+                    if (odgovor.toString().equals("sviispitnirokovi")) {
+
+                        sviIspitniRokovi.clear();
+                        while (true) { //nisam sigurna za ovu proveru
+                            odgovor = inObj.readObject();
+                            if (odgovor.toString().equals("svistudenti")) {
+                                break;
+                            } else {
+                                IspitniRok ispitniRok = (IspitniRok) odgovor;
+                                sviIspitniRokovi.add(ispitniRok);
+                            }
+                        }
+
+                    }
+                    if (odgovor.toString().equals("svistudenti")) {
+
+                        sviStudenti.clear();
+                        while (true) { //nisam sigurna za ovu proveru
+                            odgovor = inObj.readObject();
+                            if (odgovor.toString().equals("svizaposleni")) {
+                                break;
+                            } else {
+                                Student student = (Student) odgovor;
+                                sviStudenti.add(student);
+                            }
+                        }
+                    }
+                    if (odgovor.toString().equals("svizaposleni")) {
+
+                        sviZaposleni.clear();
+                        while (true) { //nisam sigurna za ovu proveru
+                            odgovor = inObj.readObject();
+                            if (odgovor.toString().equals("svipredmeti")) {
+                                break;
+                            } else {
+                                Zaposleni zaposleni = (Zaposleni) odgovor;
+                                sviZaposleni.add(zaposleni);
+                            }
+                        }
+                    }
+                    if (odgovor.toString().equals("svipredmeti")) {
+
+                        sviPredmeti.clear();
+                        while (true) { //nisam sigurna za ovu proveru
+                            odgovor = inObj.readObject();
+                            if (odgovor.toString().equals("svesale")) {
+                                break;
+                            } else {
+                                Predmet predmet = (Predmet) odgovor;
+                                sviPredmeti.add(predmet);
+                            }
+                        }
+                    }
+                    if (odgovor.toString().equals("svesale")) {
+
+                        sveSale.clear();
+                        while (true) { //nisam sigurna za ovu proveru
+                            odgovor = inObj.readObject();
+                            if (odgovor.toString().equals("kraj")) {
+                                break;
+                            } else {
+                                Sala sala = (Sala) odgovor;
+                                sveSale.add(sala);
+                            }
+                        }
+                    }
 
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
@@ -186,7 +249,7 @@ public class Klijent extends Application {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi());
+                        Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi());
                         //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
                         runnableKlijentOsvezi.setDaemon(true);
                         runnableKlijentOsvezi.start();
@@ -208,10 +271,14 @@ public class Klijent extends Application {
                     odgovor = inObj.readObject();
                     ovajZaposleni = (Zaposleni) odgovor;
 
-                    Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajZaposleni));
-                    //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                    runnableKlijentOsvezi.setDaemon(true);
-                    runnableKlijentOsvezi.start();
+                    while (true) {
+                        odgovor = inObj.readObject();
+                        if (odgovor.equals("kraj")) {
+                            break;
+                        }
+                        IspitniRok ispitniRok = (IspitniRok) odgovor;
+                        sviIspitniRokovi.add(ispitniRok);
+                    }
 
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
@@ -234,7 +301,7 @@ public class Klijent extends Application {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajZaposleni));
+                        Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajZaposleni));
                         //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
                         runnableKlijentOsvezi.setDaemon(true);
                         runnableKlijentOsvezi.start();
@@ -250,17 +317,21 @@ public class Klijent extends Application {
 
                     while (true) {
                         odgovor = inObj.readObject();
-                        if (odgovor.equals("kraj")) {
+                        if (odgovor.equals("sviispitnirokovi")) {
                             break;
                         }
                         Predmet predmet = (Predmet) odgovor;
                         nepolozeniPredmeti.add(predmet);
                     }
 
-                    Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajStudent));
-                    //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                    runnableKlijentOsvezi.setDaemon(true);
-                    runnableKlijentOsvezi.start();
+                    while (true) {
+                        odgovor = inObj.readObject();
+                        if (odgovor.equals("kraj")) {
+                            break;
+                        }
+                        IspitniRok ispitniRok = (IspitniRok) odgovor;
+                        sviIspitniRokovi.add(ispitniRok);
+                    }
 
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
@@ -283,7 +354,7 @@ public class Klijent extends Application {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajStudent));
+                        Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajStudent));
                         //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
                         runnableKlijentOsvezi.setDaemon(true);
                         runnableKlijentOsvezi.start();
