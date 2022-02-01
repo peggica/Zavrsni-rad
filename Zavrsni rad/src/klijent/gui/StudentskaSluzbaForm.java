@@ -1,5 +1,6 @@
 package klijent.gui;
 
+import javafx.beans.binding.Bindings;
 import javafx.collections.*;
 import javafx.geometry.*;
 import javafx.scene.Scene;
@@ -11,6 +12,7 @@ import javafx.stage.Stage;
 import model.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /** Klasa namenjena za prikaz Forme za korisnike Studentske Sluzbe u JavaFx-u
  *  @author Biljana Stanojevic  */
@@ -127,14 +129,19 @@ public class StudentskaSluzbaForm extends Stage {
 
             Label lblPretraga = new Label("Studenti: ");
             lblPretraga.setFont(font15);
-
             TextField txtPretraga = new TextField();
+
+            TableView<Student> tableStudenti = new TableView<>();
 
             Button btnPretrazi = new Button("pretraži");
             btnPretrazi.setFont(font15);
+            btnPretrazi.setOnMouseClicked(event -> {
+                String trazeno = txtPretraga.getText().toLowerCase();
+                ObservableList<Student> nadjeni = (sviStudenti.stream().filter(s -> s.getIme().toLowerCase().contains(trazeno) || s.getPrezime().toLowerCase().contains(trazeno) || String.valueOf(s.getBrojIndeksa()).contains(trazeno) || String.valueOf(s.getSemestar()).contains(trazeno) || (s.getAdresa()!=null && s.getAdresa().toLowerCase().contains(trazeno)) || s.getFinansiranje().toLowerCase().contains(trazeno) || (s.getBrojTelefona()!=null && s.getBrojTelefona().toLowerCase().contains(trazeno)) || (s.getEmail()!=null && s.getEmail().toLowerCase().contains(trazeno)))).collect(Collectors.toCollection(FXCollections::observableArrayList));
+                tableStudenti.setItems(nadjeni);
+            });
             hBoxPretraga.getChildren().addAll(lblPretraga, txtPretraga, btnPretrazi);
 
-            TableView<Student> tableStudenti = new TableView<>();
             tableStudenti.setEditable(true);
             tableStudenti.getColumns().clear();
 
@@ -145,7 +152,8 @@ public class StudentskaSluzbaForm extends Stage {
             colPrezime.setCellValueFactory(new PropertyValueFactory<Student, String>("prezime"));
             colPrezime.setMinWidth(150);
             TableColumn colIndex = new TableColumn("Broj indeksa");
-            colIndex.setCellValueFactory(new PropertyValueFactory<Student, String>("smer"));
+            //TODO: prikaz broja indeksa
+            colIndex.setCellValueFactory(new PropertyValueFactory<Student, String>("brojIndeksa"));
             colIndex.setMinWidth(50);
             TableColumn colFinansiranje = new TableColumn("Finansiranje");
             colFinansiranje.setCellValueFactory(new PropertyValueFactory<Student, String>("finansiranje"));
@@ -232,11 +240,17 @@ public class StudentskaSluzbaForm extends Stage {
             lblPretraga.setFont(font15);
             TextField txtPretraga = new TextField();
 
+            TableView<Zaposleni> tableZaposleni = new TableView<>();
+
             Button btnPretrazi = new Button("pretraži");
             btnPretrazi.setFont(font15);
+            btnPretrazi.setOnMouseClicked(event -> {
+                String trazeno = txtPretraga.getText().toLowerCase();
+                ObservableList<Zaposleni> nadjeni = (sviZaposleni.stream().filter(z -> z.getIme().toLowerCase().contains(trazeno) || z.getPrezime().toLowerCase().contains(trazeno) || z.getPozicija().contains(trazeno) || (z.getAdresa()!=null && z.getAdresa().toLowerCase().contains(trazeno)) || (z.getBrojTelefona()!=null && z.getBrojTelefona().toLowerCase().contains(trazeno)) || (z.getEmail()!=null && z.getEmail().toLowerCase().contains(trazeno)))).collect(Collectors.toCollection(FXCollections::observableArrayList));
+                tableZaposleni.setItems(nadjeni);
+            });
             hBoxPretraga.getChildren().addAll(lblPretraga, txtPretraga, btnPretrazi);
 
-            TableView<Zaposleni> tableZaposleni = new TableView<>();
             tableZaposleni.setEditable(true);
             tableZaposleni.getColumns().clear();
 
@@ -328,11 +342,18 @@ public class StudentskaSluzbaForm extends Stage {
 
             TextField txtPretraga = new TextField();
 
+            TableView<Predmet> tablePredmeti = new TableView<>();
+
             Button btnPretrazi = new Button("pretraži");
             btnPretrazi.setFont(font15);
+            btnPretrazi.setOnMouseClicked(event -> {
+                String trazeno = txtPretraga.getText().toLowerCase();
+                ObservableList<Predmet> nadjeni = (sviPredmeti.stream().filter(p -> String.valueOf(p.getIdPredmeta()).contains(trazeno) || p.getNaziv().toLowerCase().contains(trazeno) || (p.getStudijskiSmer()!=null && p.getStudijskiSmer().toLowerCase().contains(trazeno)) || (String.valueOf(p.getSemestar())!=null && String.valueOf(p.getSemestar()).contains(trazeno)) || (String.valueOf(p.getEspb())!=null && String.valueOf(p.getEspb()).contains(trazeno)))).collect(Collectors.toCollection(FXCollections::observableArrayList));
+                tablePredmeti.setItems(nadjeni);
+            });
+
             hBoxPretraga.getChildren().addAll(lblPretraga, txtPretraga, btnPretrazi);
 
-            TableView<Predmet> tablePredmeti = new TableView<>();
             tablePredmeti.setEditable(true);
             tablePredmeti.getColumns().clear();
 

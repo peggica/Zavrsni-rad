@@ -19,12 +19,14 @@ public class Student implements Serializable {
     private String adresa;
     private String email;
     private String brojTelefona;
+    private String brojIndeksa;
 
     public Student(int idStudenta, int godinaUpisa, tipSmera tipSm, String ime, String prezime, tipFinansiranja tipFin, String adresa, String email, String brojTelefona) {
 
         this.idStudenta = idStudenta;
         this.godinaUpisa = godinaUpisa;
         this.smer = tipSm.toString();
+        this.brojIndeksa = this.smer + "/" + this.idStudenta + "-" + String.valueOf(this.godinaUpisa).substring(2);
         this.ime = ime;
         this.prezime = prezime;
         this.finansiranje = tipFin.toString();
@@ -81,12 +83,12 @@ public class Student implements Serializable {
         return brojTelefona;
     }
 
-    public String imePrezime() {
-        return ime + " " + prezime;
+    public String getBrojIndeksa() {
+        return brojIndeksa;
     }
 
-    public String brojIndeksa() {
-        return smer + "/" + idStudenta + "-" + String.valueOf(godinaUpisa).substring(2);
+    public String imePrezime() {
+        return ime + " " + prezime;
     }
 
     public int getSemestar() {

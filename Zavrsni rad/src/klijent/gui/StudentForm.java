@@ -314,7 +314,7 @@ public class StudentForm extends Stage {
             Label lblPrikaz = new Label("Podaci");
             lblPrikaz.setFont(font20);
 
-            Label lblBrIndeksa = new Label("Broj indeksa: " + student.brojIndeksa());
+            Label lblBrIndeksa = new Label("Broj indeksa: " + student.getBrojIndeksa());
             lblBrIndeksa.setPadding(new Insets(20,0,0,0));
             lblBrIndeksa.setFont(font15);
 
