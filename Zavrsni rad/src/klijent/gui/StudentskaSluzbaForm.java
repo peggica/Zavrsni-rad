@@ -27,9 +27,9 @@ public class StudentskaSluzbaForm extends Stage {
     private static Font font15 = new Font("Arial", 15);
     private static Font font20 = new Font("Arial", 20);
     private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
-    private ObservableList<Student> sviStudenti = FXCollections.observableArrayList();
-    private ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
-    private ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
+    private static ObservableList<Student> sviStudenti = FXCollections.observableArrayList();
+    private static ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
+    private static ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
     private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
 
     public void setSviIspitniRokovi(ObservableList<IspitniRok> sviIspitniRokovi) {
@@ -684,7 +684,6 @@ public class StudentskaSluzbaForm extends Stage {
         public void run() {
             //STUDENT
             if(cmbFinansiranje != null) {
-                //TODO: broj za id tj za indeks cu da dobijem kad od ukupnog broja koje vrati za taj smer i godinu dodam +1
                 //TODO: dodati u Bazu
                 String ime = txtIme.getText();
                 String prezime = txtPrezime.getText();
@@ -706,6 +705,8 @@ public class StudentskaSluzbaForm extends Stage {
                 //AKO SU UNETI SAMO IME I PREZIME ILI AKO SU UNETI SVI ALI ISPRAVNO
                 if ((ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && validniTelefon)) {
                     //da doda u bazu i vrati normalnu boju polja
+                    //Student student = new Student(Student.idNovogStudenta(sviStudenti, smer, godinaUpisa), godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, brojTelefona);
+
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
@@ -774,6 +775,8 @@ public class StudentskaSluzbaForm extends Stage {
                 //AKO SU UNETI SAMO IME I PREZIME ILI AKO SU UNETI SVI ALI ISPRAVNO
                 if ((ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && validniTelefon)) {
                     //da doda u bazu i vrati normalnu boju polja
+                    //Zaposleni zaposleni = new Zaposleni(Zaposleni.idNovogZaposlenog(sviZaposleni, pozicija), Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, brojTelefona);
+
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
@@ -835,6 +838,8 @@ public class StudentskaSluzbaForm extends Stage {
                 //AKO JE UNET NAZIV, OSTALI SU OPCIONI
                 if(naziv.length() != 0) {
                     //da doda u bazu i vrati normalnu boju polja
+                    //Predmet predmet = new Predmet(Predmet.idNovogPredmeta(sviPredmeti, smer), naziv, Predmet.tipSmera.valueOf(smer), semestar, espb);
+
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
