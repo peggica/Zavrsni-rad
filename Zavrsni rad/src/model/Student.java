@@ -1,7 +1,5 @@
 package model;
 
-import com.sun.security.jgss.GSSUtil;
-
 import java.io.Serializable;
 import java.util.Calendar;
 
