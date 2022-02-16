@@ -501,7 +501,8 @@ public class Server extends Application {
                                 predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
                             } else {
                                 predmet = new Predmet(idPredmeta, naziv, null, semestar, espb);
-                            }odgovor = predmet;
+                            }
+                            odgovor = predmet;
                             outObj.writeObject(odgovor);
                             outObj.flush();
                         }
@@ -570,6 +571,44 @@ public class Server extends Application {
 
                         outObj.writeObject("kraj");
                         outObj.flush();
+                    } else if(zahtev.equals("dodajStudenta")) {
+
+                        Student student = (Student) inObj.readObject();
+                        query = "INSERT INTO Student(idStudenta, smer, godinaUpisa, ime, prezime, finansiranje, adresa, email, telefon) VALUES ('" + student.getIdStudenta() + "', '" + student.getSmer() + "', '" + student.getGodinaUpisa() + "', '" + student.getIme() + "', '" + student.getPrezime() + "', '" + student.getFinansiranje() + "', '" + student.getAdresa() + "', '" + student.getEmail() + "', '" + student.getBrojTelefona() + "')";
+                        int izmena = statement.executeUpdate(query);
+                        if(izmena != 0) {
+                            outObj.writeObject("uspelo");
+                            outObj.flush();
+                        } else {
+                            outObj.writeObject("vecPostoji");
+                            outObj.flush();
+                        }
+                    } else if(zahtev.equals("dodajZaposlenog")) {
+
+                        Zaposleni zaposleni = (Zaposleni) inObj.readObject();
+                        query = "INSERT INTO Zaposleni(idZaposlenog, pozicija, ime, prezime, adresa, email, telefon) VALUES ('" + zaposleni.getIdZaposlenog() + "', '" + zaposleni.getPozicija() + "', '"  + zaposleni.getIme() + "', '" + zaposleni.getPrezime() + "', '" + zaposleni.getAdresa() + "', '" + zaposleni.getEmail() + "', '" + zaposleni.getBrojTelefona() + "')";
+                        int izmena = statement.executeUpdate(query);
+                        if (izmena != 0) {
+                            outObj.writeObject("uspelo");
+                            outObj.flush();
+                        } else {
+                            outObj.writeObject("vecPostoji");
+                            outObj.flush();
+                        }
+                    } else if(zahtev.equals("dodajPredmet")) {
+
+                        Predmet predmet = (Predmet) inObj.readObject();
+                        //RaspodelaPredmeta raspodelaPredmeta = (RaspodelaPredmeta) inObj.readObject();
+
+                        query = "INSERT INTO Predmet(idPredmeta, naziv, studijskiSmer, semestar, espb) VALUES ('" + predmet.getIdPredmeta() + "', '" + predmet.getNaziv() + "', '"  + predmet.getStudijskiSmer() + "', '" + predmet.getSemestar() + "', '" + predmet.getEspb() + "')";
+                        int izmena = statement.executeUpdate(query);
+                        if (izmena != 0) {
+                            outObj.writeObject("uspelo");
+                            outObj.flush();
+                        } else {
+                            outObj.writeObject("vecPostoji");
+                            outObj.flush();
+                        }
                     }
 
             } catch (IOException | SQLException | ClassNotFoundException e) {

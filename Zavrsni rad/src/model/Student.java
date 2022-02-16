@@ -117,7 +117,7 @@ public class Student implements Serializable {
     //METODA KOJA VRACA NOVI ID (+1) ZA TU GODINU UPISA I TAJ SMER
     public static int idNovogStudenta(ObservableList<Student> studenti, String smer, int godinaUpisa) {
 
-        int brojNadjenih = (int)studenti.stream().filter(s -> s.getSmer() == smer && s.getGodinaUpisa() == godinaUpisa).count();
+        int brojNadjenih = (int)studenti.stream().filter(s -> s.getSmer().equals(smer) && s.getGodinaUpisa() == godinaUpisa).count();
         return brojNadjenih + 1;
 
     }

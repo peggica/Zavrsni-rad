@@ -70,7 +70,7 @@ public class Zaposleni implements Serializable {
     public static int idNovogZaposlenog(ObservableList<Zaposleni> zaposleni, String pozicija) {
 
         int idZaposlenog = 0;
-        int brojNadjenih = (int) zaposleni.stream().filter(z -> z.getPozicija() == pozicija).count();
+        int brojNadjenih = (int) zaposleni.stream().filter(z -> z.getPozicija().equals(pozicija)).count();
         if (pozicija.equals("profesor")) {
             idZaposlenog = 1000;
         } else if (pozicija.equals("asistent")) {

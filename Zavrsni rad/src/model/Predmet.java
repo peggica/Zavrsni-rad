@@ -32,7 +32,7 @@ public class Predmet implements Serializable {
 
         this.idPredmeta = idPredmeta;
         this.naziv = naziv;
-        //defaultno je studijskiSMer null - za String ako ne dodelim, a semestar i espb 0
+        //defaultno je studijskiSmer null - za String ako ne dodelim, a semestar i espb 0
 
     }
 
@@ -60,8 +60,14 @@ public class Predmet implements Serializable {
     public static int idNovogPredmeta(ObservableList<Predmet> predmeti, String smer) {
 
         int idPredmeta = 0;
-        int brojNadjenih = (int) predmeti.stream().filter(p -> p.getStudijskiSmer() == smer).count();
-        if(smer.equals("")) {
+        String studijskiSmer;
+        if(smer == null) {
+            studijskiSmer = "";
+        } else {
+            studijskiSmer = smer;
+        }
+        int brojNadjenih = (int) predmeti.stream().filter(p -> studijskiSmer.equals(p.getStudijskiSmer())).count();
+        if(studijskiSmer.equals("")) {
             idPredmeta = 10000;
         } else if(smer.equals("avt")) {
             idPredmeta = 11000;
