@@ -11,7 +11,6 @@ import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.util.Callback;
-import model.IspitniRok;
 import model.*;
 
 import java.util.*;

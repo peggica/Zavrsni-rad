@@ -1,10 +1,8 @@
 package model;
 
-import javafx.collections.ObservableArray;
 import javafx.collections.ObservableList;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Calendar;
 
 public class Student implements Serializable {
@@ -22,8 +20,9 @@ public class Student implements Serializable {
     private String email;
     private String brojTelefona;
     private String brojIndeksa;
+    private boolean vidljiv;
 
-    public Student(int idStudenta, int godinaUpisa, tipSmera tipSm, String ime, String prezime, tipFinansiranja tipFin, String adresa, String email, String brojTelefona) {
+    public Student(int idStudenta, int godinaUpisa, tipSmera tipSm, String ime, String prezime, tipFinansiranja tipFin, String adresa, String email, String brojTelefona, boolean vidljiv) {
 
         this.idStudenta = idStudenta;
         this.godinaUpisa = godinaUpisa;
@@ -35,6 +34,7 @@ public class Student implements Serializable {
         this.adresa = adresa;
         this.email = email;
         this.brojTelefona = brojTelefona;
+        this.vidljiv = vidljiv;
     }
 
     public Student(int idStudenta, int godinaUpisa, tipSmera tipSm, String ime, String prezime, tipFinansiranja tipFin) {
@@ -91,6 +91,10 @@ public class Student implements Serializable {
 
     public String imePrezime() {
         return ime + " " + prezime;
+    }
+
+    public boolean isVidljiv() {
+        return vidljiv;
     }
 
     public int getSemestar() {

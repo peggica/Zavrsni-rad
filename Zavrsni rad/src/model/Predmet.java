@@ -13,8 +13,9 @@ public class Predmet implements Serializable {
     private String studijskiSmer;
     private int semestar;
     private int espb;
+    private boolean vidljiv;
 
-    public Predmet(int idPredmeta, String naziv, tipSmera smer, int semestar, int espb) {
+    public Predmet(int idPredmeta, String naziv, tipSmera smer, int semestar, int espb, boolean vidljiv) {
 
         this.idPredmeta = idPredmeta;
         this.naziv = naziv;
@@ -25,6 +26,7 @@ public class Predmet implements Serializable {
         }
         this.semestar = semestar;
         this.espb = espb;
+        this.vidljiv = vidljiv;
 
     }
 
@@ -56,18 +58,24 @@ public class Predmet implements Serializable {
         return espb;
     }
 
+    public boolean isVidljiv() {
+        return vidljiv;
+    }
+
     //METODA KOJA GENERISE NOVI ID (+1) ZA TAJ STUDIJSKI SMER
     public static int idNovogPredmeta(ObservableList<Predmet> predmeti, String smer) {
 
         int idPredmeta = 0;
         String studijskiSmer;
+        int brojNadjenih = 0;
         if(smer == null) {
-            studijskiSmer = "";
+            studijskiSmer = null;
+            brojNadjenih = (int) predmeti.stream().filter(p -> studijskiSmer == p.getStudijskiSmer()).count();
         } else {
             studijskiSmer = smer;
+            brojNadjenih = (int) predmeti.stream().filter(p -> studijskiSmer.equals(p.getStudijskiSmer())).count();
         }
-        int brojNadjenih = (int) predmeti.stream().filter(p -> studijskiSmer.equals(p.getStudijskiSmer())).count();
-        if(studijskiSmer.equals("")) {
+        if(studijskiSmer == null) {
             idPredmeta = 10000;
         } else if(smer.equals("avt")) {
             idPredmeta = 11000;

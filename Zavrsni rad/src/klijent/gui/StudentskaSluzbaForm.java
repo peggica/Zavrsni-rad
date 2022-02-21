@@ -176,12 +176,15 @@ public class StudentskaSluzbaForm extends Stage {
             TableColumn colTelefon = new TableColumn("Broj telefona");
             colTelefon.setCellValueFactory(new PropertyValueFactory<Student, String>("brojTelefona"));
             colTelefon.setMinWidth(100);
+            TableColumn colAktivan = new TableColumn("Aktivan");
+            colAktivan.setCellValueFactory(new PropertyValueFactory<Student, String>("vidljiv"));
+            colAktivan.setMinWidth(50);
 
             tableStudenti.setItems(sviStudenti);
             //sredjuje problem za dodatu kolonu
             tableStudenti.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableStudenti.setPrefHeight(500);
-            tableStudenti.getColumns().addAll(colIme, colPrezime, colIndex, colFinansiranje, colAdresa, colEmail, colTelefon);
+            tableStudenti.getColumns().addAll(colIme, colPrezime, colIndex, colFinansiranje, colAdresa, colEmail, colTelefon, colAktivan);
 
             TextField txtIme = new TextField("");
             txtIme.setPromptText("Ime");
@@ -241,8 +244,8 @@ public class StudentskaSluzbaForm extends Stage {
                     //AKO SU UNETI SAMO IME I PREZIME ILI AKO SU UNETI SVI ILI EMAIL ILI TELEFON ALI ISPRAVNO
                     if ((ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && validniTelefon) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && validniTelefon)) {
                         //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
-                        Student student = new Student(Student.idNovogStudenta(sviStudenti, smer, godinaUpisa), godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, brojTelefona);
-                        Thread t = new Thread(new RunnableZahtevServeru("dodajStudenta", student));
+                        Student student = new Student(Student.idNovogStudenta(sviStudenti, smer, godinaUpisa), godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, brojTelefona, true);
+                        Thread t = new Thread(new RunnableZahtevServeru("dodaj", student));
                         t.setDaemon(true);
                         t.start();
 
@@ -304,6 +307,23 @@ public class StudentskaSluzbaForm extends Stage {
 
             Button btnObrisi = new Button("Obriši");
             btnObrisi.setMinWidth(60);
+            btnObrisi.setOnAction(e -> {
+                if (tableStudenti.getSelectionModel().getSelectedItem() != null) {
+                    Student izabraniStudent = tableStudenti.getSelectionModel().getSelectedItem();
+                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", tableStudenti, izabraniStudent));
+                    t.setDaemon(true);
+                    t.start();
+                } else {
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            Stage dialog = new Dialog(getStage(), "Molim vas izaberite studenta u tabeli");
+                            dialog.sizeToScene();
+                            dialog.show();
+                        }
+                    });
+                }
+            });
 
             HBox hboxAkcija = new HBox();
             hboxAkcija.setSpacing(5);
@@ -366,12 +386,15 @@ public class StudentskaSluzbaForm extends Stage {
             TableColumn colTelefon = new TableColumn("Broj telefona");
             colTelefon.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("brojTelefona"));
             colTelefon.setMinWidth(150);
+            TableColumn colAktivan = new TableColumn("Aktivan");
+            colAktivan.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("vidljiv"));
+            colAktivan.setMinWidth(50);
 
             tableZaposleni.setItems(sviZaposleni);
             //sredjuje problem za dodatu kolonu
             tableZaposleni.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableZaposleni.setPrefHeight(500);
-            tableZaposleni.getColumns().addAll(colPozicija, colIme, colPrezime, colAdresa, colEmail, colTelefon);
+            tableZaposleni.getColumns().addAll(colPozicija, colIme, colPrezime, colAdresa, colEmail, colTelefon, colAktivan);
 
             Label lblPozicija = new Label("Pozicija: ");
             lblPozicija.setMinWidth(Region.USE_PREF_SIZE);
@@ -422,8 +445,8 @@ public class StudentskaSluzbaForm extends Stage {
                 //AKO SU UNETI SAMO IME I PREZIME ILI AKO SU UNETI SVI ILI EMAIL ILI TELEFON ALI ISPRAVNO
                 if ((ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && validniTelefon) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && validniTelefon)) {
                     //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
-                    Zaposleni zaposleni = new Zaposleni(Zaposleni.idNovogZaposlenog(sviZaposleni, pozicija), Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, brojTelefona);
-                    Thread t = new Thread(new RunnableZahtevServeru("dodajZaposlenog", zaposleni));
+                    Zaposleni zaposleni = new Zaposleni(Zaposleni.idNovogZaposlenog(sviZaposleni, pozicija), Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, brojTelefona, true);
+                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", zaposleni));
                     t.setDaemon(true);
                     t.start();
 
@@ -483,6 +506,23 @@ public class StudentskaSluzbaForm extends Stage {
             });
             Button btnObrisi = new Button("Obriši");
             btnObrisi.setMinWidth(60);
+            btnObrisi.setOnAction(e -> {
+                if (tableZaposleni.getSelectionModel().getSelectedItem() != null) {
+                    Zaposleni izabraniZaposleni = tableZaposleni.getSelectionModel().getSelectedItem();
+                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", tableZaposleni, izabraniZaposleni));
+                    t.setDaemon(true);
+                    t.start();
+                } else {
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            Stage dialog = new Dialog(getStage(), "Molim vas izaberite zaposlenog u tabeli");
+                            dialog.sizeToScene();
+                            dialog.show();
+                        }
+                    });
+                }
+            });
 
             HBox hboxAkcija = new HBox();
             hboxAkcija.setSpacing(5);
@@ -530,28 +570,31 @@ public class StudentskaSluzbaForm extends Stage {
             tablePredmeti.getColumns().clear();
 
             TableColumn colSifra = new TableColumn("Šifra");
-            colSifra.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("idPredmeta"));
+            colSifra.setCellValueFactory(new PropertyValueFactory<Predmet, String>("idPredmeta"));
             colSifra.setMinWidth(75);
             TableColumn colNaziv = new TableColumn("Naziv");
-            colNaziv.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("naziv"));
+            colNaziv.setCellValueFactory(new PropertyValueFactory<Predmet, String>("naziv"));
             colNaziv.setMinWidth(250);
             TableColumn colProfesor = new TableColumn("Profesor");
             colProfesor.setMinWidth(250);
             TableColumn colSmer = new TableColumn("Smer");
-            colSmer.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("studijskiSmer"));
+            colSmer.setCellValueFactory(new PropertyValueFactory<Predmet, String>("studijskiSmer"));
             colSmer.setMinWidth(50);
             TableColumn colSemestar = new TableColumn("Semestar");
-            colSemestar.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("semestar"));
+            colSemestar.setCellValueFactory(new PropertyValueFactory<Predmet, String>("semestar"));
             colSemestar.setMinWidth(50);
             TableColumn colEspb = new TableColumn("ESPB");
-            colEspb.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("espb"));
+            colEspb.setCellValueFactory(new PropertyValueFactory<Predmet, String>("espb"));
             colEspb.setMinWidth(50);
+            TableColumn colAktivan = new TableColumn("Aktivan");
+            colAktivan.setCellValueFactory(new PropertyValueFactory<Predmet, String>("vidljiv"));
+            colAktivan.setMinWidth(50);
 
             tablePredmeti.setItems(sviPredmeti);
             //sredjuje problem za dodatu kolonu
             tablePredmeti.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tablePredmeti.setPrefHeight(500);
-            tablePredmeti.getColumns().addAll(colSifra, colNaziv, colProfesor, colSmer, colSemestar, colEspb);
+            tablePredmeti.getColumns().addAll(colSifra, colNaziv, colProfesor, colSmer, colSemestar, colEspb, colAktivan);
 
             TextField txtSifra = new TextField();
             txtSifra.setPromptText("Šifra");
@@ -600,7 +643,7 @@ public class StudentskaSluzbaForm extends Stage {
 
                 String naziv = txtNaziv.getText();
                 String smer = null;
-                if (!cmbSmer.getValue().equals("")) {
+                if (cmbSmer.getValue() != null) {
                     smer = cmbSmer.getValue().toString();
                 }
                 int semestar = vfSemestar.getValue();
@@ -613,11 +656,11 @@ public class StudentskaSluzbaForm extends Stage {
                     //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
                     Predmet predmet;
                     if (smer != null) {
-                        predmet = new Predmet(Predmet.idNovogPredmeta(sviPredmeti, smer), naziv, Predmet.tipSmera.valueOf(smer), semestar, espb);
+                        predmet = new Predmet(Predmet.idNovogPredmeta(sviPredmeti, smer), naziv, Predmet.tipSmera.valueOf(smer), semestar, espb, true);
                     } else {
-                        predmet = new Predmet(Predmet.idNovogPredmeta(sviPredmeti, smer), naziv, null, semestar, espb);
+                        predmet = new Predmet(Predmet.idNovogPredmeta(sviPredmeti, smer), naziv, null, semestar, espb, true);
                     }
-                    Thread t = new Thread(new RunnableZahtevServeru("dodajPredmet", predmet));
+                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", predmet));
                     t.setDaemon(true);
                     t.start();
 
@@ -651,6 +694,43 @@ public class StudentskaSluzbaForm extends Stage {
             });
             Button btnObrisi = new Button("Obriši");
             btnObrisi.setMinWidth(60);
+            btnObrisi.setOnAction(e -> {
+                try {
+                    //UKOLIKO UNESE KARAKTERE
+                    int sifraPredmeta = Integer.parseInt(txtSifra.getText());
+
+                    //UKOLIKO JE UNEO NEKU SIFRU - PROVERA
+                    if(sifraPredmeta != 0) {
+                        Thread t = new Thread(new RunnableZahtevServeru("obrisi", txtSifra, sifraPredmeta));
+                        t.setDaemon(true);
+                        t.start();
+
+                    } else {
+                        txtSifra.setStyle("-fx-border-color: red;");
+
+                        Platform.runLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Molim vas unesite sifru predmeta");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                    }
+
+                } catch (Exception ex) {
+                    txtSifra.setStyle("-fx-border-color: red;");
+
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            Stage dialog = new Dialog(getStage(), "Molim vas unesite sifru predmeta");
+                            dialog.sizeToScene();
+                            dialog.show();
+                        }
+                    });
+                }
+            });
 
             HBox hboxAkcija = new HBox();
             hboxAkcija.setSpacing(5);
@@ -847,6 +927,9 @@ public class StudentskaSluzbaForm extends Stage {
         private Student student;
         private Zaposleni zaposleni;
         private Predmet predmet;
+        private TextField txtSifra;
+        private int sifra;
+        private TableView tabela;
 
         public RunnableZahtevServeru(Object zahtev, Student student) {
             this.zahtev = zahtev;
@@ -858,10 +941,27 @@ public class StudentskaSluzbaForm extends Stage {
             this.zaposleni = zaposleni;
         }
 
-
         public RunnableZahtevServeru(Object zahtev, Predmet predmet) {
             this.zahtev = zahtev;
             this.predmet = predmet;
+        }
+
+        public RunnableZahtevServeru(Object zahtev, TableView<Student> tabela, Student student) {
+            this.zahtev = zahtev;
+            this.tabela = tabela;
+            this.student = student;
+        }
+
+        public RunnableZahtevServeru(Object zahtev, TableView<Zaposleni> tabela, Zaposleni zaposleni) {
+            this.zahtev = zahtev;
+            this.tabela = tabela;
+            this.zaposleni = zaposleni;
+        }
+
+        public RunnableZahtevServeru(Object zahtev, TextField txtSifra, int sifra) {
+            this.zahtev = zahtev;
+            this.txtSifra = txtSifra;
+            this.sifra = sifra;
         }
 
         @Override
@@ -878,88 +978,190 @@ public class StudentskaSluzbaForm extends Stage {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            if (student != null) {
+            if(zahtev.equals("dodaj")) {
+                if (student != null) {
 
-                //ukoliko je pozvan konstruktor za studenta
-                try {
-                    outObj.writeObject(zahtev);
-                    outObj.writeObject(student);
+                    //ukoliko je pozvan konstruktor za studenta
                     try {
-                        odgovor = inObj.readObject();
-                        if(odgovor.equals("uspelo")) {
-                            Platform.runLater(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Stage dialog = new Dialog(getStage(), "Uspesno dodat student u Bazu");
-                                    dialog.sizeToScene();
-                                    dialog.show();
-                                }
-                            });
-                        } else {
-                            Platform.runLater(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Stage dialog = new Dialog(getStage(), "Taj student vec postoji u Bazi");
-                                    dialog.sizeToScene();
-                                    dialog.show();
-                                }
-                            });
+                        outObj.writeObject(zahtev + "Studenta");
+                        outObj.writeObject(student);
+                        try {
+                            odgovor = inObj.readObject();
+                            if (odgovor.equals("uspelo")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Uspesno dodat student u Bazu");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            } else {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Taj student vec postoji u Bazi");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
                         }
-                    } catch (ClassNotFoundException e) {
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
 
-            } else if (zaposleni != null) {
+                } else if (zaposleni != null) {
 
-                //ukoliko je pozvan konstruktor za zaposlenog
-                try {
-                    outObj.writeObject(zahtev);
-                    outObj.writeObject(zaposleni);
+                    //ukoliko je pozvan konstruktor za zaposlenog
                     try {
-                        odgovor = inObj.readObject();
-                        if (odgovor.equals("uspelo")) {
-                            Platform.runLater(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Stage dialog = new Dialog(getStage(), "Uspesno dodat zaposleni u Bazu");
-                                    dialog.sizeToScene();
-                                    dialog.show();
-                                }
-                            });
-                        } else {
-                            Platform.runLater(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Stage dialog = new Dialog(getStage(), "Taj zaposleni vec postoji u Bazi");
-                                    dialog.sizeToScene();
-                                    dialog.show();
-                                }
-                            });
+                        outObj.writeObject(zahtev + "Zaposlenog");
+                        outObj.writeObject(zaposleni);
+                        try {
+                            odgovor = inObj.readObject();
+                            if (odgovor.equals("uspelo")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Uspesno dodat zaposleni u Bazu");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            } else {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Taj zaposleni vec postoji u Bazi");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
                         }
-                    } catch (ClassNotFoundException e) {
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            } else if (predmet != null){
+                } else if (predmet != null) {
 
-                //ukoliko je pozvan konstruktor za predmet
-                try {
-                    outObj.writeObject(zahtev);
-                    outObj.writeObject(predmet);
+                    //ukoliko je pozvan konstruktor za predmet
                     try {
-                        odgovor = inObj.readObject();
-                    } catch (ClassNotFoundException e) {
+                        outObj.writeObject(zahtev + "Predmet");
+                        outObj.writeObject(predmet);
+                        try {
+                            odgovor = inObj.readObject();
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
+                }
+            } else if (zahtev.equals("obrisi")) {
+                //ukoliko je pozvan konstruktor za brisanje studenta/zaposlenog/predmeta
+                if (student != null) {
+                    try {
+                        outObj.writeObject(zahtev + "Studenta");
+                        outObj.writeObject(student);
+                        try {
+                            odgovor = inObj.readObject();
+                            if (odgovor.equals("uspelo")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Uspesno obrisan student");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            } else {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "...");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else if (zaposleni != null) {
+                    try {
+                        outObj.writeObject(zahtev + "Zaposlenog");
+                        outObj.writeObject(zaposleni);
+                        try {
+                            odgovor = inObj.readObject();
+                            if (odgovor.equals("uspelo")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Uspesno obrisan zaposleni");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            } else {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "...");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else if (sifra != 0) {
+                    try {
+                        outObj.writeObject(zahtev + "Predmet");
+                        outObj.writeObject(sifra);
+                        try {
+                            odgovor = inObj.readObject();
+                            if (odgovor.equals("uspelo")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Uspesno obrisan predmet");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            } else {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "...");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
+            student = null;
+            zaposleni = null;
+            predmet = null;
+            sifra = 0;
             //ZATVARANJE KONEKCIJE
             if (socket != null && (inObj != null || outObj != null)) {
                 try {

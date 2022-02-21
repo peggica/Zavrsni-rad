@@ -172,7 +172,7 @@ public class Server extends Application {
                         //provera u bazi da li postoji korisnik za primljene podatke
                         String korisnickoIme = login.getKorisnickoIme();
                         String lozinka = login.getLozinka();
-                        query = "SELECT * FROM Login WHERE korisnickoIme = '" + korisnickoIme + "' AND lozinka = '" + lozinka + "'";
+                        query = "SELECT * FROM Login WHERE korisnickoIme = '" + korisnickoIme + "' AND lozinka = '" + lozinka + "' AND aktivan = 1";
                         resultset = statement.executeQuery(query);
 
                         if (!resultset.next()) {
@@ -199,7 +199,8 @@ public class Server extends Application {
                                     String adresa = resultset.getString("adresa");
                                     String email = resultset.getString("email");
                                     String telefon = resultset.getString("telefon");
-                                    Zaposleni zaposleni = new Zaposleni(idZaposlenog, Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, telefon);
+                                    boolean vidljiv = resultset.getBoolean("vidljiv");
+                                    Zaposleni zaposleni = new Zaposleni(idZaposlenog, Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, telefon, vidljiv);
                                     odgovor = "zaposleni";
                                     outObj.writeObject(odgovor);
                                     outObj.flush();
@@ -240,7 +241,8 @@ public class Server extends Application {
                                     String adresa = resultset.getString("adresa");
                                     String email = resultset.getString("email");
                                     String telefon = resultset.getString("telefon");
-                                    Student student = new Student(idStudenta, godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, telefon);
+                                    boolean vidljiv = resultset.getBoolean("vidljiv");
+                                    Student student = new Student(idStudenta, godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, telefon, vidljiv);
                                     odgovor = "student";
                                     outObj.writeObject(odgovor);
                                     outObj.flush();
@@ -258,11 +260,12 @@ public class Server extends Application {
                                     int semestar = resultset.getInt("semestar");
                                     int espb = resultset.getInt("espb");
                                     int ocena = resultset.getInt("ocena");
+                                    boolean vidljiv = resultset.getBoolean("vidljiv");
                                     Predmet predmet;
                                     if(studijskiSmer != null) {
-                                        predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
+                                        predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb, vidljiv);
                                     } else {
-                                        predmet = new Predmet(idPredmeta, naziv, null, semestar, espb);
+                                        predmet = new Predmet(idPredmeta, naziv, null, semestar, espb, vidljiv);
                                     }
                                     polozeniPredmeti.put(predmet, ocena);
                                 }
@@ -279,11 +282,12 @@ public class Server extends Application {
                                     String studijskiSmer = resultset.getString("studijSkismer");
                                     int semestar = resultset.getInt("semestar");
                                     int espb = resultset.getInt("espb");
+                                    boolean vidljiv = resultset.getBoolean("vidljiv");
                                     Predmet predmet;
                                     if(studijskiSmer != null) {
-                                        predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
+                                        predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb, vidljiv);
                                     } else {
-                                        predmet = new Predmet(idPredmeta, naziv, null, semestar, espb);
+                                        predmet = new Predmet(idPredmeta, naziv, null, semestar, espb, vidljiv);
                                     }
                                     odgovor = predmet;
                                     outObj.writeObject(odgovor);
@@ -350,7 +354,8 @@ public class Server extends Application {
                                     String adresa = resultset.getString("adresa");
                                     String email = resultset.getString("email");
                                     String telefon = resultset.getString("telefon");
-                                    Student student = new Student(idStudenta, godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, telefon);
+                                    boolean vidljiv = resultset.getBoolean("vidljiv");
+                                    Student student = new Student(idStudenta, godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, telefon, vidljiv);
                                     odgovor = student;
                                     outObj.writeObject(odgovor);
                                     outObj.flush();
@@ -370,7 +375,8 @@ public class Server extends Application {
                                     String adresa = resultset.getString("adresa");
                                     String email = resultset.getString("email");
                                     String telefon = resultset.getString("telefon");
-                                    Zaposleni zaposleni = new Zaposleni(idZaposlenog, Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, telefon);
+                                    boolean vidljiv = resultset.getBoolean("vidljiv");
+                                    Zaposleni zaposleni = new Zaposleni(idZaposlenog, Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, telefon, vidljiv);
                                     odgovor = zaposleni;
                                     outObj.writeObject(odgovor);
                                     outObj.flush();
@@ -388,12 +394,13 @@ public class Server extends Application {
                                     String studijskiSmer = resultset.getString("studijskiSmer");
                                     int semestar = resultset.getInt("semestar");
                                     int espb = resultset.getInt("Espb");
+                                    boolean vidljiv = resultset.getBoolean("vidljiv");
                                     //TODO: POSLATI I PROFESORE NEKAKO + UPIT*
                                     Predmet predmet;
                                     if (studijskiSmer != null) {
-                                        predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
+                                        predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb, vidljiv);
                                     } else {
-                                        predmet = new Predmet(idPredmeta, naziv, null, semestar, espb);
+                                        predmet = new Predmet(idPredmeta, naziv, null, semestar, espb, vidljiv);
                                     }
                                     odgovor = predmet;
                                     outObj.writeObject(odgovor);
@@ -457,7 +464,8 @@ public class Server extends Application {
                             String adresa = resultset.getString("adresa");
                             String email = resultset.getString("email");
                             String telefon = resultset.getString("telefon");
-                            Student student = new Student(idStudenta, godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, telefon);
+                            boolean vidljiv = resultset.getBoolean("vidljiv");
+                            Student student = new Student(idStudenta, godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, telefon, vidljiv);
                             odgovor = student;
                             outObj.writeObject(odgovor);
                             outObj.flush();
@@ -477,7 +485,8 @@ public class Server extends Application {
                             String adresa = resultset.getString("adresa");
                             String email = resultset.getString("email");
                             String telefon = resultset.getString("telefon");
-                            Zaposleni zaposleni = new Zaposleni(idZaposlenog, Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, telefon);
+                            boolean vidljiv = resultset.getBoolean("vidljiv");
+                            Zaposleni zaposleni = new Zaposleni(idZaposlenog, Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, telefon, vidljiv);
                             odgovor = zaposleni;
                             outObj.writeObject(odgovor);
                             outObj.flush();
@@ -495,12 +504,13 @@ public class Server extends Application {
                             String studijskiSmer = resultset.getString("studijskiSmer");
                             int semestar = resultset.getInt("semestar");
                             int espb = resultset.getInt("Espb");
+                            boolean vidljiv = resultset.getBoolean("vidljiv");
                             //TODO: POSLATI I PROFESORE NEKAKO + UPIT*
                             Predmet predmet;
                             if(studijskiSmer != null) {
-                                predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
+                                predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb, vidljiv);
                             } else {
-                                predmet = new Predmet(idPredmeta, naziv, null, semestar, espb);
+                                predmet = new Predmet(idPredmeta, naziv, null, semestar, espb, vidljiv);
                             }
                             odgovor = predmet;
                             outObj.writeObject(odgovor);
@@ -574,7 +584,7 @@ public class Server extends Application {
                     } else if(zahtev.equals("dodajStudenta")) {
 
                         Student student = (Student) inObj.readObject();
-                        query = "INSERT INTO Student(idStudenta, smer, godinaUpisa, ime, prezime, finansiranje, adresa, email, telefon) VALUES ('" + student.getIdStudenta() + "', '" + student.getSmer() + "', '" + student.getGodinaUpisa() + "', '" + student.getIme() + "', '" + student.getPrezime() + "', '" + student.getFinansiranje() + "', '" + student.getAdresa() + "', '" + student.getEmail() + "', '" + student.getBrojTelefona() + "')";
+                        query = "INSERT INTO Student(idStudenta, smer, godinaUpisa, ime, prezime, finansiranje, adresa, email, telefon, vidljiv) VALUES ('" + student.getIdStudenta() + "', '" + student.getSmer() + "', '" + student.getGodinaUpisa() + "', '" + student.getIme() + "', '" + student.getPrezime() + "', '" + student.getFinansiranje() + "', '" + student.getAdresa() + "', '" + student.getEmail() + "', '" + student.getBrojTelefona() +"', '" + (student.isVidljiv() ? 1 : 0) + "')";
                         int izmena = statement.executeUpdate(query);
                         if(izmena != 0) {
                             outObj.writeObject("uspelo");
@@ -586,7 +596,7 @@ public class Server extends Application {
                     } else if(zahtev.equals("dodajZaposlenog")) {
 
                         Zaposleni zaposleni = (Zaposleni) inObj.readObject();
-                        query = "INSERT INTO Zaposleni(idZaposlenog, pozicija, ime, prezime, adresa, email, telefon) VALUES ('" + zaposleni.getIdZaposlenog() + "', '" + zaposleni.getPozicija() + "', '"  + zaposleni.getIme() + "', '" + zaposleni.getPrezime() + "', '" + zaposleni.getAdresa() + "', '" + zaposleni.getEmail() + "', '" + zaposleni.getBrojTelefona() + "')";
+                        query = "INSERT INTO Zaposleni(idZaposlenog, pozicija, ime, prezime, adresa, email, telefon, vidljiv) VALUES ('" + zaposleni.getIdZaposlenog() + "', '" + zaposleni.getPozicija() + "', '"  + zaposleni.getIme() + "', '" + zaposleni.getPrezime() + "', '" + zaposleni.getAdresa() + "', '" + zaposleni.getEmail() + "', '" + zaposleni.getBrojTelefona() + "', '" + (zaposleni.isVidljiv() ? 1 : 0) + "')";
                         int izmena = statement.executeUpdate(query);
                         if (izmena != 0) {
                             outObj.writeObject("uspelo");
@@ -600,13 +610,60 @@ public class Server extends Application {
                         Predmet predmet = (Predmet) inObj.readObject();
                         //RaspodelaPredmeta raspodelaPredmeta = (RaspodelaPredmeta) inObj.readObject();
 
-                        query = "INSERT INTO Predmet(idPredmeta, naziv, studijskiSmer, semestar, espb) VALUES ('" + predmet.getIdPredmeta() + "', '" + predmet.getNaziv() + "', '"  + predmet.getStudijskiSmer() + "', '" + predmet.getSemestar() + "', '" + predmet.getEspb() + "')";
+                        query = "INSERT INTO Predmet(idPredmeta, naziv, studijskiSmer, semestar, espb, vidljiv) VALUES ('" + predmet.getIdPredmeta() + "', '" + predmet.getNaziv() + "', ";
+                        if(predmet.getStudijskiSmer() == null) {
+                            query += predmet.getStudijskiSmer() + ", '" + predmet.getSemestar() + "', '" + predmet.getEspb() + "', '" + (predmet.isVidljiv() ? 1 : 0) + "')";
+                        } else {
+                            query += "'" + predmet.getStudijskiSmer() + "', '" + predmet.getSemestar() + "', '" + predmet.getEspb() + "', '" + (predmet.isVidljiv() ? 1 : 0) + "')";
+                        }
                         int izmena = statement.executeUpdate(query);
                         if (izmena != 0) {
                             outObj.writeObject("uspelo");
                             outObj.flush();
                         } else {
                             outObj.writeObject("vecPostoji");
+                            outObj.flush();
+                        }
+                    } else if(zahtev.equals("obrisiStudenta")) {
+                        int izmene = 0;
+                        Student student = (Student) inObj.readObject();
+                        query = "UPDATE Student SET `vidljiv` = '0' WHERE (`idStudenta` = '" + student.getIdStudenta() + "') AND (`smer` = '" + student.getSmer() + "') AND (`godinaUpisa` = '" + student.getGodinaUpisa() + "')";
+                        izmene += statement.executeUpdate(query);
+                        query = "UPDATE Login SET `aktivan` = '0' WHERE (`idStudenta` = '" + student.getIdStudenta() + "') AND (`smer` = '" + student.getSmer() + "') AND (`godinaUpisa` = '" + student.getGodinaUpisa() + "')";
+                        izmene += statement.executeUpdate(query);
+                        //MOZDA GA NEMAM U SIFRAMA, TREBA TEK DA DODAM, PA JE PROVERA != 0
+                        if (izmene != 0) {
+                            outObj.writeObject("uspelo");
+                            outObj.flush();
+                        } else {
+                            outObj.writeObject("nijeUspelo");
+                            outObj.flush();
+                        }
+
+                    } else if(zahtev.equals("obrisiZaposlenog")) {
+                        int izmene = 0;
+                        Zaposleni zaposleni = (Zaposleni) inObj.readObject();
+                        query = "UPDATE Zaposleni SET `vidljiv` = '0' WHERE (`idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "')";
+                        izmene += statement.executeUpdate(query);
+                        query = "UPDATE Login SET `aktivan` = '0' WHERE (`idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "')";
+                        izmene += statement.executeUpdate(query);
+                        //MOZDA GA NEMAM U SIFRAMA, TREBA TEK DA DODAM, PA JE PROVERA != 0
+                        if (izmene != 0) {
+                            outObj.writeObject("uspelo");
+                            outObj.flush();
+                        } else {
+                            outObj.writeObject("nijeUspelo");
+                            outObj.flush();
+                        }
+                    } else if(zahtev.equals("obrisiPredmet")) {
+                        int sifra = Integer.parseInt(inObj.readObject().toString());
+                        query = "UPDATE Predmet SET `vidljiv` = '0' WHERE (`idPredmeta` = '" + sifra + "')";
+                        int izmena = statement.executeUpdate(query);
+                        if (izmena != 0) {
+                            outObj.writeObject("uspelo");
+                            outObj.flush();
+                        } else {
+                            outObj.writeObject("nepostoji");
                             outObj.flush();
                         }
                     }

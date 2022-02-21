@@ -15,8 +15,9 @@ public class Zaposleni implements Serializable {
     private String adresa;
     private String email;
     private String brojTelefona;
+    private boolean vidljiv;
 
-    public Zaposleni(int idZaposlenog, tipZaposlenog tip, String ime, String prezime, String adresa, String email, String brojTelefona) {
+    public Zaposleni(int idZaposlenog, tipZaposlenog tip, String ime, String prezime, String adresa, String email, String brojTelefona, boolean vidljiv) {
 
         this.idZaposlenog = idZaposlenog;
         this.pozicija = tip.toString();
@@ -25,6 +26,7 @@ public class Zaposleni implements Serializable {
         this.adresa = adresa;
         this.email = email;
         this.brojTelefona = brojTelefona;
+        this.vidljiv = vidljiv;
 
     }
 
@@ -64,6 +66,10 @@ public class Zaposleni implements Serializable {
 
     public String getBrojTelefona() {
         return brojTelefona;
+    }
+
+    public boolean isVidljiv() {
+        return vidljiv;
     }
 
     //METODA KOJA GENERISE NOVI ID (+1) ZA TU POZICIJU
