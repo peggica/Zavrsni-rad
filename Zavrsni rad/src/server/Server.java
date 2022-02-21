@@ -656,8 +656,8 @@ public class Server extends Application {
                             outObj.flush();
                         }
                     } else if(zahtev.equals("obrisiPredmet")) {
-                        int sifra = Integer.parseInt(inObj.readObject().toString());
-                        query = "UPDATE Predmet SET `vidljiv` = '0' WHERE (`idPredmeta` = '" + sifra + "')";
+                        Predmet predmet = (Predmet) inObj.readObject();
+                        query = "UPDATE Predmet SET `vidljiv` = '0' WHERE (`idPredmeta` = '" + predmet.getIdPredmeta() + "')";
                         int izmena = statement.executeUpdate(query);
                         if (izmena != 0) {
                             outObj.writeObject("uspelo");

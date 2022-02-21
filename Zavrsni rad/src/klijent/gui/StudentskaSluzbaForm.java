@@ -245,27 +245,10 @@ public class StudentskaSluzbaForm extends Stage {
                     if ((ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && validniTelefon) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && validniTelefon)) {
                         //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
                         Student student = new Student(Student.idNovogStudenta(sviStudenti, smer, godinaUpisa), godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, brojTelefona, true);
-                        Thread t = new Thread(new RunnableZahtevServeru("dodaj", student));
+                        Thread t = new Thread(new RunnableZahtevServeru("dodaj", student, txtIme, txtPrezime, txtAdresa, txtMail, txtTelefon, cmbSmer, cmbFinansiranje));
                         t.setDaemon(true);
                         t.start();
 
-                        Platform.runLater(new Runnable() {
-                            @Override
-                            public void run() {
-                                txtIme.setStyle("-fx-border-width: 0;");
-                                txtPrezime.setStyle("-fx-border-width: 0;");
-                                txtAdresa.setStyle("-fx-border-width: 0;");
-                                txtMail.setStyle("-fx-border-width: 0;");
-                                txtTelefon.setStyle("-fx-border-width: 0;");
-                                txtIme.clear();
-                                txtPrezime.clear();
-                                txtAdresa.clear();
-                                txtMail.clear();
-                                txtTelefon.clear();
-                                cmbSmer.setValue(Student.tipSmera.avt);
-                                cmbFinansiranje.setValue(Student.tipFinansiranja.budzet);
-                            }
-                        });
                     } else {
                         //PROVERA KOJI NIJE UNET ISPRAVNO I BOJENJE OKVIRA TOG POLJA
                         Platform.runLater(new Runnable() {
@@ -446,28 +429,9 @@ public class StudentskaSluzbaForm extends Stage {
                 if ((ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && validniTelefon) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && validniTelefon)) {
                     //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
                     Zaposleni zaposleni = new Zaposleni(Zaposleni.idNovogZaposlenog(sviZaposleni, pozicija), Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, brojTelefona, true);
-                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", zaposleni));
+                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", zaposleni, cmbPozicija, txtIme, txtPrezime, txtMail, txtTelefon, txtAdresa));
                     t.setDaemon(true);
                     t.start();
-
-                    Platform.runLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            Stage dialog = new Dialog(getStage(), "Uspesno dodat zaposleni u Bazu");
-                            dialog.sizeToScene();
-                            dialog.show();
-                            txtIme.setStyle("-fx-border-width: 0;");
-                            txtPrezime.setStyle("-fx-border-width: 0;");
-                            txtMail.setStyle("-fx-border-width: 0;");
-                            txtTelefon.setStyle("-fx-border-width: 0;");
-                            txtIme.clear();
-                            txtPrezime.clear();
-                            txtAdresa.clear();
-                            txtMail.clear();
-                            txtTelefon.clear();
-                            cmbPozicija.setValue(Zaposleni.tipZaposlenog.profesor);
-                        }
-                    });
                 } else {
                     //PROVERA KOJI NIJE UNET ISPRAVNO I BOJENJE OKVIRA TOG POLJA
                     Platform.runLater(new Runnable() {
@@ -512,6 +476,7 @@ public class StudentskaSluzbaForm extends Stage {
                     Thread t = new Thread(new RunnableZahtevServeru("obrisi", tableZaposleni, izabraniZaposleni));
                     t.setDaemon(true);
                     t.start();
+
                 } else {
                     Platform.runLater(new Runnable() {
                         @Override
@@ -615,7 +580,6 @@ public class StudentskaSluzbaForm extends Stage {
             cmbSmer.setMinWidth(Region.USE_PREF_SIZE);
             cmbSmer.setStyle("-fx-font: 12px \"Arial\";");
 
-            //TODO: ukoliko je 0, tretirati kao null i ne upisivati nista
             Label lblSemestar = new Label("Semestar: ");
             lblSemestar.setMinWidth(Region.USE_PREF_SIZE);
             Spinner<Integer> spSemestar = new Spinner();
@@ -639,7 +603,7 @@ public class StudentskaSluzbaForm extends Stage {
             btnDodaj.setMinWidth(60);
             btnDodaj.setOnMouseClicked(e -> {
                 //TODO: metoda u predmetu koja generise sifru
-                //ID SE UNOSI SAMO ZA IZMENU
+                //TODO: moze id za izmenu da se unosi, a moze i direktno izmena u tabeli
 
                 String naziv = txtNaziv.getText();
                 String smer = null;
@@ -652,33 +616,16 @@ public class StudentskaSluzbaForm extends Stage {
 
                 //AKO JE UNET NAZIV, OSTALI SU OPCIONI JER SMER MOZE BITI ZAJEDNICKI
                 if (naziv.length() != 0) {
-                    //TODO: dodati profesor+smer u dodelu predmeta
-                    //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
                     Predmet predmet;
                     if (smer != null) {
                         predmet = new Predmet(Predmet.idNovogPredmeta(sviPredmeti, smer), naziv, Predmet.tipSmera.valueOf(smer), semestar, espb, true);
                     } else {
                         predmet = new Predmet(Predmet.idNovogPredmeta(sviPredmeti, smer), naziv, null, semestar, espb, true);
                     }
-                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", predmet));
+                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", predmet, txtNaziv, cmbSmer, vfSemestar, vfEspb, txtProfesor));
                     t.setDaemon(true);
                     t.start();
 
-                    Platform.runLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            Stage dialog = new Dialog(getStage(), "Uspesno dodat predmet u Bazu");
-                            dialog.sizeToScene();
-                            dialog.show();
-                            txtNaziv.setStyle("-fx-border-width: 0;");
-                            cmbSmer.setValue(null);
-                            vfSemestar.setValue(0);
-                            vfEspb.setValue(0);
-                            txtNaziv.clear();
-                            txtProfesor.clear();
-
-                        }
-                    });
                 } else {
                     txtNaziv.setStyle("-fx-border-color: red;");
 
@@ -695,41 +642,21 @@ public class StudentskaSluzbaForm extends Stage {
             Button btnObrisi = new Button("Obriši");
             btnObrisi.setMinWidth(60);
             btnObrisi.setOnAction(e -> {
-                try {
-                    //UKOLIKO UNESE KARAKTERE
-                    int sifraPredmeta = Integer.parseInt(txtSifra.getText());
-
-                    //UKOLIKO JE UNEO NEKU SIFRU - PROVERA
-                    if(sifraPredmeta != 0) {
-                        Thread t = new Thread(new RunnableZahtevServeru("obrisi", txtSifra, sifraPredmeta));
-                        t.setDaemon(true);
-                        t.start();
-
-                    } else {
-                        txtSifra.setStyle("-fx-border-color: red;");
-
-                        Platform.runLater(new Runnable() {
-                            @Override
-                            public void run() {
-                                Stage dialog = new Dialog(getStage(), "Molim vas unesite sifru predmeta");
-                                dialog.sizeToScene();
-                                dialog.show();
-                            }
-                        });
-                    }
-
-                } catch (Exception ex) {
-                    txtSifra.setStyle("-fx-border-color: red;");
-
-                    Platform.runLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            Stage dialog = new Dialog(getStage(), "Molim vas unesite sifru predmeta");
-                            dialog.sizeToScene();
-                            dialog.show();
+                        if (tablePredmeti.getSelectionModel().getSelectedItem() != null) {
+                            Predmet izabraniPredmet = tablePredmeti.getSelectionModel().getSelectedItem();
+                            Thread t = new Thread(new RunnableZahtevServeru("obrisi", tablePredmeti, izabraniPredmet));
+                            t.setDaemon(true);
+                            t.start();
+                        } else {
+                            Platform.runLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Stage dialog = new Dialog(getStage(), "Molim vas izaberite predmet u tabeli");
+                                    dialog.sizeToScene();
+                                    dialog.show();
+                                }
+                            });
                         }
-                    });
-                }
             });
 
             HBox hboxAkcija = new HBox();
@@ -927,23 +854,45 @@ public class StudentskaSluzbaForm extends Stage {
         private Student student;
         private Zaposleni zaposleni;
         private Predmet predmet;
-        private TextField txtSifra;
-        private int sifra;
         private TableView tabela;
+        private TextField txtIme;
+        private TextField txtPrezime;
+        private TextField txtMail;
+        private TextField txtTelefon;
+        private TextField txtAdresa;
+        private ComboBox cmbPozicija;
+        private TextField txtNaziv;
+        private ComboBox cmbSmer;
+        SpinnerValueFactory vfSemestar;
+        private SpinnerValueFactory vfEspb;
+        private TextField txtProfesor;
+        private ComboBox cmbFinansiranje;
 
-        public RunnableZahtevServeru(Object zahtev, Student student) {
+        public RunnableZahtevServeru(Object zahtev, Student student, TextField txtIme, TextField txtPrezime, TextField txtAdresa, TextField txtMail, TextField txtTelefon, ComboBox cmbSmer, ComboBox cmbFinansiranje) {
             this.zahtev = zahtev;
             this.student = student;
+            this.txtIme = txtIme;
+            this.txtPrezime = txtPrezime;
+            this.txtAdresa = txtAdresa;
+            this.txtMail = txtMail;
+            this.txtTelefon = txtTelefon;
+            this.cmbSmer = cmbSmer;
+            this.cmbFinansiranje = cmbFinansiranje;
         }
 
-        public RunnableZahtevServeru(Object zahtev, Zaposleni zaposleni) {
+        public RunnableZahtevServeru(Object zahtev, Zaposleni zaposleni, ComboBox cmbPozicija, TextField txtIme, TextField txtPrezime, TextField txtMail, TextField txtTelefon, TextField txtAdresa) {
             this.zahtev = zahtev;
             this.zaposleni = zaposleni;
         }
 
-        public RunnableZahtevServeru(Object zahtev, Predmet predmet) {
+        public RunnableZahtevServeru(Object zahtev, Predmet predmet, TextField txtNaziv, ComboBox cmbSmer, SpinnerValueFactory<Integer> vfSemestar, SpinnerValueFactory<Integer> vfEspb, TextField txtProfesor) {
             this.zahtev = zahtev;
             this.predmet = predmet;
+            this.txtNaziv = txtNaziv;
+            this.cmbSmer = cmbSmer;
+            this.vfSemestar = vfSemestar;
+            this.vfEspb = vfEspb;
+            this.txtProfesor = txtProfesor;
         }
 
         public RunnableZahtevServeru(Object zahtev, TableView<Student> tabela, Student student) {
@@ -958,10 +907,10 @@ public class StudentskaSluzbaForm extends Stage {
             this.zaposleni = zaposleni;
         }
 
-        public RunnableZahtevServeru(Object zahtev, TextField txtSifra, int sifra) {
+        public RunnableZahtevServeru(Object zahtev, TableView<Predmet> tabela, Predmet predmet) {
             this.zahtev = zahtev;
-            this.txtSifra = txtSifra;
-            this.sifra = sifra;
+            this.tabela = tabela;
+            this.predmet = predmet;
         }
 
         @Override
@@ -994,6 +943,18 @@ public class StudentskaSluzbaForm extends Stage {
                                         Stage dialog = new Dialog(getStage(), "Uspesno dodat student u Bazu");
                                         dialog.sizeToScene();
                                         dialog.show();
+                                        txtIme.setStyle("-fx-border-width: 0;");
+                                        txtPrezime.setStyle("-fx-border-width: 0;");
+                                        txtAdresa.setStyle("-fx-border-width: 0;");
+                                        txtMail.setStyle("-fx-border-width: 0;");
+                                        txtTelefon.setStyle("-fx-border-width: 0;");
+                                        txtIme.clear();
+                                        txtPrezime.clear();
+                                        txtAdresa.clear();
+                                        txtMail.clear();
+                                        txtTelefon.clear();
+                                        cmbSmer.setValue(Student.tipSmera.avt);
+                                        cmbFinansiranje.setValue(Student.tipFinansiranja.budzet);
                                     }
                                 });
                             } else {
@@ -1028,6 +989,16 @@ public class StudentskaSluzbaForm extends Stage {
                                         Stage dialog = new Dialog(getStage(), "Uspesno dodat zaposleni u Bazu");
                                         dialog.sizeToScene();
                                         dialog.show();
+                                        txtIme.setStyle("-fx-border-width: 0;");
+                                        txtPrezime.setStyle("-fx-border-width: 0;");
+                                        txtMail.setStyle("-fx-border-width: 0;");
+                                        txtTelefon.setStyle("-fx-border-width: 0;");
+                                        txtIme.clear();
+                                        txtPrezime.clear();
+                                        txtAdresa.clear();
+                                        txtMail.clear();
+                                        txtTelefon.clear();
+                                        cmbPozicija.setValue(Zaposleni.tipZaposlenog.profesor);
                                     }
                                 });
                             } else {
@@ -1061,8 +1032,12 @@ public class StudentskaSluzbaForm extends Stage {
                                         Stage dialog = new Dialog(getStage(), "Uspesno dodat predmet u Bazu");
                                         dialog.sizeToScene();
                                         dialog.show();
-                                        txtSifra.setStyle("-fx-border-width: 0;");
-                                        txtSifra.clear();
+                                        txtNaziv.setStyle("-fx-border-width: 0;");
+                                        cmbSmer.setValue(null);
+                                        vfSemestar.setValue(0);
+                                        vfEspb.setValue(0);
+                                        txtNaziv.clear();
+                                        txtProfesor.clear();
                                     }
                                 });
                             } else {
@@ -1146,10 +1121,10 @@ public class StudentskaSluzbaForm extends Stage {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                } else if (sifra != 0) {
+                } else if (predmet != null) {
                     try {
                         outObj.writeObject(zahtev + "Predmet");
-                        outObj.writeObject(sifra);
+                        outObj.writeObject(predmet);
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
@@ -1182,7 +1157,6 @@ public class StudentskaSluzbaForm extends Stage {
             student = null;
             zaposleni = null;
             predmet = null;
-            sifra = 0;
             //ZATVARANJE KONEKCIJE
             if (socket != null && (inObj != null || outObj != null)) {
                 try {
