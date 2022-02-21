@@ -20,8 +20,8 @@ import java.util.*;
 
 public class StudentForm extends Stage {
 
-    private static Font font15 = new Font("Arial", 15);
-    private static Font font20 = new Font("Arial", 20);
+    private static final Font font15 = new Font("Arial", 15);
+    private static final Font font20 = new Font("Arial", 20);
     private Student student;
     private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
     private HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
@@ -48,13 +48,13 @@ public class StudentForm extends Stage {
 
         boolean aktivan = false;
         for (IspitniRok ispitniRok:this.sviIspitniRokovi) {
-            if(ispitniRok.isAktivnost()==true) {
+            if(ispitniRok.isAktivnost()) {
                 aktivan = true;
                 break;
             }
         }
 
-        String poruka = "";
+        String poruka;
         if(aktivan) {
             poruka = "Ispitni rok je u toku.";
         } else {

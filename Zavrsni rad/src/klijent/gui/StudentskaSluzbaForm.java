@@ -26,8 +26,8 @@ public class StudentskaSluzbaForm extends Stage {
 
     //TODO: umesto <nesto> tipa za table column i view da ide klasa
 
-    private static Font font15 = new Font("Arial", 15);
-    private static Font font20 = new Font("Arial", 20);
+    private static final Font font15 = new Font("Arial", 15);
+    private static final Font font20 = new Font("Arial", 20);
     private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
     private static ObservableList<Student> sviStudenti = FXCollections.observableArrayList();
     private static ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
@@ -62,13 +62,13 @@ public class StudentskaSluzbaForm extends Stage {
         boolean aktivan = false;
         for (IspitniRok ispitniRok : sviIspitniRokovi) {
 
-            if (ispitniRok.isAktivnost() == true) {
+            if (ispitniRok.isAktivnost()) {
                 aktivan = true;
                 break;
             }
         }
 
-        String poruka = "";
+        String poruka;
         if (aktivan) {
             poruka = "Ispitni rok je u toku.";
         } else {
@@ -223,7 +223,7 @@ public class StudentskaSluzbaForm extends Stage {
             Button btnDodaj = new Button("Dodaj");
             btnDodaj.setMinWidth(60);
             btnDodaj.setOnMouseClicked(e -> {
-                if (cmbFinansiranje != null) {
+                if (cmbFinansiranje.getValue() != null) {
                     String ime = txtIme.getText();
                     String prezime = txtPrezime.getText();
                     String smer = cmbSmer.getValue().toString();
@@ -1054,6 +1054,27 @@ public class StudentskaSluzbaForm extends Stage {
                         outObj.writeObject(predmet);
                         try {
                             odgovor = inObj.readObject();
+                            if (odgovor.equals("uspelo")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Uspesno dodat predmet u Bazu");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                        txtSifra.setStyle("-fx-border-width: 0;");
+                                        txtSifra.clear();
+                                    }
+                                });
+                            } else {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Taj predmet vec postoji u Bazi");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            }
                         } catch (ClassNotFoundException e) {
                             e.printStackTrace();
                         }
