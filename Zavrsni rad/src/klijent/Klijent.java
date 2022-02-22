@@ -238,20 +238,6 @@ public class Klijent extends Application {
 
                         }
                     });
-
-                    while(true) {
-
-                        //na svakih 10 sekundi da ponovo pokrene nit i na taj nacin osvezi podatke
-                        try {
-                            Thread.sleep(10000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi());
-                        //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                        runnableKlijentOsvezi.setDaemon(true);
-                        runnableKlijentOsvezi.start();
-                    }
                 } else if(odgovor.toString().equals("nepostoji")) {
 
                     //update na JavaFx application niti
@@ -405,10 +391,6 @@ public class Klijent extends Application {
         private Student student;
         private Zaposleni zaposleni;
 
-        public RunnableKlijentOsvezi() {
-
-        }
-
         public RunnableKlijentOsvezi(Zaposleni zaposleni) {
             this.zaposleni = zaposleni;
         }
@@ -525,99 +507,6 @@ public class Klijent extends Application {
                     }
                 });
 
-            } else {
-
-                //ukoliko je pozvan konstruktor za studentsku sluzbu
-                try {
-                    outObj.writeObject("sluzba");
-                    odgovor = inObj.readObject();
-                    if (odgovor.toString().equals("sviispitnirokovi")) {
-
-                        sviIspitniRokovi.clear();
-                        while (true) { //nisam sigurna za ovu proveru
-                            odgovor = inObj.readObject();
-                            if (odgovor.toString().equals("svistudenti")) {
-                                break;
-                            } else {
-                                IspitniRok ispitniRok = (IspitniRok) odgovor;
-                                sviIspitniRokovi.add(ispitniRok);
-                            }
-                        }
-                    }
-                    if (odgovor.toString().equals("svistudenti")) {
-
-                        sviStudenti.clear();
-                        while (true) { //nisam sigurna za ovu proveru
-                            odgovor = inObj.readObject();
-                            if (odgovor.toString().equals("svizaposleni")) {
-                                break;
-                            } else {
-                                Student student = (Student) odgovor;
-                                sviStudenti.add(student);
-                            }
-                        }
-                    }
-                    if (odgovor.toString().equals("svizaposleni")) {
-
-                        sviZaposleni.clear();
-                        while (true) { //nisam sigurna za ovu proveru
-                            odgovor = inObj.readObject();
-                            if (odgovor.toString().equals("svipredmeti")) {
-                                break;
-                            } else {
-                                Zaposleni zaposleni = (Zaposleni) odgovor;
-                                sviZaposleni.add(zaposleni);
-                            }
-                        }
-                    }
-                    if (odgovor.toString().equals("svipredmeti")) {
-
-                        sviPredmeti.clear();
-                        while (true) { //nisam sigurna za ovu proveru
-                            odgovor = inObj.readObject();
-                            if (odgovor.toString().equals("svesale")) {
-                                break;
-                            } else {
-                                Predmet predmet = (Predmet) odgovor;
-                                sviPredmeti.add(predmet);
-                            }
-                        }
-                    }
-                    if (odgovor.toString().equals("svesale")) {
-
-                        sveSale.clear();
-                        while (true) { //nisam sigurna za ovu proveru
-                            odgovor = inObj.readObject();
-                            if (odgovor.toString().equals("kraj")) {
-                                break;
-                            } else {
-                                Sala sala = (Sala) odgovor;
-                                sveSale.add(sala);
-                            }
-                        }
-                    }
-                    //update na JavaFx application niti
-                    Platform.runLater(new Runnable() {
-
-                        @Override
-                        public void run() {
-
-                            //azuriranje/ponovno popunjavanje svih listi
-                            studentskaSluzbaForm.setSviIspitniRokovi(sviIspitniRokovi);
-                            studentskaSluzbaForm.setSviStudenti(sviStudenti);
-                            studentskaSluzbaForm.setSviZaposleni(sviZaposleni);
-                            studentskaSluzbaForm.setSviPredmeti(sviPredmeti);
-                            studentskaSluzbaForm.setSveSale(sveSale);
-                            System.out.println("Osvezeni podaci sa strane servera");
-
-                            }
-                        });
-
-                } catch(IOException e){
-                    e.printStackTrace();
-                } catch(ClassNotFoundException e){
-                    e.printStackTrace();
-                }
             }
             //ZATVARANJE KONEKCIJE
             if (socket != null && (inObj != null || outObj != null)) {

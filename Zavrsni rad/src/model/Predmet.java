@@ -6,6 +6,7 @@ import java.io.Serializable;
 
 public class Predmet implements Serializable {
 
+    //TODO: profesor za predmet, 1 ili lista?
     private static final long serialVersionUID = 5L;
     private int idPredmeta;
     private String naziv;
@@ -46,16 +47,32 @@ public class Predmet implements Serializable {
         return naziv;
     }
 
+    public void setNaziv(String naziv) {
+        this.naziv = naziv;
+    }
+
     public String getStudijskiSmer() {
         return studijskiSmer;
+    }
+
+    public void setStudijskiSmer(String studijskiSmer) {
+        this.studijskiSmer = studijskiSmer;
     }
 
     public int getSemestar() {
         return semestar;
     }
 
+    public void setSemestar(int semestar) {
+        this.semestar = semestar;
+    }
+
     public int getEspb() {
         return espb;
+    }
+
+    public void setEspb(int espb) {
+        this.espb = espb;
     }
 
     public boolean isVidljiv() {

@@ -316,6 +316,7 @@ public class Server extends Application {
                                 outObj.flush();
 
                             } else {
+
                                 odgovor = "sluzba";
                                 outObj.writeObject(odgovor);
                                 outObj.flush();
@@ -404,6 +405,7 @@ public class Server extends Application {
                                     }
                                     odgovor = predmet;
                                     outObj.writeObject(odgovor);
+
                                     outObj.flush();
                                 }
 
@@ -429,7 +431,8 @@ public class Server extends Application {
                                 outObj.writeObject("kraj");
                             }
                         }
-                    } else if(zahtev.equals("sluzba")){
+                    } else if(zahtev.equals("osveziSluzba")){
+
                         odgovor = "sviispitnirokovi";
                         outObj.writeObject(odgovor);
                         outObj.flush();
@@ -539,6 +542,7 @@ public class Server extends Application {
                         outObj.writeObject("kraj");
 
                     } else if(zahtev.equals("zaposleni")) {
+
                         odgovor = "sviispitnirokovi";
                         outObj.writeObject(odgovor);
                         outObj.flush();
@@ -561,6 +565,7 @@ public class Server extends Application {
                         outObj.flush();
 
                     }  else if(zahtev.equals("student")) {
+
                         odgovor = "sviispitnirokovi";
                         outObj.writeObject(odgovor);
                         outObj.flush();
@@ -581,6 +586,49 @@ public class Server extends Application {
 
                         outObj.writeObject("kraj");
                         outObj.flush();
+
+                    } else if(zahtev.equals("izmeniStudenta")) {
+                        Student student = (Student) inObj.readObject();
+                        query = "UPDATE Student SET `ime` = '" + student.getIme() + "', `prezime` = '" + student.getPrezime() + "', `adresa` = '" + student.getAdresa() + "', `email` = '" + student.getEmail() + "', `telefon` = '" + student.getBrojTelefona() + "' WHERE (`idStudenta` = '" + student.getIdStudenta() + "' AND `smer` = '" + student.getSmer() + "' AND `godinaUpisa` = '" + student.getGodinaUpisa() + "')";
+                        int izmena = statement.executeUpdate(query);
+                        if(izmena != 0) {
+                            outObj.writeObject("uspelo");
+                            outObj.flush();
+                        } else {
+                            outObj.writeObject("nijeUspelo");
+                            outObj.flush();
+                        }
+
+                    } else if(zahtev.equals("izmeniZaposlenog")) {
+
+                        Zaposleni zaposleni = (Zaposleni) inObj.readObject();
+                        query = "UPDATE Zaposleni SET `ime` = '" + zaposleni.getIme() + "', `prezime` = '" + zaposleni.getPrezime() + "', `adresa` = '" + zaposleni.getAdresa() + "', `email` = '" + zaposleni.getEmail() + "', `telefon` = '" + zaposleni.getBrojTelefona() + "' WHERE `idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "'";
+                        int izmena = statement.executeUpdate(query);
+                        if(izmena != 0) {
+                            outObj.writeObject("uspelo");
+                            outObj.flush();
+                        } else {
+                            outObj.writeObject("nijeUspelo");
+                            outObj.flush();
+                        }
+
+                    } else if(zahtev.equals("izmeniPredmet")) {
+
+                        Predmet predmet = (Predmet) inObj.readObject();
+                        query = "UPDATE Predmet SET `naziv` = '" + predmet.getNaziv() + "', `studijskiSmer` = ";
+                        if(predmet.getStudijskiSmer() == null || predmet.getStudijskiSmer().equals("")) {
+                           query += null + ", `semestar` = '" + predmet.getSemestar() + "', `Espb` = '" + predmet.getEspb() + "' WHERE `idPredmeta` = '" + predmet.getIdPredmeta() + "'";
+                        } else {
+                            query += "'" + predmet.getStudijskiSmer() + "', `semestar` = '" + predmet.getSemestar() + "', `Espb` = '" + predmet.getEspb() + "' WHERE `idPredmeta` = '" + predmet.getIdPredmeta() + "'";
+                        }
+                        int izmena = statement.executeUpdate(query);
+                        if (izmena != 0) {
+                            outObj.writeObject("uspelo");
+                            outObj.flush();
+                        } else {
+                            outObj.writeObject("nijeUspelo");
+                            outObj.flush();
+                        }
                     } else if(zahtev.equals("dodajStudenta")) {
 
                         Student student = (Student) inObj.readObject();
@@ -593,6 +641,7 @@ public class Server extends Application {
                             outObj.writeObject("vecPostoji");
                             outObj.flush();
                         }
+
                     } else if(zahtev.equals("dodajZaposlenog")) {
 
                         Zaposleni zaposleni = (Zaposleni) inObj.readObject();
@@ -605,6 +654,7 @@ public class Server extends Application {
                             outObj.writeObject("vecPostoji");
                             outObj.flush();
                         }
+
                     } else if(zahtev.equals("dodajPredmet")) {
 
                         Predmet predmet = (Predmet) inObj.readObject();
@@ -624,7 +674,9 @@ public class Server extends Application {
                             outObj.writeObject("vecPostoji");
                             outObj.flush();
                         }
+
                     } else if(zahtev.equals("obrisiStudenta")) {
+
                         int izmene = 0;
                         Student student = (Student) inObj.readObject();
                         query = "UPDATE Student SET `vidljiv` = '0' WHERE (`idStudenta` = '" + student.getIdStudenta() + "') AND (`smer` = '" + student.getSmer() + "') AND (`godinaUpisa` = '" + student.getGodinaUpisa() + "')";
@@ -641,6 +693,7 @@ public class Server extends Application {
                         }
 
                     } else if(zahtev.equals("obrisiZaposlenog")) {
+
                         int izmene = 0;
                         Zaposleni zaposleni = (Zaposleni) inObj.readObject();
                         query = "UPDATE Zaposleni SET `vidljiv` = '0' WHERE (`idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "')";
@@ -655,7 +708,9 @@ public class Server extends Application {
                             outObj.writeObject("nijeUspelo");
                             outObj.flush();
                         }
+
                     } else if(zahtev.equals("obrisiPredmet")) {
+
                         Predmet predmet = (Predmet) inObj.readObject();
                         query = "UPDATE Predmet SET `vidljiv` = '0' WHERE (`idPredmeta` = '" + predmet.getIdPredmeta() + "')";
                         int izmena = statement.executeUpdate(query);
