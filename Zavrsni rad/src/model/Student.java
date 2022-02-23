@@ -113,6 +113,10 @@ public class Student implements Serializable {
         return ime + " " + prezime;
     }
 
+    public void setVidljiv(boolean vidljiv) {
+        this.vidljiv = vidljiv;
+    }
+
     public boolean isVidljiv() {
         return vidljiv;
     }

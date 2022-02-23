@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class PrijavaIspita implements Serializable {
 
-    private static final long serialVersionUID = 4L;
+    private static final long serialVersionUID = 5L;
     private int idPredmeta;
     private int idStudenta;
     public enum tipSmera { avt, asuv, eko, elite, epo, is, net, nrt, rt };

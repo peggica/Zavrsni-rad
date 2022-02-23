@@ -15,6 +15,8 @@ import java.net.*;
 import java.sql.*;
 import java.util.HashMap;
 
+import static java.sql.JDBCType.NULL;
+
 /** Klase Server, ServerThread i ServerPrihvatanje namenjene za podizanje servera i prihvatanje konekcija klijenata
  *  i razmenu zahteva/odgovora sa njima prikaz u JavaFx formi
  *  @author Biljana Stanojevic  */
@@ -172,7 +174,8 @@ public class Server extends Application {
                         //provera u bazi da li postoji korisnik za primljene podatke
                         String korisnickoIme = login.getKorisnickoIme();
                         String lozinka = login.getLozinka();
-                        query = "SELECT * FROM Login WHERE korisnickoIme = '" + korisnickoIme + "' AND lozinka = '" + lozinka + "' AND aktivan = 1";
+                        //da bi bilo case sensitive, posto mi nije collation?
+                        query = "SELECT * FROM Login WHERE korisnickoIme = BINARY '" + korisnickoIme + "' AND lozinka = BINARY '" + lozinka + "' AND aktivan = 1";
                         resultset = statement.executeQuery(query);
 
                         if (!resultset.next()) {
@@ -498,6 +501,8 @@ public class Server extends Application {
                         odgovor = "svipredmeti";
                         outObj.writeObject(odgovor);
                         outObj.flush();
+                        //TODO: srediti slanje svih predmeta
+                        //query = "SELECT p.idPredmeta, p.naziv, p.studijskiSmer, p.semestar, p.espb, p.vidljiv, z.ime, z.prezime FROM predmet p JOIN raspodelapredmeta rp ON p.idPredmeta = rp.idPredmeta JOIN zaposleni z ON rp.idZaposlenog = z.idZaposlenog";
                         query = "SELECT * FROM Predmet";
                         resultset = statement.executeQuery(query);
 
@@ -589,7 +594,22 @@ public class Server extends Application {
 
                     } else if(zahtev.equals("izmeniStudenta")) {
                         Student student = (Student) inObj.readObject();
-                        query = "UPDATE Student SET `ime` = '" + student.getIme() + "', `prezime` = '" + student.getPrezime() + "', `adresa` = '" + student.getAdresa() + "', `email` = '" + student.getEmail() + "', `telefon` = '" + student.getBrojTelefona() + "' WHERE (`idStudenta` = '" + student.getIdStudenta() + "' AND `smer` = '" + student.getSmer() + "' AND `godinaUpisa` = '" + student.getGodinaUpisa() + "')";
+                        query = "UPDATE Student SET `ime` = '" + student.getIme() + "', `prezime` = '" + student.getPrezime() + "', `adresa` = ";
+                        if(student.getAdresa() == null || student.getAdresa().equals("")) {
+                            query += NULL + ", `email` = ";
+                        } else {
+                            query += "'" + student.getAdresa() + "', `email` = ";
+                        }
+                        if(student.getEmail() == null || student.getEmail().equals("")) {
+                            query += NULL + ", `telefon` = ";
+                        } else {
+                            query += "'" + student.getEmail() + "', `telefon` = ";
+                        }
+                        if(student.getBrojTelefona() == null || student.getBrojTelefona().equals("")) {
+                            query += NULL + " WHERE (`idStudenta` = '" + student.getIdStudenta() + "' AND `smer` = '" + student.getSmer() + "' AND `godinaUpisa` = '" + student.getGodinaUpisa() + "')";
+                        } else {
+                            query +=  "'" + student.getBrojTelefona() + "' WHERE (`idStudenta` = '" + student.getIdStudenta() + "' AND `smer` = '" + student.getSmer() + "' AND `godinaUpisa` = '" + student.getGodinaUpisa() + "')";
+                        }
                         int izmena = statement.executeUpdate(query);
                         if(izmena != 0) {
                             outObj.writeObject("uspelo");
@@ -602,7 +622,22 @@ public class Server extends Application {
                     } else if(zahtev.equals("izmeniZaposlenog")) {
 
                         Zaposleni zaposleni = (Zaposleni) inObj.readObject();
-                        query = "UPDATE Zaposleni SET `ime` = '" + zaposleni.getIme() + "', `prezime` = '" + zaposleni.getPrezime() + "', `adresa` = '" + zaposleni.getAdresa() + "', `email` = '" + zaposleni.getEmail() + "', `telefon` = '" + zaposleni.getBrojTelefona() + "' WHERE `idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "'";
+                        query = "UPDATE Zaposleni SET `ime` = '" + zaposleni.getIme() + "', `prezime` = '" + zaposleni.getPrezime() + "', `adresa` = ";
+                        if(zaposleni.getAdresa() == null || zaposleni.getAdresa().equals("")) {
+                            query += NULL + ", `email` = ";
+                        } else {
+                            query += "'" + zaposleni.getAdresa() + "', `email` = ";
+                        }
+                        if(zaposleni.getEmail() == null || zaposleni.getEmail().equals("")) {
+                            query += NULL + ", `telefon` = ";
+                        } else {
+                            query += "'" + zaposleni.getEmail() + "', `telefon` = ";
+                        }
+                        if(zaposleni.getBrojTelefona() == null || zaposleni.getBrojTelefona().equals("")) {
+                            query += NULL + " WHERE `idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "'";
+                        } else {
+                            query += "'" + zaposleni.getBrojTelefona() + "' WHERE `idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "'";
+                        }
                         int izmena = statement.executeUpdate(query);
                         if(izmena != 0) {
                             outObj.writeObject("uspelo");
@@ -617,7 +652,7 @@ public class Server extends Application {
                         Predmet predmet = (Predmet) inObj.readObject();
                         query = "UPDATE Predmet SET `naziv` = '" + predmet.getNaziv() + "', `studijskiSmer` = ";
                         if(predmet.getStudijskiSmer() == null || predmet.getStudijskiSmer().equals("")) {
-                           query += null + ", `semestar` = '" + predmet.getSemestar() + "', `Espb` = '" + predmet.getEspb() + "' WHERE `idPredmeta` = '" + predmet.getIdPredmeta() + "'";
+                           query += NULL + ", `semestar` = '" + predmet.getSemestar() + "', `Espb` = '" + predmet.getEspb() + "' WHERE `idPredmeta` = '" + predmet.getIdPredmeta() + "'";
                         } else {
                             query += "'" + predmet.getStudijskiSmer() + "', `semestar` = '" + predmet.getSemestar() + "', `Espb` = '" + predmet.getEspb() + "' WHERE `idPredmeta` = '" + predmet.getIdPredmeta() + "'";
                         }
