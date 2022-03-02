@@ -31,6 +31,20 @@ public class Predmet implements Serializable {
 
     }
 
+    public Predmet(int idPredmeta, String naziv, tipSmera smer, int semestar, int espb) {
+
+        this.idPredmeta = idPredmeta;
+        this.naziv = naziv;
+        if (smer == null) {
+            this.studijskiSmer = null;
+        } else {
+            this.studijskiSmer = smer.toString();
+        }
+        this.semestar = semestar;
+        this.espb = espb;
+
+    }
+
     public Predmet(int idPredmeta, String naziv) {
 
         this.idPredmeta = idPredmeta;

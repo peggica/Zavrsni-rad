@@ -27,7 +27,7 @@ public class Klijent extends Application {
     private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
     private ObservableList<Student> sviStudenti = FXCollections.observableArrayList();
     private ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
-    private ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
+    private HashMap<Predmet, Zaposleni> sviPredmeti = new HashMap<>();
     private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
     private HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
     private ObservableList<Predmet> nepolozeniPredmeti = FXCollections.observableArrayList();
@@ -201,16 +201,10 @@ public class Klijent extends Application {
                     if (odgovor.toString().equals("svipredmeti")) {
 
                         sviPredmeti.clear();
-                        while (true) { //nisam sigurna za ovu proveru
-                            odgovor = inObj.readObject();
-                            if (odgovor.toString().equals("svesale")) {
-                                break;
-                            } else {
-                                Predmet predmet = (Predmet) odgovor;
-                                sviPredmeti.add(predmet);
-                            }
-                        }
+                        odgovor = inObj.readObject();
+                        sviPredmeti = (HashMap) odgovor;
                     }
+                    odgovor = inObj.readObject();
                     if (odgovor.toString().equals("svesale")) {
 
                         sveSale.clear();

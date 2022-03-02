@@ -1,6 +1,8 @@
 package klijent.gui;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.*;
 import javafx.event.EventHandler;
 import javafx.geometry.*;
@@ -10,6 +12,7 @@ import javafx.scene.control.cell.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 import model.*;
 
 import java.io.*;
@@ -29,7 +32,7 @@ public class StudentskaSluzbaForm extends Stage {
     private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
     private static ObservableList<Student> sviStudenti = FXCollections.observableArrayList();
     private static ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
-    private static ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
+    private HashMap<Predmet, Zaposleni> sviPredmeti = new HashMap<>();
     private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
     Pattern patternEmail = Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
     Pattern patternTelefon = Pattern.compile("^(\\+\\d{1,3}( )?)?((\\(\\d{1,3}\\))|\\d{1,3})[- .]?\\d{3,4}[- .]?\\d{4}$");
@@ -51,7 +54,7 @@ public class StudentskaSluzbaForm extends Stage {
         this.sviZaposleni = sviZaposleni;
     }
 
-    public void setSviPredmeti(ObservableList<Predmet> sviPredmeti) {
+    public void setSviPredmeti(HashMap<Predmet, Zaposleni> sviPredmeti) {
         this.sviPredmeti = sviPredmeti;
     }
 
@@ -97,7 +100,7 @@ public class StudentskaSluzbaForm extends Stage {
         root.setCenter(null);
     }
 
-    public StudentskaSluzbaForm(Stage stage, ObservableList<IspitniRok> sviIspitniRokovi, ObservableList<Student> sviStudenti, ObservableList<Zaposleni> sviZaposleni, ObservableList<Predmet> sviPredmeti, ObservableList<Sala> sveSale) {
+    public StudentskaSluzbaForm(Stage stage, ObservableList<IspitniRok> sviIspitniRokovi, ObservableList<Student> sviStudenti, ObservableList<Zaposleni> sviZaposleni, HashMap<Predmet, Zaposleni> polozeniPredmeti, ObservableList<Sala> sveSale) {
 
         super();
         initOwner(stage);
@@ -358,7 +361,13 @@ public class StudentskaSluzbaForm extends Stage {
             );
             colTelefon.setMinWidth(100);
             TableColumn colAktivan = new TableColumn("Aktivan");
-            colAktivan.setCellValueFactory(new PropertyValueFactory<Student, String>("vidljiv"));
+            colAktivan.setCellValueFactory(new PropertyValueFactory<Student, Boolean>("vidljiv"));
+            colAktivan.setCellFactory(new Callback<TableColumn<Student, Boolean>, TableCell<Student, Boolean>>() {
+                @Override
+                public TableCell<Student, Boolean> call(TableColumn<Student, Boolean> arg0) {
+                    return new CheckBoxTableCell<Student, Boolean>();
+                }
+            });
             colAktivan.setMinWidth(50);
 
             tableStudenti.setItems(sviStudenti);
@@ -864,13 +873,13 @@ public class StudentskaSluzbaForm extends Stage {
 
             TextField txtPretraga = new TextField();
 
-            TableView<Predmet> tablePredmeti = new TableView<>();
+            TableView<HashMap.Entry<Predmet, Zaposleni>> tablePredmeti = new TableView<>();
 
             Button btnPretrazi = new Button("pretraži");
             btnPretrazi.setFont(font15);
             btnPretrazi.setOnMouseClicked(event -> {
                 String trazeno = txtPretraga.getText().toLowerCase();
-                ObservableList<Predmet> nadjeni = (sviPredmeti.stream().filter(p -> String.valueOf(p.getIdPredmeta()).contains(trazeno) || p.getNaziv().toLowerCase().contains(trazeno) || (p.getStudijskiSmer() != null && p.getStudijskiSmer().toLowerCase().contains(trazeno)) || (String.valueOf(p.getSemestar()) != null && String.valueOf(p.getSemestar()).contains(trazeno)) || (String.valueOf(p.getEspb()) != null && String.valueOf(p.getEspb()).contains(trazeno)))).collect(Collectors.toCollection(FXCollections::observableArrayList));
+                ObservableList<HashMap.Entry<Predmet, Zaposleni>> nadjeni = FXCollections.observableArrayList(sviPredmeti.entrySet().stream().filter(map -> String.valueOf(map.getKey().getIdPredmeta()).contains(trazeno) || map.getKey().getNaziv().toLowerCase().contains(trazeno) || (map.getKey().getStudijskiSmer() != null && map.getKey().getStudijskiSmer().toLowerCase().contains(trazeno)) || (String.valueOf(map.getKey().getSemestar()) != null && String.valueOf(map.getKey().getSemestar()).contains(trazeno)) || (String.valueOf(map.getKey().getEspb()) != null && String.valueOf(map.getKey().getEspb()).contains(trazeno)) || (map.getValue().getIme() + " " + map.getValue().getPrezime()).toLowerCase().contains(trazeno)).collect(Collectors.toMap(map -> map.getKey(), map -> map.getValue())).entrySet());
                 tablePredmeti.setItems(nadjeni);
             });
 
@@ -879,13 +888,27 @@ public class StudentskaSluzbaForm extends Stage {
             tablePredmeti.setEditable(true);
             tablePredmeti.getColumns().clear();
 
-            TableColumn colSifra = new TableColumn("Šifra");
-            colSifra.setCellValueFactory(new PropertyValueFactory<Predmet, String>("idPredmeta"));
+            TableColumn<Map.Entry<Predmet, Zaposleni>, Integer> colSifra = new TableColumn<>("Šifra");
+            colSifra.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Integer>, ObservableValue<Integer>>() {
+
+                @Override
+                public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Integer> p) {
+                    return new SimpleObjectProperty<Integer>(p.getValue().getKey().getIdPredmeta());
+                }
+
+            });
             colSifra.setMinWidth(75);
-            TableColumn colNaziv = new TableColumn("Naziv");
-            colNaziv.setCellValueFactory(new PropertyValueFactory<Predmet, String>("naziv"));
+            TableColumn<Map.Entry<Predmet, Zaposleni>, String> colNaziv = new TableColumn<>("Naziv");
+            colNaziv.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, String>, ObservableValue<String>>() {
+
+                @Override
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, String> p) {
+                    return new SimpleObjectProperty<String>(p.getValue().getKey().getNaziv());
+                }
+
+            });
             colNaziv.setCellFactory(TextFieldTableCell.forTableColumn());
-            colNaziv.setOnEditCommit(
+            /*colNaziv.setOnEditCommit(
                     new EventHandler<TableColumn.CellEditEvent<Predmet, String>>() {
                         @Override
                         public void handle(TableColumn.CellEditEvent<Predmet, String> tabela) {
@@ -915,41 +938,68 @@ public class StudentskaSluzbaForm extends Stage {
                             }
                         }
                     }
-            );
+            );*/
             colNaziv.setMinWidth(250);
-            TableColumn colProfesor = new TableColumn("Profesor");
+            TableColumn<Map.Entry<Predmet, Zaposleni>, String> colProfesor = new TableColumn<>("Profesor");
+            colProfesor.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, String>, ObservableValue<String>>() {
+
+                @Override
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, String> p) {
+                    return new SimpleObjectProperty<String>(p.getValue().getValue().getIme() + " " + p.getValue().getValue().getPrezime());
+                }
+
+            });
             colProfesor.setCellFactory(TextFieldTableCell.forTableColumn());
 
             colProfesor.setMinWidth(250);
 
-            TableColumn colSmer = new TableColumn("Smer");
-            colSmer.setCellValueFactory(new PropertyValueFactory<Predmet, String>("studijskiSmer"));
-            colSmer.setCellFactory(ComboBoxTableCell.forTableColumn(Predmet.tipSmera.values()));
-            colSmer.setOnEditCommit(
-                    new EventHandler<TableColumn.CellEditEvent<Predmet, String>>() {
-                        @Override
-                        public void handle(TableColumn.CellEditEvent<Predmet, String> tabela) {
+            TableColumn<Map.Entry<Predmet, Zaposleni>, String> colSmer = new TableColumn<>("Smer");
+            colSmer.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, String>, ObservableValue<String>>() {
 
-                        }
-                    }
-            );
+                @Override
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, String> p) {
+                    return new SimpleObjectProperty<String>(p.getValue().getKey().getStudijskiSmer());
+                }
+
+            });
             colSmer.setMinWidth(50);
-            TableColumn colSemestar = new TableColumn("Semestar");
-            colSemestar.setCellValueFactory(new PropertyValueFactory<Predmet, Integer>("semestar"));
             //TODO: spinner unutar polja, da mora ili prazno - null ili broj, bez greske za unet prazan string ili tekst
-            colSemestar.setCellValueFactory(new PropertyValueFactory<Predmet, String>("semestar"));
+            TableColumn<Map.Entry<Predmet, Zaposleni>, Integer> colSemestar = new TableColumn<>("Semestar");
+            colSemestar.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Integer>, ObservableValue<Integer>>() {
+
+                @Override
+                public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Integer> p) {
+                    return new SimpleObjectProperty<Integer>(p.getValue().getKey().getSemestar());
+                }
+
+            });
 
             colSemestar.setMinWidth(50);
-            TableColumn colEspb = new TableColumn("ESPB");
+            TableColumn<Map.Entry<Predmet, Zaposleni>, Integer> colEspb = new TableColumn<>("ESPB");
+            colEspb.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Integer>, ObservableValue<Integer>>() {
+
+                @Override
+                public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Integer> p) {
+                    return new SimpleObjectProperty<Integer>(p.getValue().getKey().getEspb());
+                }
+
+            });
             //TODO: spinner unutar polja, da mora ili prazno - null ili broj, bez greske za unet prazan string ili tekst
-            colEspb.setCellValueFactory(new PropertyValueFactory<Predmet, String>("Espb"));
 
             colEspb.setMinWidth(50);
-            TableColumn colAktivan = new TableColumn("Aktivan");
-            colAktivan.setCellValueFactory(new PropertyValueFactory<Predmet, String>("vidljiv"));
+            TableColumn<Map.Entry<Predmet, Zaposleni>, Boolean> colAktivan = new TableColumn<>("Aktivan");
+            colAktivan.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Boolean>, ObservableValue<Boolean>>() {
+
+                @Override
+                public ObservableValue<Boolean> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Boolean> p) {
+                    return new SimpleObjectProperty<Boolean>(p.getValue().getKey().isVidljiv());
+                }
+
+            });
             colAktivan.setMinWidth(50);
 
-            tablePredmeti.setItems(sviPredmeti);
+            ObservableList<HashMap.Entry<Predmet, Zaposleni>> stavke = FXCollections.observableArrayList(sviPredmeti.entrySet());
+            tablePredmeti.setItems(stavke);
             //sredjuje problem za dodatu kolonu
             tablePredmeti.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tablePredmeti.setPrefHeight(500);
@@ -1016,9 +1066,9 @@ public class StudentskaSluzbaForm extends Stage {
                 if (naziv.length() != 0) {
                     Predmet predmet;
                     if (smer != null) {
-                        predmet = new Predmet(Predmet.idNovogPredmeta(sviPredmeti, smer), naziv, Predmet.tipSmera.valueOf(smer), semestar, espb, true);
+                        predmet = new Predmet(Predmet.idNovogPredmeta(FXCollections.observableArrayList(sviPredmeti.keySet()), smer), naziv, Predmet.tipSmera.valueOf(smer), semestar, espb, true);
                     } else {
-                        predmet = new Predmet(Predmet.idNovogPredmeta(sviPredmeti, smer), naziv, null, semestar, espb, true);
+                        predmet = new Predmet(Predmet.idNovogPredmeta(FXCollections.observableArrayList(sviPredmeti.keySet()), smer), naziv, null, semestar, espb, true);
                     }
                     Thread t = new Thread(new RunnableZahtevServeru("dodaj", predmet, txtNaziv, cmbSmer, vfSemestar, vfEspb, txtProfesor));
                     t.setDaemon(true);
@@ -1041,10 +1091,10 @@ public class StudentskaSluzbaForm extends Stage {
             btnObrisi.setMinWidth(60);
             btnObrisi.setOnAction(e -> {
                         if (tablePredmeti.getSelectionModel().getSelectedItem() != null) {
-                            Predmet izabraniPredmet = tablePredmeti.getSelectionModel().getSelectedItem();
-                            Thread t = new Thread(new RunnableZahtevServeru("obrisi", tablePredmeti, izabraniPredmet));
-                            t.setDaemon(true);
-                            t.start();
+                            Map.Entry<Predmet, Zaposleni> izabraniPredmet = tablePredmeti.getSelectionModel().getSelectedItem();
+                            //Thread t = new Thread(new RunnableZahtevServeru("obrisi", tablePredmeti, izabraniPredmet));
+                            //t.setDaemon(true);
+                            //t.start();
                         } else {
                             Platform.runLater(new Runnable() {
                                 @Override
@@ -1419,16 +1469,10 @@ public class StudentskaSluzbaForm extends Stage {
                         if (odgovor.toString().equals("svipredmeti")) {
 
                             sviPredmeti.clear();
-                            while (true) { //nisam sigurna za ovu proveru
-                                odgovor = inObj.readObject();
-                                if (odgovor.toString().equals("svesale")) {
-                                    break;
-                                } else {
-                                    Predmet predmet = (Predmet) odgovor;
-                                    sviPredmeti.add(predmet);
-                                }
-                            }
+                            odgovor = inObj.readObject();
+                            sviPredmeti = (HashMap) odgovor;
                         }
+                        odgovor = inObj.readObject();
                         if (odgovor.toString().equals("svesale")) {
 
                             sveSale.clear();

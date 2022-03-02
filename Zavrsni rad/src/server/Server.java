@@ -263,12 +263,12 @@ public class Server extends Application {
                                     int semestar = resultset.getInt("semestar");
                                     int espb = resultset.getInt("espb");
                                     int ocena = resultset.getInt("ocena");
-                                    boolean vidljiv = resultset.getBoolean("vidljiv");
+                                    //boolean vidljiv = resultset.getBoolean("vidljiv");
                                     Predmet predmet;
                                     if(studijskiSmer != null) {
-                                        predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb, vidljiv);
+                                        predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
                                     } else {
-                                        predmet = new Predmet(idPredmeta, naziv, null, semestar, espb, vidljiv);
+                                        predmet = new Predmet(idPredmeta, naziv, null, semestar, espb);
                                     }
                                     polozeniPredmeti.put(predmet, ocena);
                                 }
@@ -389,8 +389,9 @@ public class Server extends Application {
                                 odgovor = "svipredmeti";
                                 outObj.writeObject(odgovor);
                                 outObj.flush();
-                                query = "SELECT * FROM Predmet";
+                                query = "SELECT p.idPredmeta, p.naziv, p.studijskiSmer, p.semestar, p.espb, p.vidljiv, z.idZaposlenog, z.pozicija, z.ime, z.prezime FROM predmet p JOIN raspodelapredmeta rp ON p.idPredmeta = rp.idPredmeta JOIN zaposleni z ON rp.idZaposlenog = z.idZaposlenog WHERE z.pozicija = 'profesor'";
                                 resultset = statement.executeQuery(query);
+                                HashMap<Predmet, Zaposleni> sviPredmeti = new HashMap<>();
 
                                 while (resultset.next()) {
                                     int idPredmeta = resultset.getInt("idPredmeta");
@@ -399,18 +400,23 @@ public class Server extends Application {
                                     int semestar = resultset.getInt("semestar");
                                     int espb = resultset.getInt("Espb");
                                     boolean vidljiv = resultset.getBoolean("vidljiv");
-                                    //TODO: POSLATI I PROFESORE NEKAKO + UPIT*
+                                    idZaposlenog = resultset.getInt("idZaposlenog");
+                                    String ime = resultset.getString("ime");
+                                    String prezime = resultset.getString("prezime");
+                                    String pozicija = resultset.getString("pozicija");
                                     Predmet predmet;
+                                    Zaposleni zaposleni;
                                     if (studijskiSmer != null) {
                                         predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb, vidljiv);
                                     } else {
                                         predmet = new Predmet(idPredmeta, naziv, null, semestar, espb, vidljiv);
                                     }
-                                    odgovor = predmet;
-                                    outObj.writeObject(odgovor);
-
-                                    outObj.flush();
+                                    zaposleni = new Zaposleni(idZaposlenog, Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime);
+                                    sviPredmeti.put(predmet, zaposleni);
                                 }
+                                odgovor = sviPredmeti;
+                                outObj.writeObject(odgovor);
+                                outObj.flush();
 
                                 odgovor = "svesale";
                                 outObj.writeObject(odgovor);
@@ -501,10 +507,9 @@ public class Server extends Application {
                         odgovor = "svipredmeti";
                         outObj.writeObject(odgovor);
                         outObj.flush();
-                        //TODO: srediti slanje svih predmeta
-                        //query = "SELECT p.idPredmeta, p.naziv, p.studijskiSmer, p.semestar, p.espb, p.vidljiv, z.ime, z.prezime FROM predmet p JOIN raspodelapredmeta rp ON p.idPredmeta = rp.idPredmeta JOIN zaposleni z ON rp.idZaposlenog = z.idZaposlenog";
-                        query = "SELECT * FROM Predmet";
+                        query = "SELECT p.idPredmeta, p.naziv, p.studijskiSmer, p.semestar, p.espb, p.vidljiv, z.idZaposlenog, z.pozicija, z.ime, z.prezime FROM predmet p JOIN raspodelapredmeta rp ON p.idPredmeta = rp.idPredmeta JOIN zaposleni z ON rp.idZaposlenog = z.idZaposlenog WHERE z.pozicija = 'profesor'";
                         resultset = statement.executeQuery(query);
+                        HashMap<Predmet, Zaposleni> sviPredmeti = new HashMap<>();
 
                         while (resultset.next()) {
                             int idPredmeta = resultset.getInt("idPredmeta");
@@ -513,17 +518,23 @@ public class Server extends Application {
                             int semestar = resultset.getInt("semestar");
                             int espb = resultset.getInt("Espb");
                             boolean vidljiv = resultset.getBoolean("vidljiv");
-                            //TODO: POSLATI I PROFESORE NEKAKO + UPIT*
+                            int idZaposlenog = resultset.getInt("idZaposlenog");
+                            String ime = resultset.getString("ime");
+                            String prezime = resultset.getString("prezime");
+                            String pozicija = resultset.getString("pozicija");
                             Predmet predmet;
-                            if(studijskiSmer != null) {
+                            Zaposleni zaposleni;
+                            if (studijskiSmer != null) {
                                 predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb, vidljiv);
                             } else {
                                 predmet = new Predmet(idPredmeta, naziv, null, semestar, espb, vidljiv);
                             }
-                            odgovor = predmet;
-                            outObj.writeObject(odgovor);
-                            outObj.flush();
+                            zaposleni = new Zaposleni(idZaposlenog, Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime);
+                            sviPredmeti.put(predmet, zaposleni);
                         }
+                        odgovor = sviPredmeti;
+                        outObj.writeObject(odgovor);
+                        outObj.flush();
 
                         odgovor = "svesale";
                         outObj.writeObject(odgovor);
