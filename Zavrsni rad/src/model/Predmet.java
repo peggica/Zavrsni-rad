@@ -89,6 +89,10 @@ public class Predmet implements Serializable {
         this.espb = espb;
     }
 
+    public void setVidljiv(boolean vidljiv) {
+        this.vidljiv = vidljiv;
+    }
+
     public boolean isVidljiv() {
         return vidljiv;
     }

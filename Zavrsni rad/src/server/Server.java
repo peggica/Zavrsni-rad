@@ -617,9 +617,9 @@ public class Server extends Application {
                             query += "'" + student.getEmail() + "', `telefon` = ";
                         }
                         if(student.getBrojTelefona() == null || student.getBrojTelefona().equals("")) {
-                            query += NULL + " WHERE (`idStudenta` = '" + student.getIdStudenta() + "' AND `smer` = '" + student.getSmer() + "' AND `godinaUpisa` = '" + student.getGodinaUpisa() + "')";
+                            query += NULL + ", `vidljiv` = '" + (student.isVidljiv() ? 1 : 0) + "' WHERE (`idStudenta` = '" + student.getIdStudenta() + "' AND `smer` = '" + student.getSmer() + "' AND `godinaUpisa` = '" + student.getGodinaUpisa() + "')";
                         } else {
-                            query +=  "'" + student.getBrojTelefona() + "' WHERE (`idStudenta` = '" + student.getIdStudenta() + "' AND `smer` = '" + student.getSmer() + "' AND `godinaUpisa` = '" + student.getGodinaUpisa() + "')";
+                            query +=  "'" + student.getBrojTelefona() + "', `vidljiv` = '" + (student.isVidljiv() ? 1 : 0)  + "' WHERE (`idStudenta` = '" + student.getIdStudenta() + "' AND `smer` = '" + student.getSmer() + "' AND `godinaUpisa` = '" + student.getGodinaUpisa() + "')";
                         }
                         int izmena = statement.executeUpdate(query);
                         if(izmena != 0) {
@@ -645,9 +645,9 @@ public class Server extends Application {
                             query += "'" + zaposleni.getEmail() + "', `telefon` = ";
                         }
                         if(zaposleni.getBrojTelefona() == null || zaposleni.getBrojTelefona().equals("")) {
-                            query += NULL + " WHERE `idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "'";
+                            query += NULL  + ", `vidljiv` = '" + (zaposleni.isVidljiv() ? 1 : 0) + "' WHERE `idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "'";
                         } else {
-                            query += "'" + zaposleni.getBrojTelefona() + "' WHERE `idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "'";
+                            query += "'" + zaposleni.getBrojTelefona() + "', `vidljiv` = '" + (zaposleni.isVidljiv() ? 1 : 0)  + "' WHERE `idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "'";
                         }
                         int izmena = statement.executeUpdate(query);
                         if(izmena != 0) {
@@ -663,9 +663,9 @@ public class Server extends Application {
                         Predmet predmet = (Predmet) inObj.readObject();
                         query = "UPDATE Predmet SET `naziv` = '" + predmet.getNaziv() + "', `studijskiSmer` = ";
                         if(predmet.getStudijskiSmer() == null || predmet.getStudijskiSmer().equals("")) {
-                           query += NULL + ", `semestar` = '" + predmet.getSemestar() + "', `Espb` = '" + predmet.getEspb() + "' WHERE `idPredmeta` = '" + predmet.getIdPredmeta() + "'";
+                           query += NULL + ", `semestar` = '" + predmet.getSemestar() + "', `Espb` = '" + predmet.getEspb() + "', `vidljiv` = '" + (predmet.isVidljiv() ? 1 : 0) + "' WHERE `idPredmeta` = '" + predmet.getIdPredmeta() + "'";
                         } else {
-                            query += "'" + predmet.getStudijskiSmer() + "', `semestar` = '" + predmet.getSemestar() + "', `Espb` = '" + predmet.getEspb() + "' WHERE `idPredmeta` = '" + predmet.getIdPredmeta() + "'";
+                            query += "'" + predmet.getStudijskiSmer() + "', `semestar` = '" + predmet.getSemestar() + "', `Espb` = '" + predmet.getEspb() + "', `vidljiv` = '" + (predmet.isVidljiv() ? 1 : 0) + "' WHERE `idPredmeta` = '" + predmet.getIdPredmeta() + "'";
                         }
                         int izmena = statement.executeUpdate(query);
                         if (izmena != 0) {

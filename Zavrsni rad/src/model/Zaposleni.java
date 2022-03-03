@@ -88,6 +88,10 @@ public class Zaposleni implements Serializable {
         this.brojTelefona = brojTelefona;
     }
 
+    public void setVidljiv(boolean vidljiv) {
+        this.vidljiv = vidljiv;
+    }
+
     public boolean isVidljiv() {
         return vidljiv;
     }

@@ -2,6 +2,7 @@ package klijent.gui;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.*;
 import javafx.event.EventHandler;
@@ -13,6 +14,8 @@ import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.util.Callback;
+import javafx.util.converter.BooleanStringConverter;
+import javafx.util.converter.IntegerStringConverter;
 import model.*;
 
 import java.io.*;
@@ -362,10 +365,30 @@ public class StudentskaSluzbaForm extends Stage {
             colTelefon.setMinWidth(100);
             TableColumn colAktivan = new TableColumn("Aktivan");
             colAktivan.setCellValueFactory(new PropertyValueFactory<Student, Boolean>("vidljiv"));
-            colAktivan.setCellFactory(new Callback<TableColumn<Student, Boolean>, TableCell<Student, Boolean>>() {
+            colAktivan.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Student, CheckBox>, ObservableValue<CheckBox>>() {
+
                 @Override
-                public TableCell<Student, Boolean> call(TableColumn<Student, Boolean> arg0) {
-                    return new CheckBoxTableCell<Student, Boolean>();
+                public ObservableValue<CheckBox> call(TableColumn.CellDataFeatures<Student, CheckBox> arg0) {
+                    Student mp = arg0.getValue();
+
+                    CheckBox checkBox = new CheckBox();
+                    checkBox.selectedProperty().setValue(mp.isVidljiv());
+
+                    checkBox.selectedProperty().addListener(new ChangeListener<Boolean>() {
+                        public void changed(ObservableValue<? extends Boolean> ov,
+                                            Boolean stara_vrednost, Boolean nova_vrednost) {
+
+                            mp.setVidljiv(nova_vrednost);
+                            Student izabraniStudent = arg0.getValue();
+                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniStudent));
+                            t.setDaemon(true);
+                            t.start();
+
+                        }
+                    });
+
+                    return new SimpleObjectProperty<CheckBox>(checkBox);
+
                 }
             });
             colAktivan.setMinWidth(50);
@@ -719,7 +742,33 @@ public class StudentskaSluzbaForm extends Stage {
             );
             colTelefon.setMinWidth(150);
             TableColumn colAktivan = new TableColumn("Aktivan");
-            colAktivan.setCellValueFactory(new PropertyValueFactory<Zaposleni, String>("vidljiv"));
+            colAktivan.setCellValueFactory(new PropertyValueFactory<Zaposleni, Boolean>("vidljiv"));
+            colAktivan.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Zaposleni, CheckBox>, ObservableValue<CheckBox>>() {
+
+                @Override
+                public ObservableValue<CheckBox> call(TableColumn.CellDataFeatures<Zaposleni, CheckBox> arg0) {
+                    Zaposleni mp = arg0.getValue();
+
+                    CheckBox checkBox = new CheckBox();
+                    checkBox.selectedProperty().setValue(mp.isVidljiv());
+
+                    checkBox.selectedProperty().addListener(new ChangeListener<Boolean>() {
+                        public void changed(ObservableValue<? extends Boolean> ov,
+                                            Boolean stara_vrednost, Boolean nova_vrednost) {
+
+                            mp.setVidljiv(nova_vrednost);
+                            Zaposleni izabraniZaposleni = arg0.getValue();
+                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniZaposleni));
+                            t.setDaemon(true);
+                            t.start();
+
+                        }
+                    });
+
+                    return new SimpleObjectProperty<CheckBox>(checkBox);
+
+                }
+            });
             colAktivan.setMinWidth(50);
 
             tableZaposleni.setItems(sviZaposleni);
@@ -908,39 +957,44 @@ public class StudentskaSluzbaForm extends Stage {
 
             });
             colNaziv.setCellFactory(TextFieldTableCell.forTableColumn());
-            /*colNaziv.setOnEditCommit(
-                    new EventHandler<TableColumn.CellEditEvent<Predmet, String>>() {
-                        @Override
-                        public void handle(TableColumn.CellEditEvent<Predmet, String> tabela) {
-                            //AKO JE UNET NAZIV I NIJE PRAZAN STRING, U SUPROTNOM PORUKA O GRESCI
-                            ((Predmet) tabela.getTableView().getItems().get(
-                                    tabela.getTablePosition().getRow())
-                            ).setNaziv(tabela.getNewValue());
-                            if(!tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getNaziv().equals("")) {
-                                Predmet izabraniPredmet = (Predmet) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
-                                t.setDaemon(true);
-                                t.start();
-                            } else {
-                                //poruka za neispravan unos
-                                Platform.runLater(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Molim vas unesite naziv predmeta");
-                                        dialog.sizeToScene();
-                                        dialog.show();
-                                    }
-                                });
-                                //da osvezi podatke na formi
-                                Thread t = new Thread(new RunnableZahtevServeru("osvezi"));
-                                t.setDaemon(true);
-                                t.start();
+            colNaziv.setOnEditCommit(new EventHandler<TableColumn.CellEditEvent<Map.Entry<Predmet, Zaposleni>, String>>() {
+                @Override
+                public void handle(TableColumn.CellEditEvent<Map.Entry<Predmet, Zaposleni>, String> entryStringCellEditEvent) {
+                    TablePosition<Map.Entry<Predmet, Zaposleni>, String> pozicija = entryStringCellEditEvent.getTablePosition();
+                    String novaVrednost = entryStringCellEditEvent.getNewValue();
+
+                    ((Map.Entry<Predmet, Zaposleni>) entryStringCellEditEvent.getTableView().getItems().get(
+                            entryStringCellEditEvent.getTablePosition().getRow())
+                    ).getKey().setNaziv(novaVrednost);
+
+                    //AKO JE UNET NAZIV I NIJE PRAZAN STRING, U SUPROTNOM PORUKA O GRESCI
+                    if(!novaVrednost.equals("")) {
+                        int red = pozicija.getRow();
+                        Predmet izabraniPredmet = entryStringCellEditEvent.getTableView().getItems().get(red).getKey();
+                        Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
+                        t.setDaemon(true);
+                        t.start();
+                    } else {
+                        //poruka za neispravan unos
+                        Platform.runLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Molim vas unesite naziv predmeta");
+                                dialog.sizeToScene();
+                                dialog.show();
                             }
-                        }
+                        });
+                        //da osvezi podatke na formi
+                        Thread t = new Thread(new RunnableZahtevServeru("osvezi"));
+                        t.setDaemon(true);
+                        t.start();
                     }
-            );*/
+                }
+
+            });
             colNaziv.setMinWidth(250);
             TableColumn<Map.Entry<Predmet, Zaposleni>, String> colProfesor = new TableColumn<>("Profesor");
+            //TODO: izmena u tabeli raspodela predmeta*
             colProfesor.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, String>, ObservableValue<String>>() {
 
                 @Override
@@ -973,7 +1027,24 @@ public class StudentskaSluzbaForm extends Stage {
                 }
 
             });
+            colSemestar.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
+            colSemestar.setOnEditCommit(new EventHandler<TableColumn.CellEditEvent<Map.Entry<Predmet, Zaposleni>, Integer>>() {
+                @Override
+                public void handle(TableColumn.CellEditEvent<Map.Entry<Predmet, Zaposleni>, Integer> entryStringCellEditEvent) {
+                    TablePosition<Map.Entry<Predmet, Zaposleni>, Integer> pozicija = entryStringCellEditEvent.getTablePosition();
+                    Integer novaVrednost = entryStringCellEditEvent.getNewValue();
 
+                    ((Map.Entry<Predmet, Zaposleni>) entryStringCellEditEvent.getTableView().getItems().get(
+                            entryStringCellEditEvent.getTablePosition().getRow())
+                    ).getKey().setSemestar(novaVrednost);
+
+                    int red = pozicija.getRow();
+                    Predmet izabraniPredmet = entryStringCellEditEvent.getTableView().getItems().get(red).getKey();
+                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
+                    t.setDaemon(true);
+                    t.start();
+                }
+            });
             colSemestar.setMinWidth(50);
             TableColumn<Map.Entry<Predmet, Zaposleni>, Integer> colEspb = new TableColumn<>("ESPB");
             colEspb.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Integer>, ObservableValue<Integer>>() {
@@ -984,17 +1055,54 @@ public class StudentskaSluzbaForm extends Stage {
                 }
 
             });
+            colEspb.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
             //TODO: spinner unutar polja, da mora ili prazno - null ili broj, bez greske za unet prazan string ili tekst
-
-            colEspb.setMinWidth(50);
-            TableColumn<Map.Entry<Predmet, Zaposleni>, Boolean> colAktivan = new TableColumn<>("Aktivan");
-            colAktivan.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Boolean>, ObservableValue<Boolean>>() {
-
+            colEspb.setOnEditCommit(new EventHandler<TableColumn.CellEditEvent<Map.Entry<Predmet, Zaposleni>, Integer>>() {
                 @Override
-                public ObservableValue<Boolean> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Boolean> p) {
-                    return new SimpleObjectProperty<Boolean>(p.getValue().getKey().isVidljiv());
+                public void handle(TableColumn.CellEditEvent<Map.Entry<Predmet, Zaposleni>, Integer> entryStringCellEditEvent) {
+                    TablePosition<Map.Entry<Predmet, Zaposleni>, Integer> pozicija = entryStringCellEditEvent.getTablePosition();
+                    Integer novaVrednost = entryStringCellEditEvent.getNewValue();
+
+                    ((Map.Entry<Predmet, Zaposleni>) entryStringCellEditEvent.getTableView().getItems().get(
+                            entryStringCellEditEvent.getTablePosition().getRow())
+                    ).getKey().setEspb(novaVrednost);
+
+                    int red = pozicija.getRow();
+                    Predmet izabraniPredmet = entryStringCellEditEvent.getTableView().getItems().get(red).getKey();
+                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
+                    t.setDaemon(true);
+                    t.start();
                 }
 
+            });
+            colEspb.setMinWidth(50);
+            TableColumn<Map.Entry<Predmet, Zaposleni>, CheckBox> colAktivan = new TableColumn<>("Aktivan");
+            colAktivan.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, CheckBox>, ObservableValue<CheckBox>>() {
+
+                @Override
+                public ObservableValue<CheckBox> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, CheckBox> arg0) {
+                    Map.Entry<Predmet, Zaposleni> mp = arg0.getValue();
+
+                    CheckBox checkBox = new CheckBox();
+                    checkBox.selectedProperty().setValue(mp.getKey().isVidljiv());
+
+
+                    checkBox.selectedProperty().addListener(new ChangeListener<Boolean>() {
+                        public void changed(ObservableValue<? extends Boolean> ov,
+                                            Boolean stara_vrednost, Boolean nova_vrednost) {
+
+                            mp.getKey().setVidljiv(nova_vrednost);
+                            Predmet izabraniPredmet = arg0.getValue().getKey();
+                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
+                            t.setDaemon(true);
+                            t.start();
+
+                        }
+                    });
+
+                    return new SimpleObjectProperty<CheckBox>(checkBox);
+
+                }
             });
             colAktivan.setMinWidth(50);
 
@@ -1091,10 +1199,11 @@ public class StudentskaSluzbaForm extends Stage {
             btnObrisi.setMinWidth(60);
             btnObrisi.setOnAction(e -> {
                         if (tablePredmeti.getSelectionModel().getSelectedItem() != null) {
+                            //TODO: srediti za brisanje predmeta da se azurira i profesor u tabeli raspodela predmeta
                             Map.Entry<Predmet, Zaposleni> izabraniPredmet = tablePredmeti.getSelectionModel().getSelectedItem();
-                            //Thread t = new Thread(new RunnableZahtevServeru("obrisi", tablePredmeti, izabraniPredmet));
-                            //t.setDaemon(true);
-                            //t.start();
+                            Thread t = new Thread(new RunnableZahtevServeru("obrisi", tablePredmeti, izabraniPredmet.getKey()));
+                            t.setDaemon(true);
+                            t.start();
                         } else {
                             Platform.runLater(new Runnable() {
                                 @Override
@@ -1401,7 +1510,7 @@ public class StudentskaSluzbaForm extends Stage {
             this.zaposleni = zaposleni;
         }
 
-        public RunnableZahtevServeru(Object zahtev, TableView<Predmet> tabela, Predmet predmet) {
+        public RunnableZahtevServeru(Object zahtev, TableView<HashMap.Entry<Predmet, Zaposleni>> tabela, Predmet predmet) {
             this.zahtev = zahtev;
             this.tabela = tabela;
             this.predmet = predmet;
