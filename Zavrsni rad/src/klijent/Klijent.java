@@ -341,7 +341,6 @@ public class Klijent extends Application {
             } catch (UnknownHostException e) {
                 e.printStackTrace();
             } catch (IOException e) {
-                //e.printStackTrace();
 
                 //update na JavaFx application niti
                 Platform.runLater(new Runnable() {
@@ -349,10 +348,12 @@ public class Klijent extends Application {
                     @Override
                     public void run() {
                         Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                        System.out.println("Server je trenutno nedostupan.");
                         dialog.sizeToScene();
                         dialog.show();
                     }
                 });
+                //e.printStackTrace();
 
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();

@@ -1526,6 +1526,15 @@ public class StudentskaSluzbaForm extends Stage {
                 inObj = new ObjectInputStream(socket.getInputStream());
                 outObj = new ObjectOutputStream(socket.getOutputStream());
             } catch (UnknownHostException e) {
+                Platform.runLater(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                        dialog.sizeToScene();
+                        dialog.show();
+                    }
+                });
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -1613,7 +1622,16 @@ public class StudentskaSluzbaForm extends Stage {
                         });
 
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
                     }
@@ -1653,7 +1671,16 @@ public class StudentskaSluzbaForm extends Stage {
                             e.printStackTrace();
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
                     }
                 } else if(zaposleni != null) {
                     try {
@@ -1689,7 +1716,16 @@ public class StudentskaSluzbaForm extends Stage {
                             e.printStackTrace();
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
                     }
                 } else if(predmet != null) {
                     try {
@@ -1725,7 +1761,16 @@ public class StudentskaSluzbaForm extends Stage {
                             e.printStackTrace();
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
                     }
                 }
             } else if(zahtev.equals("dodaj")) {
@@ -1777,7 +1822,16 @@ public class StudentskaSluzbaForm extends Stage {
                             e.printStackTrace();
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
                     }
                 } else if (zaposleni != null) {
 
@@ -1825,7 +1879,16 @@ public class StudentskaSluzbaForm extends Stage {
                             e.printStackTrace();
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
                     }
                 } else if (predmet != null) {
 
@@ -1869,7 +1932,16 @@ public class StudentskaSluzbaForm extends Stage {
                             e.printStackTrace();
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
                     }
                 }
             } else if (zahtev.equals("obrisi")) {
@@ -1908,7 +1980,16 @@ public class StudentskaSluzbaForm extends Stage {
                             e.printStackTrace();
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
                     }
                 } else if (zaposleni != null) {
                     try {
@@ -1944,7 +2025,16 @@ public class StudentskaSluzbaForm extends Stage {
                             e.printStackTrace();
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
                     }
                 } else if (predmet != null) {
                     try {
@@ -1980,7 +2070,16 @@ public class StudentskaSluzbaForm extends Stage {
                             e.printStackTrace();
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
                     }
                 }
             }
