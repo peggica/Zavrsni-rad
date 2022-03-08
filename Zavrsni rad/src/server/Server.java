@@ -614,8 +614,13 @@ public class Server extends Application {
                     } else {
                         query += "'" + student.getBrojTelefona() + "', `vidljiv` = '" + (student.isVidljiv() ? 1 : 0) + "' WHERE (`idStudenta` = '" + student.getIdStudenta() + "' AND `smer` = '" + student.getSmer() + "' AND `godinaUpisa` = '" + student.getGodinaUpisa() + "')";
                     }
-                    int izmena = statement.executeUpdate(query);
-                    if (izmena != 0) {
+                    int izmene = statement.executeUpdate(query);
+                    if (student.isVidljiv()) {
+                        //vraćanje login prava u slučaju da je student bio "obrisan" pre toga
+                        query = "UPDATE Login SET `aktivan` = '1' WHERE (`idStudenta` = '" + student.getIdStudenta() + "' AND `smer` = '" + student.getSmer() + "' AND `godinaUpisa` = '" + student.getGodinaUpisa() + "')";
+                        izmene += statement.executeUpdate(query);
+                    }
+                    if (izmene != 0) {
                         outObj.writeObject("uspelo");
                         outObj.flush();
                     } else {
@@ -642,8 +647,13 @@ public class Server extends Application {
                     } else {
                         query += "'" + zaposleni.getBrojTelefona() + "', `vidljiv` = '" + (zaposleni.isVidljiv() ? 1 : 0) + "' WHERE `idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "'";
                     }
-                    int izmena = statement.executeUpdate(query);
-                    if (izmena != 0) {
+                    int izmene = statement.executeUpdate(query);
+                    if (zaposleni.isVidljiv()) {
+                        //vraćanje login prava u slučaju da je zaposleni bio "obrisan" pre toga
+                        query = "UPDATE Login SET `aktivan` = '1' WHERE (`idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "')";
+                        izmene += statement.executeUpdate(query);
+                    }
+                    if (izmene != 0) {
                         outObj.writeObject("uspelo");
                         outObj.flush();
                     } else {

@@ -193,24 +193,27 @@ public class StudentskaSluzbaForm extends Stage {
                                 //AKO JE UNETO IME I NIJE PRAZAN STRING, U SUPROTNOM PORUKA O GRESCI
                                 if (!tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getIme().equals("")) {
 
+                                    Platform.runLater(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            //TODO: obojiti ivice polja umesto osvežavanja podataka i vratiti u prvobitni izgled
+                                            //.setStyle("-fx-border-width: 0;");
+                                        }
+                                    });
                                     Student izabraniStudent = (Student) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
                                     Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniStudent));
                                     t.setDaemon(true);
                                     t.start();
+
                                 } else {
                                     //poruka za neispravan unos
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
                                             Stage dialog = new Dialog(getStage(), "Molim vas unesite ime za studenta");
-                                            dialog.sizeToScene();
-                                            dialog.show();
+                                            //.setStyle("-fx-border-color: red;");
                                         }
                                     });
-                                    //da osvezi podatke na formi
-                                    Thread t = new Thread(new RunnableZahtevServeru("osvezi"));
-                                    t.setDaemon(true);
-                                    t.start();
                                 }
                             }
                         }
@@ -276,7 +279,7 @@ public class StudentskaSluzbaForm extends Stage {
                                     tabela.getTablePosition().getRow())
                             ).setAdresa(tabela.getNewValue());
                             //UKOLIKO JE NOVA ADRESA RAZLICITA OD PRVOBITNE
-                            if(!staraAdresa.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa())) {
+                            if((staraAdresa != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(staraAdresa)) || (staraAdresa == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(""))) {
                                 Student izabraniStudent = (Student) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
                                 Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniStudent));
                                 t.setDaemon(true);
@@ -303,7 +306,7 @@ public class StudentskaSluzbaForm extends Stage {
                             boolean validniEmail = emailMatcher.find();
 
                             //UKOLIKO JE NOVI EMAIL RAZLICIT OD PRVOBITNOG
-                            if(!stariEmail.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getEmail())) {
+                            if((stariEmail != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getEmail().equals(stariEmail)) || (stariEmail == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getEmail().equals(""))) {
                                 //AKO JE EMAIL OBRISAN ILI JE UNET ISPRAVNO
                                 if (mail.length() == 0 || validniEmail) {
                                     Student izabraniStudent = (Student) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
@@ -347,7 +350,7 @@ public class StudentskaSluzbaForm extends Stage {
                             boolean validniTelefon = telefonMatcher.find();
 
                             //UKOLIKO JE NOVI TELEFON RAZLICIT OD PRVOBITNOG
-                            if(!stariTelefon.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojTelefona())) {
+                            if((stariTelefon != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojTelefona().equals(stariTelefon)) || (stariTelefon == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojTelefona().equals(""))) {
                                 //AKO JE TELEFON OBRISAN ILI JE UNET ISPRAVNO
                                 if (telefon.length() == 0 || validniTelefon) {
                                     Student izabraniStudent = (Student) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
@@ -674,11 +677,13 @@ public class StudentskaSluzbaForm extends Stage {
                                     tabela.getTablePosition().getRow())
                             ).setAdresa(tabela.getNewValue());
                             //UKOLIKO JE NOVA ADRESA RAZLICITA OD PRVOBITNE
-                            if(!staraAdresa.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa())) {
-                                Zaposleni izabraniZaposleni = (Zaposleni) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniZaposleni));
-                                t.setDaemon(true);
-                                t.start();
+                            if((staraAdresa != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(staraAdresa)) || (staraAdresa == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(""))) {
+                                if (!staraAdresa.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa())) {
+                                    Zaposleni izabraniZaposleni = (Zaposleni) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
+                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniZaposleni));
+                                    t.setDaemon(true);
+                                    t.start();
+                                }
                             }
                         }
                     }
@@ -701,7 +706,7 @@ public class StudentskaSluzbaForm extends Stage {
                             boolean validniEmail = emailMatcher.find();
 
                             //UKOLIKO JE NOVI EMAIL RAZLICIT OD PRVOBITNOG
-                            if(!stariEmail.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getEmail())) {
+                            if((stariEmail != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getEmail().equals(stariEmail)) || (stariEmail == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getEmail().equals(""))) {
                                 //AKO JE EMAIL OBRISAN ILI JE UNET ISPRAVNO
                                 if (mail.length() == 0 || validniEmail) {
                                     Zaposleni izabraniZaposleni = (Zaposleni) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
@@ -745,7 +750,7 @@ public class StudentskaSluzbaForm extends Stage {
                             boolean validniTelefon = telefonMatcher.find();
 
                             //UKOLIKO JE NOVI TELEFON RAZLICIT OD PRVOBITNOG
-                            if(!stariTelefon.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojTelefona())) {
+                            if((stariTelefon != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojTelefona().equals(stariTelefon)) || (stariTelefon == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojTelefona().equals(""))) {
                                 //AKO JE TELEFON OBRISAN ILI JE UNET ISPRAVNO
                                 if (telefon.length() == 0 || validniTelefon) {
                                     Zaposleni izabraniZaposleni = (Zaposleni) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
