@@ -382,6 +382,7 @@ public class Server extends Application {
                             odgovor = "svipredmeti";
                             outObj.writeObject(odgovor);
                             outObj.flush();
+                            //TODO: sta je sa nerasporedjenim predmetima?
                             query = "SELECT p.idPredmeta, p.naziv, p.studijskiSmer, p.semestar, p.espb, p.vidljiv, z.idZaposlenog, z.pozicija, z.ime, z.prezime FROM predmet p JOIN raspodelapredmeta rp ON p.idPredmeta = rp.idPredmeta JOIN zaposleni z ON rp.idZaposlenog = z.idZaposlenog WHERE z.pozicija = 'profesor'";
                             resultset = statement.executeQuery(query);
                             HashMap<Predmet, Zaposleni> sviPredmeti = new HashMap<>();
@@ -665,11 +666,35 @@ public class Server extends Application {
 
                     Predmet predmet = (Predmet) inObj.readObject();
                     query = "UPDATE Predmet SET `naziv` = '" + predmet.getNaziv() + "', `studijskiSmer` = ";
+
                     if (predmet.getStudijskiSmer() == null || predmet.getStudijskiSmer().equals("")) {
-                        query += NULL + ", `semestar` = '" + predmet.getSemestar() + "', `Espb` = '" + predmet.getEspb() + "', `vidljiv` = '" + (predmet.isVidljiv() ? 1 : 0) + "' WHERE `idPredmeta` = '" + predmet.getIdPredmeta() + "'";
+                        query += NULL + ", `semestar` = ";
                     } else {
-                        query += "'" + predmet.getStudijskiSmer() + "', `semestar` = '" + predmet.getSemestar() + "', `Espb` = '" + predmet.getEspb() + "', `vidljiv` = '" + (predmet.isVidljiv() ? 1 : 0) + "' WHERE `idPredmeta` = '" + predmet.getIdPredmeta() + "'";
+                        query += "'" + predmet.getStudijskiSmer() + "', `semestar` = ";
                     }
+                    if(predmet.getSemestar() == 0) {
+                        query += NULL + ", `Espb` = ";
+                    } else {
+                        query += "'" + predmet.getSemestar() + "', `Espb` = ";
+                    }
+                    if(predmet.getEspb() == 0) {
+                        query += NULL + ", `vidljiv` = '" + (predmet.isVidljiv() ? 1 : 0) + "' WHERE `idPredmeta` = '" + predmet.getIdPredmeta() + "'";
+                    } else {
+                        query += "'" + predmet.getEspb() + "', `vidljiv` = '" + (predmet.isVidljiv() ? 1 : 0) + "' WHERE `idPredmeta` = '" + predmet.getIdPredmeta() + "'";
+                    }
+                    int izmena = statement.executeUpdate(query);
+                    if (izmena != 0) {
+                        outObj.writeObject("uspelo");
+                        outObj.flush();
+                    } else {
+                        outObj.writeObject("nijeUspelo");
+                        outObj.flush();
+                    }
+                } else if (zahtev.equals("izmeniSalu")) {
+
+                    Sala sala = (Sala) inObj.readObject();
+                    query = "UPDATE Sala SET `naziv` = '" + sala.getNaziv() + "', `brojMesta` = '" + sala.getBrojMesta() + "', `oprema` = '" + sala.getOprema() + "' WHERE `idSale` = '" + sala.getIdSale() + "'";
+
                     int izmena = statement.executeUpdate(query);
                     if (izmena != 0) {
                         outObj.writeObject("uspelo");
@@ -711,9 +736,20 @@ public class Server extends Application {
 
                     query = "INSERT INTO Predmet(idPredmeta, naziv, studijskiSmer, semestar, espb, vidljiv) VALUES ('" + predmet.getIdPredmeta() + "', '" + predmet.getNaziv() + "', ";
                     if (predmet.getStudijskiSmer() == null) {
-                        query += predmet.getStudijskiSmer() + ", '" + predmet.getSemestar() + "', '" + predmet.getEspb() + "', '" + (predmet.isVidljiv() ? 1 : 0) + "')";
+                        query += predmet.getStudijskiSmer() + ", ";
                     } else {
-                        query += "'" + predmet.getStudijskiSmer() + "', '" + predmet.getSemestar() + "', '" + predmet.getEspb() + "', '" + (predmet.isVidljiv() ? 1 : 0) + "')";
+                        query += "'" + predmet.getStudijskiSmer() + "', ";
+                    }
+                    if (predmet.getSemestar() == 0) {
+                        query += NULL + ", ";
+
+                    } else {
+                        query += "'" + predmet.getSemestar() + "', ";
+                    }
+                    if (predmet.getEspb() == 0) {
+                        query += NULL + ", '" + (predmet.isVidljiv() ? 1 : 0) + "')";
+                    } else {
+                        query += "'" + predmet.getEspb() + "', '" + (predmet.isVidljiv() ? 1 : 0) + "')";
                     }
                     int izmena = statement.executeUpdate(query);
                     if (izmena != 0) {
@@ -721,6 +757,19 @@ public class Server extends Application {
                         outObj.flush();
                     } else {
                         outObj.writeObject("vecPostoji");
+                        outObj.flush();
+                    }
+
+                }  else if (zahtev.equals("dodajSalu")) {
+
+                    Sala sala = (Sala) inObj.readObject();
+                    query = "INSERT INTO Sala(naziv, brojMesta, oprema) VALUES ('" + sala.getNaziv() + "', '" + sala.getBrojMesta() + "', '" + sala.getOprema()  + "')";
+                    int izmena = statement.executeUpdate(query);
+                    if (izmena != 0) {
+                        outObj.writeObject("uspelo");
+                        outObj.flush();
+                    } else {
+                        outObj.writeObject("nijeUspelo");
                         outObj.flush();
                     }
 

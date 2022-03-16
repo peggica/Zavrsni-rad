@@ -6,6 +6,9 @@ import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
@@ -50,36 +53,92 @@ public class Klijent extends Application {
         root.setHgap(10);
         root.setVgap(10);
 
-        Font font = new Font("Arial", 15);
+        Font font10 = new Font("Arial", 10);
+        Font font15 = new Font("Arial", 15);
 
-        Label lblUserName = new Label("Korisničko ime: ");
-        lblUserName.setFont(font);
-        root.add(lblUserName, 0, 0);
+        Label lblKorisnickoIme = new Label("Korisničko ime: ");
+        lblKorisnickoIme.setFont(font15);
+        root.add(lblKorisnickoIme, 0, 0);
 
-        TextField txtInput = new TextField();
-        txtInput.setPromptText("Unesite korisničko ime");
-        root.add(txtInput, 1, 0);
+        TextField txtKorisnickoIme = new TextField();
+        txtKorisnickoIme.setPromptText("Unesite korisničko ime");
+        root.add(txtKorisnickoIme, 1, 0);
 
-        Label lblPassword = new Label("Lozinka: ");
-        lblPassword.setFont(font);
-        root.add(lblPassword, 0, 1);
+        Label lblLozinka = new Label("Lozinka: ");
+        lblLozinka.setFont(font15);
+        root.add(lblLozinka, 0, 1);
 
-        PasswordField pfPassword = new PasswordField();
-        pfPassword.setPromptText("Unesite lozinku");
-        root.add(pfPassword, 1, 1);
+        PasswordField pfLozinka = new PasswordField();
+        pfLozinka.setPromptText("Unesite lozinku");
+
+        TextField txtSkriveno = new TextField();
+        txtSkriveno.setManaged(false);
+        txtSkriveno.setVisible(false);
+
+        root.add(pfLozinka, 1, 1);
+        root.add(txtSkriveno, 1, 1);
+
+        HBox hBoxSkriveno = new HBox();
+        hBoxSkriveno.setAlignment(Pos.CENTER_RIGHT);
+        hBoxSkriveno.setSpacing(10);
+
+        Label lblSkriveno = new Label("Prikaži lozinku");
+        lblSkriveno.setFont(font10);
+        CheckBox chbSkriveno = new CheckBox();
+        chbSkriveno.setSelected(false);
+
+        //zamena passwordfield i textfield zbog prikaza lozinke na selektovan checkbox
+        txtSkriveno.managedProperty().bind(chbSkriveno.selectedProperty());
+        txtSkriveno.visibleProperty().bind(chbSkriveno.selectedProperty());
+        pfLozinka.managedProperty().bind(chbSkriveno.selectedProperty().not());
+        pfLozinka.visibleProperty().bind(chbSkriveno.selectedProperty().not());
+        txtSkriveno.textProperty().bindBidirectional(pfLozinka.textProperty());
+
+        hBoxSkriveno.getChildren().addAll(lblSkriveno, chbSkriveno);
+        root.add(hBoxSkriveno, 1, 2);
 
         HBox hBox = new HBox();
         Button btnLogin = new Button("Prijavi se");
-        btnLogin.setFont(font);
+        btnLogin.setFont(font15);
+
+        root.setOnKeyPressed(new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent keyEvent) {
+                if (keyEvent.getCode().equals(KeyCode.ENTER)) {
+
+                    //prosledjeni uneti podaci sa forme na pritisnut ENTER na tastaturi
+                    if (!txtKorisnickoIme.getText().isEmpty() && !pfLozinka.getText().isEmpty()) {
+
+                        Thread runnableKlijent = new Thread(new RunnableKlijent(txtKorisnickoIme.getText(), pfLozinka.getText()));
+                        //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                        runnableKlijent.setDaemon(true);
+                        runnableKlijent.start();
+
+                    } else {
+
+                        //update na JavaFx application niti
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Molimo vas unesite podatke!");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                    }
+                }
+            }
+        });
 
         btnLogin.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
 
                 //prosledjeni uneti podaci sa forme na klik dugmeta
-                if(txtInput.getText() != "" && pfPassword.getText() != "") {
+                if (!txtKorisnickoIme.getText().isEmpty() && !pfLozinka.getText().isEmpty()) {
 
-                    Thread runnableKlijent = new Thread(new RunnableKlijent(txtInput.getText(), pfPassword.getText()));
+                    Thread runnableKlijent = new Thread(new RunnableKlijent(txtKorisnickoIme.getText(), pfLozinka.getText()));
                     //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
                     runnableKlijent.setDaemon(true);
                     runnableKlijent.start();
@@ -102,9 +161,9 @@ public class Klijent extends Application {
 
         hBox.setAlignment(Pos.BOTTOM_RIGHT);
         hBox.getChildren().add(btnLogin);
-        root.add(hBox, 1, 2);
+        root.add(hBox, 1, 3);
 
-        Scene scene = new Scene(root, 320, 160);
+        Scene scene = new Scene(root, 320, 180);
         loginStage.setScene(scene);
         loginStage.setResizable(false);
         loginStage.setTitle("Login");
@@ -155,7 +214,7 @@ public class Klijent extends Application {
 
                 odgovor = inObj.readObject();
 
-                if(odgovor.toString().equals("sluzba")) {
+                if (odgovor.toString().equals("sluzba")) {
 
                     odgovor = inObj.readObject();
                     if (odgovor.toString().equals("sviispitnirokovi")) {
@@ -232,7 +291,7 @@ public class Klijent extends Application {
 
                         }
                     });
-                } else if(odgovor.toString().equals("nepostoji")) {
+                } else if (odgovor.toString().equals("nepostoji")) {
 
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
@@ -244,7 +303,7 @@ public class Klijent extends Application {
                             dialog.show();
                         }
                     });
-                } else if(odgovor.equals("zaposleni")) {
+                } else if (odgovor.equals("zaposleni")) {
 
                     odgovor = inObj.readObject();
                     ovajZaposleni = (Zaposleni) odgovor;
@@ -285,7 +344,7 @@ public class Klijent extends Application {
                         runnableKlijentOsvezi.start();
                     }
 
-                }  else if(odgovor.equals("student")) {
+                }  else if (odgovor.equals("student")) {
 
                     odgovor = inObj.readObject();
                     ovajStudent = (Student) odgovor;
@@ -360,7 +419,7 @@ public class Klijent extends Application {
             } finally {
 
                 //ZATVARANJE KONEKCIJE
-                if(socket != null && (inObj != null || outObj != null)) {
+                if (socket != null && (inObj != null || outObj != null)) {
 
                     try {
                         socket.close();

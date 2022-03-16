@@ -25,12 +25,11 @@ public class Sala implements Serializable {
 
     }
 
-    public Sala(int idSale, String naziv, int brojMesta) {
+    public Sala(String naziv, int brojMesta, tipOpreme tip) {
 
-        this.idSale = idSale;
         this.naziv = naziv;
         this.brojMesta = brojMesta;
-        //defaultno je oprema null jer nije nista setovano iz enum
+        this.oprema = tip.toString();
 
     }
 
@@ -42,12 +41,24 @@ public class Sala implements Serializable {
         return naziv;
     }
 
+    public void setNaziv(String naziv) {
+        this.naziv = naziv;
+    }
+
     public int getBrojMesta() {
         return brojMesta;
     }
 
+    public void setBrojMesta(int brojMesta) {
+        this.brojMesta = brojMesta;
+    }
+
     public String getOprema() {
         return oprema;
+    }
+
+    public void setOprema(tipOpreme tip) {
+        this.oprema = tip.toString();
     }
 
 }

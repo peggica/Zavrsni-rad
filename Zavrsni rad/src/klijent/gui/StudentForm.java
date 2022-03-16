@@ -48,14 +48,14 @@ public class StudentForm extends Stage {
 
         boolean aktivan = false;
         for (IspitniRok ispitniRok:this.sviIspitniRokovi) {
-            if(ispitniRok.isAktivnost()) {
+            if (ispitniRok.isAktivnost()) {
                 aktivan = true;
                 break;
             }
         }
 
         String poruka;
-        if(aktivan) {
+        if (aktivan) {
             poruka = "Ispitni rok je u toku.";
         } else {
             poruka = "Nijedan ispitni rok trenutno nije u toku.";

@@ -2,8 +2,7 @@ package klijent.gui;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
+import javafx.beans.value.*;
 import javafx.collections.*;
 import javafx.event.EventHandler;
 import javafx.geometry.*;
@@ -17,9 +16,11 @@ import javafx.util.Callback;
 import javafx.util.converter.IntegerStringConverter;
 import model.*;
 
+import javafx.event.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.*;
 import java.util.stream.Collectors;
 
@@ -189,7 +190,7 @@ public class StudentskaSluzbaForm extends Stage {
                                     tabela.getTablePosition().getRow())
                             ).setIme(tabela.getNewValue());
                             //UKOLIKO JE NOVO IME RAZLICITO OD PRVOBITNOG
-                            if(!staroIme.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getIme())) {
+                            if (!staroIme.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getIme())) {
                                 //AKO JE UNETO IME I NIJE PRAZAN STRING, U SUPROTNOM PORUKA O GRESCI
                                 if (!tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getIme().equals("")) {
 
@@ -232,7 +233,7 @@ public class StudentskaSluzbaForm extends Stage {
                                     tabela.getTablePosition().getRow())
                             ).setPrezime(tabela.getNewValue());
                             //UKOLIKO JE NOVO PREZIME RAZLICITO OD PRVOBITNOG
-                            if(!staroPrezime.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getPrezime())) {
+                            if (!staroPrezime.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getPrezime())) {
                                 //AKO JE UNETO PREZIME I NIJE PRAZAN STRING, U SUPROTNOM PORUKA O GRESCI
                                 if (!tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getPrezime().equals("")) {
 
@@ -279,7 +280,7 @@ public class StudentskaSluzbaForm extends Stage {
                                     tabela.getTablePosition().getRow())
                             ).setAdresa(tabela.getNewValue());
                             //UKOLIKO JE NOVA ADRESA RAZLICITA OD PRVOBITNE
-                            if((staraAdresa != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(staraAdresa)) || (staraAdresa == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(""))) {
+                            if ((staraAdresa != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(staraAdresa)) || (staraAdresa == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(""))) {
                                 Student izabraniStudent = (Student) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
                                 Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniStudent));
                                 t.setDaemon(true);
@@ -306,7 +307,7 @@ public class StudentskaSluzbaForm extends Stage {
                             boolean validniEmail = emailMatcher.find();
 
                             //UKOLIKO JE NOVI EMAIL RAZLICIT OD PRVOBITNOG
-                            if((stariEmail != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getEmail().equals(stariEmail)) || (stariEmail == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getEmail().equals(""))) {
+                            if ((stariEmail != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getEmail().equals(stariEmail)) || (stariEmail == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getEmail().equals(""))) {
                                 //AKO JE EMAIL OBRISAN ILI JE UNET ISPRAVNO
                                 if (mail.length() == 0 || validniEmail) {
                                     Student izabraniStudent = (Student) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
@@ -350,7 +351,7 @@ public class StudentskaSluzbaForm extends Stage {
                             boolean validniTelefon = telefonMatcher.find();
 
                             //UKOLIKO JE NOVI TELEFON RAZLICIT OD PRVOBITNOG
-                            if((stariTelefon != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojTelefona().equals(stariTelefon)) || (stariTelefon == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojTelefona().equals(""))) {
+                            if ((stariTelefon != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojTelefona().equals(stariTelefon)) || (stariTelefon == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojTelefona().equals(""))) {
                                 //AKO JE TELEFON OBRISAN ILI JE UNET ISPRAVNO
                                 if (telefon.length() == 0 || validniTelefon) {
                                     Student izabraniStudent = (Student) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
@@ -450,66 +451,63 @@ public class StudentskaSluzbaForm extends Stage {
             Button btnDodaj = new Button("Dodaj");
             btnDodaj.setMinWidth(60);
             btnDodaj.setOnMouseClicked(e -> {
-                if (cmbFinansiranje.getValue() != null) {
-                    String ime = txtIme.getText();
-                    String prezime = txtPrezime.getText();
-                    String smer = cmbSmer.getValue().toString();
-                    String finansiranje = cmbFinansiranje.getValue().toString();
-                    String adresa = txtAdresa.getText();
-                    String email = txtMail.getText();
-                    String brojTelefona = txtTelefon.getText();
-                    int godinaUpisa = Calendar.getInstance().get(Calendar.YEAR);
+                String ime = txtIme.getText();
+                String prezime = txtPrezime.getText();
+                String smer = cmbSmer.getValue().toString();
+                String finansiranje = cmbFinansiranje.getValue().toString();
+                String adresa = txtAdresa.getText();
+                String email = txtMail.getText();
+                String brojTelefona = txtTelefon.getText();
+                int godinaUpisa = Calendar.getInstance().get(Calendar.YEAR);
 
-                    Matcher emailMatcher = patternEmail.matcher(email);
-                    boolean validniEmail = emailMatcher.find();
+                Matcher emailMatcher = patternEmail.matcher(email);
+                boolean validniEmail = emailMatcher.find();
 
-                    Matcher telefonMatcher = patternTelefon.matcher(brojTelefona);
-                    boolean validniTelefon = telefonMatcher.find();
+                Matcher telefonMatcher = patternTelefon.matcher(brojTelefona);
+                boolean validniTelefon = telefonMatcher.find();
 
-                    //AKO SU UNETI SAMO IME I PREZIME ILI AKO SU UNETI SVI ILI EMAIL ILI TELEFON ALI ISPRAVNO
-                    if ((ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && validniTelefon) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && validniTelefon)) {
-                        //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
-                        Student student = new Student(Student.idNovogStudenta(sviStudenti, smer, godinaUpisa), godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, brojTelefona, true);
-                        Thread t = new Thread(new RunnableZahtevServeru("dodaj", student, txtIme, txtPrezime, txtAdresa, txtMail, txtTelefon, cmbSmer, cmbFinansiranje));
-                        t.setDaemon(true);
-                        t.start();
+                //AKO SU UNETI SAMO IME I PREZIME ILI AKO SU UNETI SVI ILI EMAIL ILI TELEFON ALI ISPRAVNO
+                if ((ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && validniTelefon) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && validniTelefon)) {
+                //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
+                    Student student = new Student(Student.idNovogStudenta(sviStudenti, smer, godinaUpisa), godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, brojTelefona, true);
+                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", student, txtIme, txtPrezime, txtAdresa, txtMail, txtTelefon, cmbSmer, cmbFinansiranje));
+                    t.setDaemon(true);
+                    t.start();
 
-                    } else {
-                        //PROVERA KOJI NIJE UNET ISPRAVNO I BOJENJE OKVIRA TOG POLJA
-                        Platform.runLater(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (ime.length() == 0) {
-                                    txtIme.setStyle("-fx-border-color: red;");
-                                } else {
-                                    txtIme.setStyle("-fx-border-width: 0;");
-                                }
-                                if (prezime.length() == 0) {
-                                    txtPrezime.setStyle("-fx-border-color: red;");
-                                } else {
-                                    txtPrezime.setStyle("-fx-border-width: 0;");
-                                }
-                                if (email.length() != 0) {
-                                    if (!validniEmail) {
-                                        txtMail.setStyle("-fx-border-color: red;");
-                                    } else {
-                                        txtMail.setStyle("-fx-border-width: 0;");
-                                    }
-                                }
-                                if (brojTelefona.length() != 0) {
-                                    if (!validniTelefon) {
-                                        txtTelefon.setStyle("-fx-border-color: red;");
-                                    } else {
-                                        txtTelefon.setStyle("-fx-border-width: 0;");
-                                    }
-                                }
-                                Stage dialog = new Dialog(getStage(), "Molim vas unesite podatke");
-                                dialog.sizeToScene();
-                                dialog.show();
+                } else {
+                    //PROVERA KOJI NIJE UNET ISPRAVNO I BOJENJE OKVIRA TOG POLJA
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (ime.length() == 0) {
+                                txtIme.setStyle("-fx-border-color: red;");
+                            } else {
+                                txtIme.setStyle("-fx-border-width: 0;");
                             }
-                        });
-
-                    }
+                            if (prezime.length() == 0) {
+                                txtPrezime.setStyle("-fx-border-color: red;");
+                            } else {
+                                txtPrezime.setStyle("-fx-border-width: 0;");
+                            }
+                            if (email.length() != 0) {
+                                if (!validniEmail) {
+                                    txtMail.setStyle("-fx-border-color: red;");
+                                } else {
+                                    txtMail.setStyle("-fx-border-width: 0;");
+                                }
+                            }
+                            if (brojTelefona.length() != 0) {
+                                if (!validniTelefon) {
+                                    txtTelefon.setStyle("-fx-border-color: red;");
+                                } else {
+                                    txtTelefon.setStyle("-fx-border-width: 0;");
+                                }
+                            }
+                            Stage dialog = new Dialog(getStage(), "Molim vas unesite podatke");
+                            dialog.sizeToScene();
+                            dialog.show();
+                        }
+                    });
                 }
             });
 
@@ -597,7 +595,7 @@ public class StudentskaSluzbaForm extends Stage {
                                     tabela.getTablePosition().getRow())
                             ).setIme(tabela.getNewValue());
                             //UKOLIKO JE NOVO IME RAZLICITO OD PRVOBITNOG
-                            if(!staroIme.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getIme())) {
+                            if (!staroIme.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getIme())) {
                                 //AKO JE UNETO IME I NIJE PRAZAN STRING, U SUPROTNOM PORUKA O GRESCI
                                 if (!tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getIme().equals("")) {
 
@@ -637,7 +635,7 @@ public class StudentskaSluzbaForm extends Stage {
                                     tabela.getTablePosition().getRow())
                             ).setPrezime(tabela.getNewValue());
                             //UKOLIKO JE NOVO PREZIME RAZLICITO OD PRVOBITNOG
-                            if(!staroPrezime.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getPrezime())) {
+                            if (!staroPrezime.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getPrezime())) {
                                 //AKO JE UNETO PREZIME I NIJE PRAZAN STRING, U SUPROTNOM PORUKA O GRESCI
                                 if (!tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getPrezime().equals("")) {
 
@@ -677,7 +675,7 @@ public class StudentskaSluzbaForm extends Stage {
                                     tabela.getTablePosition().getRow())
                             ).setAdresa(tabela.getNewValue());
                             //UKOLIKO JE NOVA ADRESA RAZLICITA OD PRVOBITNE
-                            if((staraAdresa != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(staraAdresa)) || (staraAdresa == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(""))) {
+                            if ((staraAdresa != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(staraAdresa)) || (staraAdresa == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(""))) {
                                 if (!staraAdresa.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa())) {
                                     Zaposleni izabraniZaposleni = (Zaposleni) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
                                     Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniZaposleni));
@@ -706,7 +704,7 @@ public class StudentskaSluzbaForm extends Stage {
                             boolean validniEmail = emailMatcher.find();
 
                             //UKOLIKO JE NOVI EMAIL RAZLICIT OD PRVOBITNOG
-                            if((stariEmail != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getEmail().equals(stariEmail)) || (stariEmail == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getEmail().equals(""))) {
+                            if ((stariEmail != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getEmail().equals(stariEmail)) || (stariEmail == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getEmail().equals(""))) {
                                 //AKO JE EMAIL OBRISAN ILI JE UNET ISPRAVNO
                                 if (mail.length() == 0 || validniEmail) {
                                     Zaposleni izabraniZaposleni = (Zaposleni) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
@@ -750,7 +748,7 @@ public class StudentskaSluzbaForm extends Stage {
                             boolean validniTelefon = telefonMatcher.find();
 
                             //UKOLIKO JE NOVI TELEFON RAZLICIT OD PRVOBITNOG
-                            if((stariTelefon != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojTelefona().equals(stariTelefon)) || (stariTelefon == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojTelefona().equals(""))) {
+                            if ((stariTelefon != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojTelefona().equals(stariTelefon)) || (stariTelefon == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojTelefona().equals(""))) {
                                 //AKO JE TELEFON OBRISAN ILI JE UNET ISPRAVNO
                                 if (telefon.length() == 0 || validniTelefon) {
                                     Zaposleni izabraniZaposleni = (Zaposleni) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
@@ -1007,7 +1005,7 @@ public class StudentskaSluzbaForm extends Stage {
                     ).getKey().setNaziv(novaVrednost);
 
                     //UKOLIKO JE NOVI NAZIV RAZLICIT OD PRVOBITNOG
-                    if(!stariNaziv.equals(novaVrednost)) {
+                    if (!stariNaziv.equals(novaVrednost)) {
                         //AKO JE UNET NAZIV I NIJE PRAZAN STRING, U SUPROTNOM PORUKA O GRESCI
                         if (!novaVrednost.equals("")) {
                             int red = pozicija.getRow();
@@ -1058,75 +1056,68 @@ public class StudentskaSluzbaForm extends Stage {
 
             });
             colSmer.setMinWidth(50);
-            //TODO: spinner unutar polja, da mora ili prazno - null ili broj, bez greske za unet prazan string ili tekst
-            TableColumn<Map.Entry<Predmet, Zaposleni>, Integer> colSemestar = new TableColumn<>("Semestar");
-            colSemestar.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Integer>, ObservableValue<Integer>>() {
+            TableColumn<Map.Entry<Predmet, Zaposleni>, Spinner> colSemestar = new TableColumn<>("Semestar");
+            colSemestar.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Spinner>, ObservableValue<Spinner>>() {
 
                 @Override
-                public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Integer> p) {
-                    return new SimpleObjectProperty<Integer>(p.getValue().getKey().getSemestar());
-                }
+                public ObservableValue<Spinner> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Spinner> arg0) {
+                    Map.Entry<Predmet, Zaposleni> mp = arg0.getValue();
 
-            });
-            colSemestar.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
-            colSemestar.setOnEditCommit(new EventHandler<TableColumn.CellEditEvent<Map.Entry<Predmet, Zaposleni>, Integer>>() {
-                @Override
-                public void handle(TableColumn.CellEditEvent<Map.Entry<Predmet, Zaposleni>, Integer> entryStringCellEditEvent) {
+                    Spinner<Integer> spSemestar = new Spinner();
+                    SpinnerValueFactory<Integer> vfSemestar = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 6);
+                    vfSemestar.setValue(mp.getKey().getEspb());
+                    spSemestar.setValueFactory(vfSemestar);
+                    spSemestar.setMinWidth(100);
+                    spSemestar.setMaxWidth(100);
 
-                    int stariSemestar = entryStringCellEditEvent.getTableView().getItems().get(entryStringCellEditEvent.getTablePosition().getRow()).getKey().getSemestar();
+                    //TODO: usporiti promenu na klik*
+                    spSemestar.valueProperty().addListener((obs, stara_vrednost, nova_vrednost) -> {
+                        if(nova_vrednost != stara_vrednost) {
+                            vfSemestar.setValue(nova_vrednost);
+                            spSemestar.setOnMouseReleased(e -> {
+                                Predmet izabraniPredmet = arg0.getValue().getKey();
+                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
+                                t.setDaemon(true);
+                                t.start();
+                            });
+                        }
+                    });
 
-                    TablePosition<Map.Entry<Predmet, Zaposleni>, Integer> pozicija = entryStringCellEditEvent.getTablePosition();
-                    Integer novaVrednost = entryStringCellEditEvent.getNewValue();
+                    return new SimpleObjectProperty<Spinner>(spSemestar);
 
-                    ((Map.Entry<Predmet, Zaposleni>) entryStringCellEditEvent.getTableView().getItems().get(
-                            entryStringCellEditEvent.getTablePosition().getRow())
-                    ).getKey().setSemestar(novaVrednost);
-
-                    //UKOLIKO JE NOVI SEMESTAR RAZLICIT OD PRVOBITNOG
-                    if(stariSemestar != novaVrednost) {
-                        int red = pozicija.getRow();
-                        Predmet izabraniPredmet = entryStringCellEditEvent.getTableView().getItems().get(red).getKey();
-                        Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
-                        t.setDaemon(true);
-                        t.start();
-                    }
                 }
             });
             colSemestar.setMinWidth(50);
-            TableColumn<Map.Entry<Predmet, Zaposleni>, Integer> colEspb = new TableColumn<>("ESPB");
-            colEspb.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Integer>, ObservableValue<Integer>>() {
+            TableColumn<Map.Entry<Predmet, Zaposleni>, Spinner> colEspb = new TableColumn<>("ESPB");
+            colEspb.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Spinner>, ObservableValue<Spinner>>() {
 
                 @Override
-                public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Integer> p) {
-                    return new SimpleObjectProperty<Integer>(p.getValue().getKey().getEspb());
+                public ObservableValue<Spinner> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Spinner> arg0) {
+                    Map.Entry<Predmet, Zaposleni> mp = arg0.getValue();
+
+                    Spinner<Integer> spEspb = new Spinner();
+                    SpinnerValueFactory<Integer> vfEspb = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 10);
+                    vfEspb.setValue(mp.getKey().getEspb());
+                    spEspb.setValueFactory(vfEspb);
+                    spEspb.setMinWidth(100);
+                    spEspb.setMaxWidth(100);
+
+                    //TODO: usporiti promenu na klik*
+                    spEspb.valueProperty().addListener((obs, stara_vrednost, nova_vrednost) -> {
+                        if(nova_vrednost != stara_vrednost) {
+                            vfEspb.setValue(nova_vrednost);
+                            spEspb.setOnMouseReleased(e -> {
+                                Predmet izabraniPredmet = arg0.getValue().getKey();
+                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
+                                t.setDaemon(true);
+                                t.start();
+                            });
+                        }
+                    });
+
+                    return new SimpleObjectProperty<Spinner>(spEspb);
+
                 }
-
-            });
-            colEspb.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
-            //TODO: spinner unutar polja, da mora ili prazno - null ili broj, bez greske za unet prazan string ili tekst
-            colEspb.setOnEditCommit(new EventHandler<TableColumn.CellEditEvent<Map.Entry<Predmet, Zaposleni>, Integer>>() {
-                @Override
-                public void handle(TableColumn.CellEditEvent<Map.Entry<Predmet, Zaposleni>, Integer> entryStringCellEditEvent) {
-
-                    int stariEspb = entryStringCellEditEvent.getTableView().getItems().get(entryStringCellEditEvent.getTablePosition().getRow()).getKey().getEspb();
-
-                    TablePosition<Map.Entry<Predmet, Zaposleni>, Integer> pozicija = entryStringCellEditEvent.getTablePosition();
-                    Integer novaVrednost = entryStringCellEditEvent.getNewValue();
-
-                    ((Map.Entry<Predmet, Zaposleni>) entryStringCellEditEvent.getTableView().getItems().get(
-                            entryStringCellEditEvent.getTablePosition().getRow())
-                    ).getKey().setEspb(novaVrednost);
-
-                    //UKOLIKO JE NOVI ESPB RAZLICIT OD PRVOBITNOG
-                    if(stariEspb != novaVrednost) {
-                        int red = pozicija.getRow();
-                        Predmet izabraniPredmet = entryStringCellEditEvent.getTableView().getItems().get(red).getKey();
-                        Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
-                        t.setDaemon(true);
-                        t.start();
-                    }
-                }
-
             });
             colEspb.setMinWidth(50);
             TableColumn<Map.Entry<Predmet, Zaposleni>, CheckBox> colAktivan = new TableColumn<>("Aktivan");
@@ -1138,7 +1129,6 @@ public class StudentskaSluzbaForm extends Stage {
 
                     CheckBox checkBox = new CheckBox();
                     checkBox.selectedProperty().setValue(mp.getKey().isVidljiv());
-
 
                     checkBox.selectedProperty().addListener(new ChangeListener<Boolean>() {
                         public void changed(ObservableValue<? extends Boolean> ov,
@@ -1165,7 +1155,6 @@ public class StudentskaSluzbaForm extends Stage {
             tablePredmeti.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tablePredmeti.setPrefHeight(500);
             tablePredmeti.getColumns().addAll(colSifra, colNaziv, colProfesor, colSmer, colSemestar, colEspb, colAktivan);
-
 
             TextField txtSifra = new TextField();
             txtSifra.setPromptText("Šifra");
@@ -1211,8 +1200,6 @@ public class StudentskaSluzbaForm extends Stage {
             Button btnDodaj = new Button("Dodaj");
             btnDodaj.setMinWidth(60);
             btnDodaj.setOnMouseClicked(e -> {
-                //TODO: metoda u predmetu koja generise sifru
-                //TODO: moze id za izmenu da se unosi, a moze i direktno izmena u tabeli
 
                 String naziv = txtNaziv.getText();
                 String smer = null;
@@ -1308,12 +1295,129 @@ public class StudentskaSluzbaForm extends Stage {
 
             TableColumn colNaziv = new TableColumn("Naziv");
             colNaziv.setCellValueFactory(new PropertyValueFactory<Sala, String>("naziv"));
+            colNaziv.setCellFactory(TextFieldTableCell.forTableColumn());
+            colNaziv.setOnEditCommit(
+                    new EventHandler<TableColumn.CellEditEvent<Sala, String>>() {
+                        @Override
+                        public void handle(TableColumn.CellEditEvent<Sala, String> tabela) {
+                            String stariNaziv = tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getNaziv();
+                            ((Sala) tabela.getTableView().getItems().get(
+                                    tabela.getTablePosition().getRow())
+                            ).setNaziv(tabela.getNewValue());
+                            //UKOLIKO JE NOVI NAZIV RAZLICIT OD PRVOBITNOG
+                            if (!stariNaziv.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getNaziv())) {
+                                //AKO JE UNET NAZIV I NIJE PRAZAN STRING, U SUPROTNOM PORUKA O GRESCI
+                                if (!tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getNaziv().isEmpty()) {
+
+                                    Platform.runLater(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            //TODO: obojiti ivice polja umesto osvežavanja podataka i vratiti u prvobitni izgled
+                                            //.setStyle("-fx-border-width: 0;");
+                                        }
+                                    });
+                                    Sala izabranaSala = (Sala) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
+                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabranaSala));
+                                    t.setDaemon(true);
+                                    t.start();
+
+                                } else {
+                                    //poruka za neispravan unos
+                                    Platform.runLater(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Stage dialog = new Dialog(getStage(), "Molim vas unesite naziv za salu");
+                                            dialog.sizeToScene();
+                                            dialog.show();
+                                            //.setStyle("-fx-border-color: red;");
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    }
+            );
             colNaziv.setMinWidth(200);
             TableColumn colKapacitet = new TableColumn("Broj mesta");
-            colKapacitet.setCellValueFactory(new PropertyValueFactory<Sala, String>("brojMesta"));
+            colKapacitet.setCellValueFactory(new PropertyValueFactory<Sala, Integer>("brojMesta"));
+            colKapacitet.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter(){
+                @Override
+                public Integer fromString(String value) {
+                    try {
+                        return super.fromString(value);
+                    } catch(NumberFormatException e) {
+                        //poruka za neispravan unos
+                        Platform.runLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Molim vas unesite broj");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+
+                        Sala izabranaSala = tableSale.getSelectionModel().getSelectedItem();
+                        return izabranaSala.getBrojMesta();
+                    }
+                }
+            }));
+            colKapacitet.setOnEditCommit(
+                    new EventHandler<TableColumn.CellEditEvent<Sala, Integer>>() {
+                        @Override
+                        public void handle(TableColumn.CellEditEvent<Sala, Integer> tabela) {
+                            int stariBrojMesta = tabela.getRowValue().getBrojMesta();
+                            ((Sala) tabela.getTableView().getItems().get(
+                                    tabela.getTablePosition().getRow())
+                            ).setBrojMesta(tabela.getNewValue());
+
+                            //UKOLIKO JE NOVI BROJ MESTA RAZLICIT OD PRVOBITNOG
+                            if (stariBrojMesta != tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojMesta()) {
+
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        //TODO: obojiti ivice polja umesto osvežavanja podataka i vratiti u prvobitni izgled
+                                        //.setStyle("-fx-border-width: 0;");
+                                    }
+                                });
+                                Sala izabranaSala = (Sala) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
+                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabranaSala));
+                                t.setDaemon(true);
+                                t.start();
+                            }
+                        }
+                    }
+            );
             colKapacitet.setMinWidth(100);
             TableColumn colOprema = new TableColumn("Oprema");
-            colOprema.setCellValueFactory(new PropertyValueFactory<Sala, String>("oprema"));
+            colOprema.setCellValueFactory(new PropertyValueFactory<Sala, ComboBox>("oprema"));
+            colOprema.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Sala, ComboBox>, ObservableValue<ComboBox>>() {
+
+                @Override
+                public ObservableValue<ComboBox> call(TableColumn.CellDataFeatures<Sala, ComboBox> arg0) {
+                    Sala mp = arg0.getValue();
+
+                    ComboBox comboBox = new ComboBox();
+                    comboBox.getItems().addAll(Sala.tipOpreme.values());
+                    comboBox.setMinWidth(Region.USE_PREF_SIZE);
+                    comboBox.setValue((mp.getOprema()));
+
+                    comboBox.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
+
+                            //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
+                            if (!nova_vrednost.equals(stara_vrednost)) {
+                                mp.setOprema(Sala.tipOpreme.valueOf(nova_vrednost.toString().equals("/") ? "ništa" : nova_vrednost.toString()));
+                                Sala izabranaSala = arg0.getValue();
+                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabranaSala));
+                                t.setDaemon(true);
+                                t.start();
+                            }
+                    });
+
+                    return new SimpleObjectProperty<ComboBox>(comboBox);
+
+                }
+            });
             colOprema.setMinWidth(200);
 
             tableSale.setItems(sveSale);
@@ -1332,7 +1436,7 @@ public class StudentskaSluzbaForm extends Stage {
 
             ComboBox cmbOprema = new ComboBox();
             cmbOprema.getItems().addAll(Sala.tipOpreme.values());
-            cmbOprema.setValue(Sala.tipOpreme.računari);
+            cmbOprema.setValue(Sala.tipOpreme.ništa);
             cmbOprema.setMinWidth(Region.USE_PREF_SIZE);
             cmbOprema.setStyle("-fx-font: 12px \"Arial\";");
 
@@ -1340,6 +1444,56 @@ public class StudentskaSluzbaForm extends Stage {
             hboxAkcija.setSpacing(5);
             hboxAkcija.setPadding(new Insets(5, 0, 0, 0));
             Button btnDodaj = new Button("Dodaj");
+            btnDodaj.setOnMouseClicked(e -> {
+                String naziv = txtNaziv.getText();
+                try {
+                    int brojMesta = Integer.parseInt(txtKapacitet.getText());
+                    String oprema = cmbOprema.getValue().toString();
+
+                    //AKO JE UNETI NAZIV I KAPACITET, OPREMA NIJE OBAVEZNA
+                    if (naziv.length() != 0 && brojMesta >= 0) {
+                        Sala sala = new Sala(naziv, brojMesta, Sala.tipOpreme.valueOf(oprema.equals("/") ? "ništa" : oprema));
+                        Thread t = new Thread(new RunnableZahtevServeru("dodaj", sala, txtNaziv, txtKapacitet, cmbOprema));
+                        t.setDaemon(true);
+                        t.start();
+                    }
+                    //PROVERA KOJI NIJE UNET ISPRAVNO I BOJENJE OKVIRA TOG POLJA
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (naziv.length() == 0) {
+                                txtNaziv.setStyle("-fx-border-color: red;");
+                                Stage dialog = new Dialog(getStage(), "Molim vas unesite naziv sale");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            } else {
+                                txtNaziv.setStyle("-fx-border-width: 0;");
+                            }
+                            if(brojMesta >= 0) {
+                                txtKapacitet.setStyle("-fx-border-width: 0;");
+                            }
+                        }
+                    });
+                } catch (NumberFormatException ex) {
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+
+                            txtKapacitet.setStyle("-fx-border-color: red;");
+                            Stage dialog;
+                            if (naziv.length() == 0) {
+                                txtNaziv.setStyle("-fx-border-color: red;");
+                                dialog = new Dialog(getStage(), "Molim vas unesite podatke");
+                            } else {
+                                txtNaziv.setStyle("-fx-border-width: 0;");
+                                dialog = new Dialog(getStage(), "Molim vas unesite broj");
+                            }
+                            dialog.sizeToScene();
+                            dialog.show();
+                        }
+                    });
+                }
+            });
             btnDodaj.setMinWidth(60);
             Button btnObrisi = new Button("Obriši");
             btnObrisi.setMinWidth(60);
@@ -1372,7 +1526,6 @@ public class StudentskaSluzbaForm extends Stage {
             colKraj.setCellValueFactory(new PropertyValueFactory<Sala, String>("datumKraja"));
             colKraj.setMinWidth(100);
             TableColumn colAktivan = new TableColumn("Aktivan");
-            //TODO: Staviti checkbox umesto true/false
             colAktivan.setCellValueFactory(new PropertyValueFactory<Sala, String>("aktivnost"));
             colAktivan.setMinWidth(200);
 
@@ -1438,7 +1591,7 @@ public class StudentskaSluzbaForm extends Stage {
             TableView<String> tableRasporedIspita = new TableView<String>();
             tableRasporedIspita.getColumns().clear();
 
-            TableColumn<String, String> colSifra = new TableColumn("Šifra");    //TODO: nazive kolona dobiti iz baze
+            TableColumn<String, String> colSifra = new TableColumn("Šifra");
             colSifra.setMinWidth(100);
             TableColumn<String, String> colPredmet = new TableColumn("Predmet");
             colPredmet.setMinWidth(240);
@@ -1482,6 +1635,7 @@ public class StudentskaSluzbaForm extends Stage {
         private Student student;
         private Zaposleni zaposleni;
         private Predmet predmet;
+        private Sala sala;
         private TableView tabela;
         private TextField txtIme;
         private TextField txtPrezime;
@@ -1495,6 +1649,8 @@ public class StudentskaSluzbaForm extends Stage {
         private SpinnerValueFactory vfEspb;
         private TextField txtProfesor;
         private ComboBox cmbFinansiranje;
+        private TextField txtKapacitet;
+        private ComboBox cmbOprema;
 
         //konstuktor za osvezavanje podataka
         public RunnableZahtevServeru(Object zahtev) {
@@ -1515,6 +1671,11 @@ public class StudentskaSluzbaForm extends Stage {
         public RunnableZahtevServeru(Object zahtev, Predmet predmet) {
             this.zahtev = zahtev;
             this.predmet = predmet;
+        }
+
+        public RunnableZahtevServeru(Object zahtev, Sala sala) {
+            this.zahtev = zahtev;
+            this.sala = sala;
         }
 
         //konstruktori za dodavanje
@@ -1549,6 +1710,14 @@ public class StudentskaSluzbaForm extends Stage {
             this.vfSemestar = vfSemestar;
             this.vfEspb = vfEspb;
             this.txtProfesor = txtProfesor;
+        }
+
+        public RunnableZahtevServeru(Object zahtev, Sala sala, TextField txtNaziv, TextField txtKapacitet, ComboBox cmbOprema) {
+            this.zahtev = zahtev;
+            this.sala = sala;
+            this.txtNaziv = txtNaziv;
+            this.txtKapacitet = txtKapacitet;
+            this.cmbOprema = cmbOprema;
         }
 
         public RunnableZahtevServeru(Object zahtev, TableView<Student> tabela, Student student) {
@@ -1592,7 +1761,7 @@ public class StudentskaSluzbaForm extends Stage {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            if(zahtev.equals("osvezi")) {
+            if (zahtev.equals("osvezi")) {
                 if (student == null && zaposleni == null) {
                     //ukoliko je pozvan konstruktor za studentsku sluzbu
                     try {
@@ -1689,8 +1858,8 @@ public class StudentskaSluzbaForm extends Stage {
                         e.printStackTrace();
                     }
                 }
-            } else if(zahtev.equals("izmeni")) {
-                if(student != null) {
+            } else if (zahtev.equals("izmeni")) {
+                if (student != null) {
                     try {
                         outObj.writeObject(zahtev + "Studenta");
                         outObj.writeObject(student);
@@ -1735,7 +1904,7 @@ public class StudentskaSluzbaForm extends Stage {
                         });
                         //e.printStackTrace();
                     }
-                } else if(zaposleni != null) {
+                } else if (zaposleni != null) {
                     try {
                         outObj.writeObject(zahtev + "Zaposlenog");
                         outObj.writeObject(zaposleni);
@@ -1780,7 +1949,7 @@ public class StudentskaSluzbaForm extends Stage {
                         });
                         //e.printStackTrace();
                     }
-                } else if(predmet != null) {
+                } else if (predmet != null) {
                     try {
                         outObj.writeObject(zahtev + "Predmet");
                         outObj.writeObject(predmet);
@@ -1825,8 +1994,53 @@ public class StudentskaSluzbaForm extends Stage {
                         });
                         //e.printStackTrace();
                     }
+                } else if (sala != null) {
+                    try {
+                        outObj.writeObject(zahtev + "Salu");
+                        outObj.writeObject(sala);
+                        try {
+                            odgovor = inObj.readObject();
+                            if (odgovor.equals("uspelo")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Uspesno izmenjeni podaci za salu");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                                //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
+                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osvezi"));
+                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                                runnableZahtevServeru.setDaemon(true);
+                                runnableZahtevServeru.start();
+                            } else {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Nije uspela izmena podataka za salu");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
+                    }
                 }
-            } else if(zahtev.equals("dodaj")) {
+            } else if (zahtev.equals("dodaj")) {
                 if (student != null) {
 
                     //ukoliko je pozvan konstruktor za studenta
@@ -1976,6 +2190,58 @@ public class StudentskaSluzbaForm extends Stage {
                                     @Override
                                     public void run() {
                                         Stage dialog = new Dialog(getStage(), "Taj predmet vec postoji u Bazi");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
+                    }
+                } else if (sala != null) {
+
+                    //ukoliko je pozvan konstruktor za salu
+                    try {
+                        outObj.writeObject(zahtev + "Salu");
+                        outObj.writeObject(sala);
+                        try {
+                            odgovor = inObj.readObject();
+                            if (odgovor.equals("uspelo")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Uspesno dodata sala u Bazu");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                        txtNaziv.setStyle("-fx-border-width: 0;");
+                                        txtKapacitet.setStyle("-fx-border-width: 0;");
+                                        cmbOprema.setValue(Sala.tipOpreme.ništa);
+                                        txtNaziv.clear();
+                                        txtKapacitet.clear();
+                                    }
+                                });
+                                //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
+                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osvezi"));
+                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                                runnableZahtevServeru.setDaemon(true);
+                                runnableZahtevServeru.start();
+                            } else {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Nije uspelo dodavanje sale u Bazu");
                                         dialog.sizeToScene();
                                         dialog.show();
                                     }
