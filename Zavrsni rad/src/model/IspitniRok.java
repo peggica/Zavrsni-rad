@@ -12,14 +12,6 @@ public class IspitniRok implements Serializable {
     private Date datumKraja;
     private boolean aktivnost;
 
-    public IspitniRok(int idRoka, String naziv, boolean aktivnost) {
-
-        this.idRoka = idRoka;
-        this.naziv = naziv;
-        this.aktivnost = aktivnost;
-
-    }
-
     public IspitniRok(int idRoka, String naziv, Date datumPocetka, Date datumKraja, boolean aktivnost) {
 
         this.idRoka = idRoka;
@@ -30,6 +22,14 @@ public class IspitniRok implements Serializable {
 
     }
 
+    public IspitniRok(String naziv, Date datumPocetka, Date datumKraja, boolean aktivnost) {
+
+        this.naziv = naziv;
+        this.datumPocetka = datumPocetka;
+        this.datumKraja = datumKraja;
+        this.aktivnost = aktivnost;
+
+    }
 
     public int getIdRoka() {
         return idRoka;
@@ -37,6 +37,10 @@ public class IspitniRok implements Serializable {
 
     public String getNaziv() {
         return naziv;
+    }
+
+    public void setNaziv(String naziv) {
+        this.naziv = naziv;
     }
 
     public Date getDatumPocetka() {
@@ -50,6 +54,9 @@ public class IspitniRok implements Serializable {
     public boolean isAktivnost() {
         return aktivnost;
     }
-    //za dodavanje novog id iz arrayliste pročitanih.length + 1 u glavnom programu
+
+    public void setAktivnost(boolean aktivnost) {
+        this.aktivnost = aktivnost;
+    }
 
 }

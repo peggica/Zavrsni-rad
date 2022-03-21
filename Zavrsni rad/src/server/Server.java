@@ -423,10 +423,11 @@ public class Server extends Application {
                                 String naziv = resultset.getString("naziv");
                                 int brojMesta = resultset.getInt("brojMesta");
                                 String oprema = resultset.getString("oprema");
+                                boolean vidljiv = resultset.getBoolean("vidljiv");
                                 if (oprema.equals("/")) {
                                     oprema = "ništa";
                                 }
-                                Sala sala = new Sala(idSale, naziv, brojMesta, Sala.tipOpreme.valueOf(oprema));
+                                Sala sala = new Sala(idSale, naziv, brojMesta, Sala.tipOpreme.valueOf(oprema), vidljiv);
                                 odgovor = sala;
                                 outObj.writeObject(odgovor);
                                 outObj.flush();
@@ -541,10 +542,11 @@ public class Server extends Application {
                         String naziv = resultset.getString("naziv");
                         int brojMesta = resultset.getInt("brojMesta");
                         String oprema = resultset.getString("oprema");
+                        boolean vidljiv = resultset.getBoolean("vidljiv");
                         if (oprema.equals("/")) {
                             oprema = "ništa";
                         }
-                        Sala sala = new Sala(idSale, naziv, brojMesta, Sala.tipOpreme.valueOf(oprema));
+                        Sala sala = new Sala(idSale, naziv, brojMesta, Sala.tipOpreme.valueOf(oprema), vidljiv);
                         odgovor = sala;
                         outObj.writeObject(odgovor);
                         outObj.flush();
@@ -693,7 +695,20 @@ public class Server extends Application {
                 } else if (zahtev.equals("izmeniSalu")) {
 
                     Sala sala = (Sala) inObj.readObject();
-                    query = "UPDATE Sala SET `naziv` = '" + sala.getNaziv() + "', `brojMesta` = '" + sala.getBrojMesta() + "', `oprema` = '" + sala.getOprema() + "' WHERE `idSale` = '" + sala.getIdSale() + "'";
+                    query = "UPDATE Sala SET `naziv` = '" + sala.getNaziv() + "', `brojMesta` = '" + sala.getBrojMesta() + "', `oprema` = '" + sala.getOprema() + "', `vidljiv` = '" + (sala.isVidljiv() ? 1 : 0)  + "' WHERE `idSale` = '" + sala.getIdSale() + "'";
+
+                    int izmena = statement.executeUpdate(query);
+                    if (izmena != 0) {
+                        outObj.writeObject("uspelo");
+                        outObj.flush();
+                    } else {
+                        outObj.writeObject("nijeUspelo");
+                        outObj.flush();
+                    }
+                } else if (zahtev.equals("izmeniIspitniRok")) {
+
+                    IspitniRok ispitniRok = (IspitniRok) inObj.readObject();
+                    query = "UPDATE IspitniRok SET `naziv` = '" + ispitniRok.getNaziv() + "', `aktivnost` = '" + (ispitniRok.isAktivnost() ? 1 : 0) + "' WHERE `idRoka` = '" + ispitniRok.getIdRoka() + "'";
 
                     int izmena = statement.executeUpdate(query);
                     if (izmena != 0) {
@@ -763,7 +778,7 @@ public class Server extends Application {
                 }  else if (zahtev.equals("dodajSalu")) {
 
                     Sala sala = (Sala) inObj.readObject();
-                    query = "INSERT INTO Sala(naziv, brojMesta, oprema) VALUES ('" + sala.getNaziv() + "', '" + sala.getBrojMesta() + "', '" + sala.getOprema()  + "')";
+                    query = "INSERT INTO Sala(naziv, brojMesta, oprema) VALUES ('" + sala.getNaziv() + "', '" + sala.getBrojMesta() + "', '" + sala.getOprema() + "', `vidljiv` = '" + (sala.isVidljiv() ? 1 : 0) + "')";
                     int izmena = statement.executeUpdate(query);
                     if (izmena != 0) {
                         outObj.writeObject("uspelo");
@@ -773,6 +788,28 @@ public class Server extends Application {
                         outObj.flush();
                     }
 
+                } else if (zahtev.equals("dodajIspitniRok")) {
+
+                    IspitniRok ispitniRok = (IspitniRok) inObj.readObject();
+                    query = "INSERT INTO IspitniRok(naziv, datumPocetka, datumKraja, aktivnost) VALUES ('" + ispitniRok.getNaziv() + "', ";
+                    if (ispitniRok.getDatumPocetka() == null) {
+                        query += NULL + ", ";
+                    } else {
+                        query += "'" + ispitniRok.getDatumPocetka() + "', ";
+                    }
+                    if (ispitniRok.getDatumKraja() == null) {
+                        query += NULL + ", '" + (ispitniRok.isAktivnost() ? 1 : 0) + "')";
+                    } else {
+                        query += "'" + ispitniRok.getDatumKraja() + "', '" + (ispitniRok.isAktivnost() ? 1 : 0) + "')";
+                    }
+                    int izmena = statement.executeUpdate(query);
+                    if (izmena != 0) {
+                        outObj.writeObject("uspelo");
+                        outObj.flush();
+                    } else {
+                        outObj.writeObject("nijeUspelo");
+                        outObj.flush();
+                    }
                 } else if (zahtev.equals("obrisiStudenta")) {
 
                     int izmene = 0;
@@ -811,6 +848,18 @@ public class Server extends Application {
 
                     Predmet predmet = (Predmet) inObj.readObject();
                     query = "UPDATE Predmet SET `vidljiv` = '0' WHERE (`idPredmeta` = '" + predmet.getIdPredmeta() + "')";
+                    int izmena = statement.executeUpdate(query);
+                    if (izmena != 0) {
+                        outObj.writeObject("uspelo");
+                        outObj.flush();
+                    } else {
+                        outObj.writeObject("nepostoji");
+                        outObj.flush();
+                    }
+                } else if (zahtev.equals("obrisiSalu")) {
+
+                    Sala sala = (Sala) inObj.readObject();
+                    query = "UPDATE Sala SET `vidljiv` = '0' WHERE (`idSale` = '" + sala.getIdSale() + "')";
                     int izmena = statement.executeUpdate(query);
                     if (izmena != 0) {
                         outObj.writeObject("uspelo");

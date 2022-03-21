@@ -15,21 +15,24 @@ public class Sala implements Serializable {
     private String naziv;
     private int brojMesta;
     private String oprema;
+    private boolean vidljiv;
 
-    public Sala(int idSale, String naziv, int brojMesta, tipOpreme tip) {
+    public Sala(int idSale, String naziv, int brojMesta, tipOpreme tip, boolean vidljiv) {
 
         this.idSale = idSale;
         this.naziv = naziv;
         this.brojMesta = brojMesta;
         this.oprema = tip.toString();
+        this.vidljiv = vidljiv;
 
     }
 
-    public Sala(String naziv, int brojMesta, tipOpreme tip) {
+    public Sala(String naziv, int brojMesta, tipOpreme tip, boolean vidljiv) {
 
         this.naziv = naziv;
         this.brojMesta = brojMesta;
         this.oprema = tip.toString();
+        this.vidljiv = vidljiv;
 
     }
 
@@ -60,5 +63,14 @@ public class Sala implements Serializable {
     public void setOprema(tipOpreme tip) {
         this.oprema = tip.toString();
     }
+
+    public void setVidljiv(boolean vidljiv) {
+        this.vidljiv = vidljiv;
+    }
+
+    public boolean isVidljiv() {
+        return vidljiv;
+    }
+
 
 }

@@ -1,5 +1,6 @@
 package klijent.gui;
 
+import com.sun.javafx.property.adapter.PropertyDescriptor;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.*;
@@ -16,11 +17,12 @@ import javafx.util.Callback;
 import javafx.util.converter.IntegerStringConverter;
 import model.*;
 
-import javafx.event.*;
 import java.io.*;
 import java.net.*;
+import java.net.http.WebSocket;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.*;
 import java.util.stream.Collectors;
 
@@ -378,7 +380,7 @@ public class StudentskaSluzbaForm extends Stage {
                     }
             );
             colTelefon.setMinWidth(100);
-            TableColumn colAktivan = new TableColumn("Aktivan");
+            TableColumn colAktivan = new TableColumn("Vidljiv");
             colAktivan.setCellValueFactory(new PropertyValueFactory<Student, Boolean>("vidljiv"));
             colAktivan.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Student, CheckBox>, ObservableValue<CheckBox>>() {
 
@@ -407,6 +409,7 @@ public class StudentskaSluzbaForm extends Stage {
                 }
             });
             colAktivan.setMinWidth(50);
+            colAktivan.setStyle("-fx-alignment: center;");
 
             tableStudenti.setItems(sviStudenti);
             //sredjuje problem za dodatu kolonu
@@ -775,7 +778,7 @@ public class StudentskaSluzbaForm extends Stage {
                     }
             );
             colTelefon.setMinWidth(150);
-            TableColumn colAktivan = new TableColumn("Aktivan");
+            TableColumn colAktivan = new TableColumn("Vidljiv");
             colAktivan.setCellValueFactory(new PropertyValueFactory<Zaposleni, Boolean>("vidljiv"));
             colAktivan.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Zaposleni, CheckBox>, ObservableValue<CheckBox>>() {
 
@@ -804,6 +807,7 @@ public class StudentskaSluzbaForm extends Stage {
                 }
             });
             colAktivan.setMinWidth(50);
+            colAktivan.setStyle("-fx-alignment: center;");
 
             tableZaposleni.setItems(sviZaposleni);
             //sredjuje problem za dodatu kolonu
@@ -1065,7 +1069,7 @@ public class StudentskaSluzbaForm extends Stage {
 
                     Spinner<Integer> spSemestar = new Spinner();
                     SpinnerValueFactory<Integer> vfSemestar = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 6);
-                    vfSemestar.setValue(mp.getKey().getEspb());
+                    vfSemestar.setValue(mp.getKey().getSemestar());
                     spSemestar.setValueFactory(vfSemestar);
                     spSemestar.setMinWidth(100);
                     spSemestar.setMaxWidth(100);
@@ -1076,6 +1080,7 @@ public class StudentskaSluzbaForm extends Stage {
                             vfSemestar.setValue(nova_vrednost);
                             spSemestar.setOnMouseReleased(e -> {
                                 Predmet izabraniPredmet = arg0.getValue().getKey();
+                                izabraniPredmet.setSemestar(nova_vrednost);
                                 Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
                                 t.setDaemon(true);
                                 t.start();
@@ -1108,6 +1113,7 @@ public class StudentskaSluzbaForm extends Stage {
                             vfEspb.setValue(nova_vrednost);
                             spEspb.setOnMouseReleased(e -> {
                                 Predmet izabraniPredmet = arg0.getValue().getKey();
+                                izabraniPredmet.setEspb(nova_vrednost);
                                 Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
                                 t.setDaemon(true);
                                 t.start();
@@ -1120,7 +1126,7 @@ public class StudentskaSluzbaForm extends Stage {
                 }
             });
             colEspb.setMinWidth(50);
-            TableColumn<Map.Entry<Predmet, Zaposleni>, CheckBox> colAktivan = new TableColumn<>("Aktivan");
+            TableColumn<Map.Entry<Predmet, Zaposleni>, CheckBox> colAktivan = new TableColumn<>("Vidljiv");
             colAktivan.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, CheckBox>, ObservableValue<CheckBox>>() {
 
                 @Override
@@ -1148,6 +1154,7 @@ public class StudentskaSluzbaForm extends Stage {
                 }
             });
             colAktivan.setMinWidth(50);
+            colAktivan.setStyle("-fx-alignment: center;");
 
             ObservableList<HashMap.Entry<Predmet, Zaposleni>> stavke = FXCollections.observableArrayList(sviPredmeti.entrySet());
             tablePredmeti.setItems(stavke);
@@ -1419,12 +1426,42 @@ public class StudentskaSluzbaForm extends Stage {
                 }
             });
             colOprema.setMinWidth(200);
+            colOprema.setStyle("-fx-alignment: center;");
+            TableColumn<Sala, CheckBox> colAktivan = new TableColumn<>("Vidljiv");
+            colAktivan.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Sala, CheckBox>, ObservableValue<CheckBox>>() {
+
+                @Override
+                public ObservableValue<CheckBox> call(TableColumn.CellDataFeatures<Sala, CheckBox> arg0) {
+                    Sala mp = arg0.getValue();
+
+                    CheckBox checkBox = new CheckBox();
+                    checkBox.selectedProperty().setValue(mp.isVidljiv());
+
+                    checkBox.selectedProperty().addListener(new ChangeListener<Boolean>() {
+                        public void changed(ObservableValue<? extends Boolean> ov,
+                                            Boolean stara_vrednost, Boolean nova_vrednost) {
+
+                            mp.setVidljiv(nova_vrednost);
+                            Sala izabranaSala = arg0.getValue();
+                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabranaSala));
+                            t.setDaemon(true);
+                            t.start();
+
+                        }
+                    });
+
+                    return new SimpleObjectProperty<CheckBox>(checkBox);
+
+                }
+            });
+            colAktivan.setMinWidth(50);
+            colAktivan.setStyle("-fx-alignment: center;");
 
             tableSale.setItems(sveSale);
             //sredjuje problem za dodatu kolonu
             tableSale.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableSale.setPrefHeight(550);
-            tableSale.getColumns().addAll(colNaziv, colKapacitet, colOprema);
+            tableSale.getColumns().addAll(colNaziv, colKapacitet, colOprema, colAktivan);
 
             TextField txtNaziv = new TextField();
             txtNaziv.setPromptText("Naziv");
@@ -1452,7 +1489,7 @@ public class StudentskaSluzbaForm extends Stage {
 
                     //AKO JE UNETI NAZIV I KAPACITET, OPREMA NIJE OBAVEZNA
                     if (naziv.length() != 0 && brojMesta >= 0) {
-                        Sala sala = new Sala(naziv, brojMesta, Sala.tipOpreme.valueOf(oprema.equals("/") ? "ništa" : oprema));
+                        Sala sala = new Sala(naziv, brojMesta, Sala.tipOpreme.valueOf(oprema.equals("/") ? "ništa" : oprema), true);
                         Thread t = new Thread(new RunnableZahtevServeru("dodaj", sala, txtNaziv, txtKapacitet, cmbOprema));
                         t.setDaemon(true);
                         t.start();
@@ -1496,6 +1533,23 @@ public class StudentskaSluzbaForm extends Stage {
             });
             btnDodaj.setMinWidth(60);
             Button btnObrisi = new Button("Obriši");
+            btnObrisi.setOnAction(e -> {
+                if (tableSale.getSelectionModel().getSelectedItem() != null) {
+                    Sala izabranaSala = tableSale.getSelectionModel().getSelectedItem();
+                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", tableSale, izabranaSala));
+                    t.setDaemon(true);
+                    t.start();
+                } else {
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            Stage dialog = new Dialog(getStage(), "Molim vas izaberite predmet u tabeli");
+                            dialog.sizeToScene();
+                            dialog.show();
+                        }
+                    });
+                }
+            });
             btnObrisi.setMinWidth(60);
             hboxAkcija.getChildren().addAll(txtNaziv, txtKapacitet, cmbOprema, btnDodaj, btnObrisi);
 
@@ -1517,23 +1571,128 @@ public class StudentskaSluzbaForm extends Stage {
 
             tableIspitniRokovi.getColumns().clear();
             TableColumn colNaziv = new TableColumn("Naziv");
-            colNaziv.setCellValueFactory(new PropertyValueFactory<Sala, String>("naziv"));
+            colNaziv.setCellValueFactory(new PropertyValueFactory<IspitniRok, String>("naziv"));
+            colNaziv.setCellFactory(TextFieldTableCell.forTableColumn());
+            colNaziv.setOnEditCommit(
+                    new EventHandler<TableColumn.CellEditEvent<IspitniRok, String>>() {
+                        @Override
+                        public void handle(TableColumn.CellEditEvent<IspitniRok, String> tabela) {
+                            String stariNaziv = tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getNaziv();
+                            ((IspitniRok) tabela.getTableView().getItems().get(
+                                    tabela.getTablePosition().getRow())
+                            ).setNaziv(tabela.getNewValue());
+                            //UKOLIKO JE NOVI NAZIV RAZLICIT OD PRVOBITNOG
+                            if (!stariNaziv.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getNaziv())) {
+                                //AKO JE UNET NAZIV I NIJE PRAZAN STRING, U SUPROTNOM PORUKA O GRESCI
+                                if (!tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getNaziv().isEmpty()) {
+
+                                    Platform.runLater(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            //TODO: obojiti ivice polja umesto osvežavanja podataka i vratiti u prvobitni izgled
+                                            //.setStyle("-fx-border-width: 0;");
+                                        }
+                                    });
+                                    IspitniRok izabraniIspitniRok = (IspitniRok) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
+                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniIspitniRok));
+                                    t.setDaemon(true);
+                                    t.start();
+
+                                } else {
+                                    //poruka za neispravan unos
+                                    Platform.runLater(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Stage dialog = new Dialog(getStage(), "Molim vas unesite naziv za ispitni rok");
+                                            dialog.sizeToScene();
+                                            dialog.show();
+                                            //.setStyle("-fx-border-color: red;");
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    }
+            );
             colNaziv.setMinWidth(200);
             TableColumn colPocetak = new TableColumn("Početak");
             colPocetak.setCellValueFactory(new PropertyValueFactory<Sala, String>("datumPocetka"));
             colPocetak.setMinWidth(100);
+            colPocetak.setSortType(TableColumn.SortType.DESCENDING);
             TableColumn colKraj = new TableColumn("Kraj");
             colKraj.setCellValueFactory(new PropertyValueFactory<Sala, String>("datumKraja"));
             colKraj.setMinWidth(100);
-            TableColumn colAktivan = new TableColumn("Aktivan");
-            colAktivan.setCellValueFactory(new PropertyValueFactory<Sala, String>("aktivnost"));
-            colAktivan.setMinWidth(200);
+            TableColumn<IspitniRok, CheckBox> colAktivan = new TableColumn<>("Aktivan");
+            colAktivan.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<IspitniRok, CheckBox>, ObservableValue<CheckBox>>() {
+
+                @Override
+                public ObservableValue<CheckBox> call(TableColumn.CellDataFeatures<IspitniRok, CheckBox> arg0) {
+                    IspitniRok mp = arg0.getValue();
+
+                    CheckBox checkBox = new CheckBox();
+                    checkBox.selectedProperty().setValue(mp.isAktivnost());
+
+                    checkBox.selectedProperty().addListener(new ChangeListener<Boolean>() {
+                        public void changed(ObservableValue<? extends Boolean> ov,
+                                            Boolean stara_vrednost, Boolean nova_vrednost) {
+
+                            //ukoliko zeli da aktivira neki ispitni rok
+                            if (nova_vrednost == true) {
+                                //provera da li su svi ostali rokovi neaktivni
+                                boolean aktivan = false;
+                                for (IspitniRok ispitniRok : sviIspitniRokovi) {
+
+                                    if (ispitniRok.isAktivnost()) {
+                                        aktivan = true;
+                                        break;
+                                    }
+                                }
+                                if (!aktivan) {
+                                    mp.setAktivnost(nova_vrednost);
+                                    IspitniRok izabraniIspitniRok = arg0.getValue();
+                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniIspitniRok));
+                                    t.setDaemon(true);
+                                    t.start();
+                                } else {
+                                    //poruka za nemogucu akciju
+                                    Platform.runLater(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Stage dialog = new Dialog(getStage(), "Ne mogu biti dva ispitna roka u toku");
+                                            dialog.sizeToScene();
+                                            dialog.show();
+                                            //.setStyle("-fx-border-color: red;");
+                                        }
+                                    });
+                                    //da osvezi podatke na formi
+                                    Thread t = new Thread(new RunnableZahtevServeru("osvezi"));
+                                    t.setDaemon(true);
+                                    t.start();
+                                }
+                            } else {
+                                mp.setAktivnost(nova_vrednost);
+                                IspitniRok izabraniIspitniRok = arg0.getValue();
+                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniIspitniRok));
+                                t.setDaemon(true);
+                                t.start();
+                            }
+                        }
+                    });
+
+                    tableIspitniRokovi.sort();
+                    return new SimpleObjectProperty<CheckBox>(checkBox);
+
+                }
+            });
+            colAktivan.setMinWidth(50);
+            colAktivan.setStyle("-fx-alignment: center;");
 
             tableIspitniRokovi.setItems(sviIspitniRokovi);
             //sredjuje problem za dodatu kolonu
             tableIspitniRokovi.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableIspitniRokovi.setPrefHeight(550);
             tableIspitniRokovi.getColumns().addAll(colNaziv, colPocetak, colKraj, colAktivan);
+            tableIspitniRokovi.getSortOrder().add(colPocetak);
 
             VBox vbox = new VBox();
             vbox.setPadding(new Insets(5, 10, 10, 10));
@@ -1548,14 +1707,78 @@ public class StudentskaSluzbaForm extends Stage {
 
             Label lblOd = new Label("Od: ");
             DatePicker dateOd = new DatePicker();
+            //zabranjen odabih dana pre današnjeg
+            dateOd.setDayCellFactory(picker -> new DateCell() {
+                public void updateItem(LocalDate date, boolean empty) {
+                    super.updateItem(date, empty);
+                    LocalDate danas = LocalDate.now();
+
+                    setDisable(empty || date.compareTo(danas) < 0 );
+                }
+            });
             Label lblDo = new Label("Do: ");
             DatePicker dateDo = new DatePicker();
+            //zahtevan odabir makar za 1 dan više od početka roka
+            dateDo.setDayCellFactory(picker -> new DateCell() {
+                public void updateItem(LocalDate date, boolean empty) {
+                    super.updateItem(date, empty);
+                    LocalDate sutra = LocalDate.now().plusDays(1);
+
+                    setDisable(empty || date.compareTo(sutra) < 0 );
+                }
+            });
 
             Button btnDodaj = new Button("Dodaj");
             btnDodaj.setMinWidth(60);
-            Button btnObrisi = new Button("Obriši");
-            btnObrisi.setMinWidth(60);
-            hboxAkcija.getChildren().addAll(txtNaziv, lblOd, dateOd, lblDo, dateDo, btnDodaj, btnObrisi);
+            btnDodaj.setOnMouseClicked(e -> {
+                String naziv = txtNaziv.getText();
+                Date pocetakRoka = null;
+                Date krajRoka = null;
+                if (dateOd.getValue() != null) {
+                    pocetakRoka = Date.valueOf(dateOd.getValue());
+                }
+                if (dateDo.getValue() != null) {
+                    krajRoka = Date.valueOf(dateDo.getValue());
+                }
+
+                //AKO JE UNET NAZIV I AKO SU IZABRANI I DATUM POČETKA I DATUM KRAJA ROKA, ILI AKO JE UNET NAZIV I AKO NI JEDAN OD NJIH NIJE IZABRAN
+                if ((naziv.length() != 0 && dateOd.getValue() != null && dateDo.getValue() != null && dateDo.getValue().isAfter(dateOd.getValue())) || (naziv.length() != 0 && dateOd.getValue() == null && dateDo.getValue() == null)) {
+
+                    //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
+                    IspitniRok ispitniRok = new IspitniRok(naziv, pocetakRoka, krajRoka, false);
+                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", ispitniRok, txtNaziv, dateOd, dateDo));
+                    t.setDaemon(true);
+                    t.start();
+
+                } else {
+                    //PROVERA KOJI NIJE UNET I BOJENJE OKVIRA TOG POLJA, za datepicker samo ukoliko je jedno izabrano, ali nije i drugo
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (naziv.length() == 0) {
+                                txtNaziv.setStyle("-fx-border-color: red;");
+                            } else {
+                                txtNaziv.setStyle("-fx-border-width: 0;");
+                            }
+                            if (dateOd.getValue() != null && dateDo.getValue() == null) {
+                                dateDo.setStyle("-fx-border-color: red;");
+                            } else {
+                                dateDo.setStyle("-fx-border-width: 0;");
+                            }
+                            if (dateDo.getValue() != null && dateOd.getValue() == null) {
+                                dateOd.setStyle("-fx-border-color: red;");
+                            } else {
+                                dateOd.setStyle("-fx-border-width: 0;");
+                            }
+                            Stage dialog = new Dialog(getStage(), "Molim vas unesite podatke");
+                            dialog.sizeToScene();
+                            dialog.show();
+                        }
+                    });
+                }
+            });
+
+            hboxAkcija.getChildren().addAll(txtNaziv, lblOd, dateOd, lblDo, dateDo, btnDodaj);
 
             vbox.getChildren().addAll(tableIspitniRokovi, hboxAkcija);
             root.setCenter(vbox);
@@ -1636,6 +1859,7 @@ public class StudentskaSluzbaForm extends Stage {
         private Zaposleni zaposleni;
         private Predmet predmet;
         private Sala sala;
+        private IspitniRok ispitniRok;
         private TableView tabela;
         private TextField txtIme;
         private TextField txtPrezime;
@@ -1651,6 +1875,8 @@ public class StudentskaSluzbaForm extends Stage {
         private ComboBox cmbFinansiranje;
         private TextField txtKapacitet;
         private ComboBox cmbOprema;
+        private DatePicker dateOd;
+        private DatePicker dateDo;
 
         //konstuktor za osvezavanje podataka
         public RunnableZahtevServeru(Object zahtev) {
@@ -1676,6 +1902,11 @@ public class StudentskaSluzbaForm extends Stage {
         public RunnableZahtevServeru(Object zahtev, Sala sala) {
             this.zahtev = zahtev;
             this.sala = sala;
+        }
+
+        public RunnableZahtevServeru(Object zahtev, IspitniRok ispitniRok) {
+            this.zahtev = zahtev;
+            this.ispitniRok = ispitniRok;
         }
 
         //konstruktori za dodavanje
@@ -1720,6 +1951,15 @@ public class StudentskaSluzbaForm extends Stage {
             this.cmbOprema = cmbOprema;
         }
 
+        public RunnableZahtevServeru(Object zahtev, IspitniRok ispitniRok, TextField txtNaziv, DatePicker dateOd, DatePicker dateDo) {
+            this.zahtev = zahtev;
+            this.ispitniRok = ispitniRok;
+            this.txtNaziv = txtNaziv;
+            this.dateOd = dateOd;
+            this.dateDo = dateDo;
+        }
+
+        //konstruktori za brisanje
         public RunnableZahtevServeru(Object zahtev, TableView<Student> tabela, Student student) {
             this.zahtev = zahtev;
             this.tabela = tabela;
@@ -1736,6 +1976,12 @@ public class StudentskaSluzbaForm extends Stage {
             this.zahtev = zahtev;
             this.tabela = tabela;
             this.predmet = predmet;
+        }
+
+        public RunnableZahtevServeru(Object zahtev, TableView<Sala> tabela, Sala sala) {
+            this.zahtev = zahtev;
+            this.tabela = tabela;
+            this.sala = sala;
         }
 
         @Override
@@ -2039,6 +2285,51 @@ public class StudentskaSluzbaForm extends Stage {
                         });
                         //e.printStackTrace();
                     }
+                } else if (ispitniRok != null) {
+                    try {
+                        outObj.writeObject(zahtev + "IspitniRok");
+                        outObj.writeObject(ispitniRok);
+                        try {
+                            odgovor = inObj.readObject();
+                            if (odgovor.equals("uspelo")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Uspesno izmenjeni podaci za ispitni rok");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                                //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
+                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osvezi"));
+                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                                runnableZahtevServeru.setDaemon(true);
+                                runnableZahtevServeru.start();
+                            } else {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Nije uspela izmena podataka za ispitni rok");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
+                    }
                 }
             } else if (zahtev.equals("dodaj")) {
                 if (student != null) {
@@ -2262,9 +2553,62 @@ public class StudentskaSluzbaForm extends Stage {
                         });
                         //e.printStackTrace();
                     }
+                } else if (ispitniRok != null) {
+
+                    //ukoliko je pozvan konstruktor za ispitni rok
+                    try {
+                        outObj.writeObject(zahtev + "IspitniRok");
+                        outObj.writeObject(ispitniRok);
+                        try {
+                            odgovor = inObj.readObject();
+                            if (odgovor.equals("uspelo")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Uspesno dodat ispitni rok u Bazu");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                        txtNaziv.setStyle("-fx-border-width: 0;");
+                                        dateOd.setStyle("-fx-border-width: 0;");
+                                        dateDo.setStyle("-fx-border-width: 0;");
+                                        txtNaziv.clear();
+                                        dateOd.setValue(null);
+                                        dateDo.setValue(null);
+                                    }
+                                });
+                                //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
+                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osvezi"));
+                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                                runnableZahtevServeru.setDaemon(true);
+                                runnableZahtevServeru.start();
+                            } else {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Nije uspelo dodavanje ispitnog roka u Bazu");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
+                    }
                 }
             } else if (zahtev.equals("obrisi")) {
-                //ukoliko je pozvan konstruktor za brisanje studenta/zaposlenog/predmeta
+                //ukoliko je pozvan konstruktor za brisanje studenta/zaposlenog/predmeta/sale
                 if (student != null) {
                     try {
                         outObj.writeObject(zahtev + "Studenta");
@@ -2366,6 +2710,51 @@ public class StudentskaSluzbaForm extends Stage {
                                     @Override
                                     public void run() {
                                         Stage dialog = new Dialog(getStage(), "Uspesno obrisan predmet");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                                //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
+                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osvezi"));
+                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                                runnableZahtevServeru.setDaemon(true);
+                                runnableZahtevServeru.start();
+                            } else {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "...");
+                                        dialog.sizeToScene();
+                                        dialog.show();
+                                    }
+                                });
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
+                                dialog.sizeToScene();
+                                dialog.show();
+                            }
+                        });
+                        //e.printStackTrace();
+                    }
+                } else if (sala != null) {
+                    try {
+                        outObj.writeObject(zahtev + "Salu");
+                        outObj.writeObject(sala);
+                        try {
+                            odgovor = inObj.readObject();
+                            if (odgovor.equals("uspelo")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Stage dialog = new Dialog(getStage(), "Uspesno obrisana sala");
                                         dialog.sizeToScene();
                                         dialog.show();
                                     }
