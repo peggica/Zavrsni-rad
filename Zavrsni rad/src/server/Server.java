@@ -708,8 +708,17 @@ public class Server extends Application {
                 } else if (zahtev.equals("izmeniIspitniRok")) {
 
                     IspitniRok ispitniRok = (IspitniRok) inObj.readObject();
-                    query = "UPDATE IspitniRok SET `naziv` = '" + ispitniRok.getNaziv() + "', `aktivnost` = '" + (ispitniRok.isAktivnost() ? 1 : 0) + "' WHERE `idRoka` = '" + ispitniRok.getIdRoka() + "'";
-
+                    query = "UPDATE IspitniRok SET `naziv` = '" + ispitniRok.getNaziv() + "', `datumPocetka` = ";
+                    if (ispitniRok.getDatumPocetka() == null) {
+                        query += NULL + ", `datumKraja` = ";
+                    } else {
+                        query += "'" + ispitniRok.getDatumPocetka() + "', `datumKraja` = ";
+                    }
+                    if (ispitniRok.getDatumKraja() == null) {
+                        query += NULL + ", `aktivnost` = '" + (ispitniRok.isAktivnost() ? 1 : 0) + "' WHERE `idRoka` = '" + ispitniRok.getIdRoka() + "'";
+                    } else {
+                        query += "'" + ispitniRok.getDatumKraja() + "', `aktivnost` = '" + (ispitniRok.isAktivnost() ? 1 : 0) + "' WHERE `idRoka` = '" + ispitniRok.getIdRoka() + "'";
+                    }
                     int izmena = statement.executeUpdate(query);
                     if (izmena != 0) {
                         outObj.writeObject("uspelo");

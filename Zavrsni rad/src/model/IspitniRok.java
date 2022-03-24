@@ -47,8 +47,16 @@ public class IspitniRok implements Serializable {
         return datumPocetka;
     }
 
+    public void setDatumPocetka(Date datumPocetka) {
+        this.datumPocetka = datumPocetka;
+    }
+
     public Date getDatumKraja() {
         return datumKraja;
+    }
+
+    public void setDatumKraja(Date datumKraja) {
+        this.datumKraja = datumKraja;
     }
 
     public boolean isAktivnost() {

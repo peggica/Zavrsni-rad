@@ -1,6 +1,5 @@
 package klijent.gui;
 
-import com.sun.javafx.property.adapter.PropertyDescriptor;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.*;
@@ -13,13 +12,14 @@ import javafx.scene.control.cell.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import javafx.util.Callback;
+import javafx.util.Duration;
 import javafx.util.converter.IntegerStringConverter;
 import model.*;
 
 import java.io.*;
 import java.net.*;
-import java.net.http.WebSocket;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.*;
@@ -214,6 +214,8 @@ public class StudentskaSluzbaForm extends Stage {
                                         @Override
                                         public void run() {
                                             Stage dialog = new Dialog(getStage(), "Molim vas unesite ime za studenta");
+                                            dialog.sizeToScene();
+                                            dialog.show();
                                             //.setStyle("-fx-border-color: red;");
                                         }
                                     });
@@ -415,7 +417,11 @@ public class StudentskaSluzbaForm extends Stage {
             //sredjuje problem za dodatu kolonu
             tableStudenti.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableStudenti.setPrefHeight(500);
+            //TODO: sortiranje treba svaki put kad je osvezeno
+            colIndex.setSortType(TableColumn.SortType.DESCENDING);
             tableStudenti.getColumns().addAll(colIme, colPrezime, colIndex, colFinansiranje, colAdresa, colEmail, colTelefon, colAktivan);
+            tableStudenti.getSortOrder().add(colIndex);
+            tableStudenti.sort();
 
             TextField txtIme = new TextField("");
             txtIme.setPromptText("Ime");
@@ -1073,8 +1079,9 @@ public class StudentskaSluzbaForm extends Stage {
                     spSemestar.setValueFactory(vfSemestar);
                     spSemestar.setMinWidth(100);
                     spSemestar.setMaxWidth(100);
+                    spSemestar.setInitialDelay(new Duration(1000));
+                    spSemestar.setRepeatDelay(new Duration(1000));
 
-                    //TODO: usporiti promenu na klik*
                     spSemestar.valueProperty().addListener((obs, stara_vrednost, nova_vrednost) -> {
                         if(nova_vrednost != stara_vrednost) {
                             vfSemestar.setValue(nova_vrednost);
@@ -1106,8 +1113,9 @@ public class StudentskaSluzbaForm extends Stage {
                     spEspb.setValueFactory(vfEspb);
                     spEspb.setMinWidth(100);
                     spEspb.setMaxWidth(100);
+                    spEspb.setInitialDelay(new Duration(1000));
+                    spEspb.setRepeatDelay(new Duration(1000));
 
-                    //TODO: usporiti promenu na klik*
                     spEspb.valueProperty().addListener((obs, stara_vrednost, nova_vrednost) -> {
                         if(nova_vrednost != stara_vrednost) {
                             vfEspb.setValue(nova_vrednost);
@@ -1185,6 +1193,8 @@ public class StudentskaSluzbaForm extends Stage {
             Label lblSemestar = new Label("Semestar: ");
             lblSemestar.setMinWidth(Region.USE_PREF_SIZE);
             Spinner<Integer> spSemestar = new Spinner();
+            spSemestar.setInitialDelay(new Duration(1000));
+            spSemestar.setRepeatDelay(new Duration(1000));
             SpinnerValueFactory<Integer> vfSemestar = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 6);
             vfSemestar.setValue(0);
             spSemestar.setValueFactory(vfSemestar);
@@ -1195,6 +1205,8 @@ public class StudentskaSluzbaForm extends Stage {
             Label lblEspb = new Label("Broj espb: ");
             lblEspb.setMinWidth(Region.USE_PREF_SIZE);
             Spinner<Integer> spEspb = new Spinner();
+            spEspb.setInitialDelay(new Duration(1000));
+            spEspb.setRepeatDelay(new Duration(1000));
             ObservableList<Integer> bodovi = FXCollections.observableArrayList(0, 2, 3, 4, 5, 6, 7, 8, 9, 10);
             SpinnerValueFactory<Integer> vfEspb = new SpinnerValueFactory.ListSpinnerValueFactory<Integer>(bodovi);
             vfEspb.setValue(0);
@@ -1396,8 +1408,7 @@ public class StudentskaSluzbaForm extends Stage {
                     }
             );
             colKapacitet.setMinWidth(100);
-            TableColumn colOprema = new TableColumn("Oprema");
-            colOprema.setCellValueFactory(new PropertyValueFactory<Sala, ComboBox>("oprema"));
+            TableColumn<Sala, ComboBox> colOprema = new TableColumn("Oprema");
             colOprema.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Sala, ComboBox>, ObservableValue<ComboBox>>() {
 
                 @Override
@@ -1615,13 +1626,119 @@ public class StudentskaSluzbaForm extends Stage {
                     }
             );
             colNaziv.setMinWidth(200);
-            TableColumn colPocetak = new TableColumn("Početak");
-            colPocetak.setCellValueFactory(new PropertyValueFactory<Sala, String>("datumPocetka"));
+            TableColumn<IspitniRok, DatePicker> colPocetak = new TableColumn("Početak");
+            colPocetak.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<IspitniRok, DatePicker>, ObservableValue<DatePicker>>() {
+
+                @Override
+                public ObservableValue<DatePicker> call(TableColumn.CellDataFeatures<IspitniRok, DatePicker> arg0) {
+                    IspitniRok mp = arg0.getValue();
+
+                    DatePicker datePicker = new DatePicker();
+                    if(mp.getDatumPocetka() != null) {
+
+                        datePicker.valueProperty().setValue(LocalDate.parse(mp.getDatumPocetka().toString()));
+                    } else if (mp.getDatumPocetka() == null) {
+                        datePicker.valueProperty().setValue(null);
+                    }
+
+                    datePicker.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
+                        //UKOLIKO JE JEDNA OD VREDNOSTI NULL
+                        if ((nova_vrednost == null && stara_vrednost != null) || (nova_vrednost != null && stara_vrednost == null))
+                        {
+                            //provera da li je mozda uneta null vrednost
+                            if (nova_vrednost != null) {
+                                //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
+                                if (!nova_vrednost.equals(stara_vrednost)) {
+                                    mp.setDatumPocetka(Date.valueOf(nova_vrednost));
+                                }
+                            } else if (nova_vrednost == null) {
+                                mp.setDatumPocetka(null);
+                            }
+
+                            IspitniRok izabraniIspitniRok = arg0.getValue();
+                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniIspitniRok));
+                            t.setDaemon(true);
+                            t.start();
+                        //UKOLIKO NI JEDNA OD VREDNOSTI NIJE NULL
+                        } else if (nova_vrednost != null && stara_vrednost != null) {
+                            //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
+                            if (!nova_vrednost.equals(stara_vrednost)) {
+                                mp.setDatumPocetka(Date.valueOf(nova_vrednost));
+                                IspitniRok izabraniIspitniRok = arg0.getValue();
+                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniIspitniRok));
+                                t.setDaemon(true);
+                                t.start();
+                            }
+                        }
+                    });
+                    return new SimpleObjectProperty<DatePicker>(datePicker);
+                }
+            });
             colPocetak.setMinWidth(100);
-            colPocetak.setSortType(TableColumn.SortType.DESCENDING);
-            TableColumn colKraj = new TableColumn("Kraj");
-            colKraj.setCellValueFactory(new PropertyValueFactory<Sala, String>("datumKraja"));
+            colPocetak.setStyle("-fx-alignment: center;");
+            TableColumn<IspitniRok, DatePicker> colKraj = new TableColumn("Kraj");
+            colKraj.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<IspitniRok, DatePicker>, ObservableValue<DatePicker>>() {
+
+                @Override
+                public ObservableValue<DatePicker> call(TableColumn.CellDataFeatures<IspitniRok, DatePicker> arg0) {
+                    IspitniRok mp = arg0.getValue();
+
+                    DatePicker dateDo = new DatePicker();
+                    //zabranjen odabih dana manjih od izabranog pocetnog datuma + 1
+                    dateDo.setDayCellFactory(picker -> new DateCell() {
+                        public void updateItem(LocalDate date, boolean empty) {
+                            super.updateItem(date, empty);
+
+                            if (mp.getDatumPocetka() != null) {
+                                LocalDate danVise = mp.getDatumPocetka().toLocalDate().plusDays(1);
+
+                                setDisable(empty || date.compareTo(danVise) < 0);
+                            }
+                        }
+                    });
+                    if(mp.getDatumKraja() != null) {
+
+                        dateDo.valueProperty().setValue(LocalDate.parse(mp.getDatumKraja().toString()));
+                    } else if (mp.getDatumPocetka() == null) {
+                        dateDo.valueProperty().setValue(null);
+                    }
+
+                    //TODO: moglo bi i provera ako tamo nije prazno na pocetnom da stari kad ide na null vrati u tabeli svoju vrednost
+                    dateDo.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
+                        //UKOLIKO JE JEDNA OD VREDNOSTI NULL
+                        if ((nova_vrednost == null && stara_vrednost != null) || (nova_vrednost != null && stara_vrednost == null))
+                        {
+                            //provera da li je mozda uneta null vrednost
+                            if (nova_vrednost != null) {
+                                //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
+                                if (!nova_vrednost.equals(stara_vrednost)) {
+                                    mp.setDatumKraja(Date.valueOf(nova_vrednost));
+                                }
+                            } else if (nova_vrednost == null) {
+                                mp.setDatumKraja(null);
+                            }
+
+                            IspitniRok izabraniIspitniRok = arg0.getValue();
+                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniIspitniRok));
+                            t.setDaemon(true);
+                            t.start();
+                        //UKOLIKO NI JEDNA OD VREDNOSTI NIJE NULL
+                        } else if (nova_vrednost != null && stara_vrednost != null) {
+                            //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
+                            if (!nova_vrednost.equals(stara_vrednost)) {
+                                mp.setDatumKraja(Date.valueOf(nova_vrednost));
+                                IspitniRok izabraniIspitniRok = arg0.getValue();
+                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniIspitniRok));
+                                t.setDaemon(true);
+                                t.start();
+                            }
+                        }
+                    });
+                    return new SimpleObjectProperty<DatePicker>(dateDo);
+                }
+            });
             colKraj.setMinWidth(100);
+            colKraj.setStyle("-fx-alignment: center;");
             TableColumn<IspitniRok, CheckBox> colAktivan = new TableColumn<>("Aktivan");
             colAktivan.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<IspitniRok, CheckBox>, ObservableValue<CheckBox>>() {
 
@@ -1679,7 +1796,6 @@ public class StudentskaSluzbaForm extends Stage {
                         }
                     });
 
-                    tableIspitniRokovi.sort();
                     return new SimpleObjectProperty<CheckBox>(checkBox);
 
                 }
@@ -1691,8 +1807,10 @@ public class StudentskaSluzbaForm extends Stage {
             //sredjuje problem za dodatu kolonu
             tableIspitniRokovi.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableIspitniRokovi.setPrefHeight(550);
+            colPocetak.setSortType(TableColumn.SortType.DESCENDING);
             tableIspitniRokovi.getColumns().addAll(colNaziv, colPocetak, colKraj, colAktivan);
             tableIspitniRokovi.getSortOrder().add(colPocetak);
+            tableIspitniRokovi.sort();
 
             VBox vbox = new VBox();
             vbox.setPadding(new Insets(5, 10, 10, 10));
