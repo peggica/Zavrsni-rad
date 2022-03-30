@@ -12,9 +12,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 import klijent.gui.*;
-import klijent.gui.Dialog;
 import model.*;
 
 import java.io.*;
@@ -38,11 +36,27 @@ public class Klijent extends Application {
     private StudentskaSluzbaForm studentskaSluzbaForm;
     private ZaposleniForm zaposleniForm;
     private StudentForm studentForm;
+    private static Alert alert = new Alert(Alert.AlertType.NONE);
     private static final int TCP_PORT = 9000;
 
     public static Stage getStage() {
 
         return stage;
+    }
+
+    /**
+     * Setuje tip i naslov statičkog alerta u zavisnosti od prosleđenog tipa
+     */
+    public static void setAlert(Alert.AlertType at) {
+        if (at == Alert.AlertType.ERROR) {
+            alert.setAlertType(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("");
+        } else if (at == Alert.AlertType.INFORMATION) {
+            alert.setAlertType(Alert.AlertType.INFORMATION);
+            alert.setTitle("Info");
+            alert.setHeaderText("");
+        }
     }
 
     @Override
@@ -122,9 +136,9 @@ public class Klijent extends Application {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Molimo vas unesite podatke!");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.ERROR);
+                                alert.setContentText("Molim vas unesite podatke!");
+                                alert.showAndWait();
                             }
                         });
                     }
@@ -151,9 +165,9 @@ public class Klijent extends Application {
 
                         @Override
                         public void run() {
-                            Stage dialog = new Dialog(getStage(), "Molimo vas unesite podatke!");
-                            dialog.sizeToScene();
-                            dialog.show();
+                            setAlert(Alert.AlertType.ERROR);
+                            alert.setContentText("Molim vas unesite podatke!");
+                            alert.showAndWait();
                         }
                     });
                 }
@@ -169,6 +183,10 @@ public class Klijent extends Application {
         loginStage.setResizable(false);
         loginStage.setTitle("Login");
         stage = loginStage;
+        loginStage.setOnCloseRequest(event -> {
+            Platform.exit();
+            System.exit(0);
+        });
         loginStage.show();
 
     }
@@ -299,9 +317,9 @@ public class Klijent extends Application {
 
                         @Override
                         public void run() {
-                            Stage dialog = new Dialog(getStage(), "Pogrešno uneto korisničko ime ili lozinka");
-                            dialog.sizeToScene();
-                            dialog.show();
+                            setAlert(Alert.AlertType.ERROR);
+                            alert.setContentText("Pogrešno uneto korisničko ime ili lozinka");
+                            alert.showAndWait();
                         }
                     });
                 } else if (odgovor.equals("zaposleni")) {
@@ -407,10 +425,9 @@ public class Klijent extends Application {
 
                     @Override
                     public void run() {
-                        Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                        System.out.println("Server je trenutno nedostupan.");
-                        dialog.sizeToScene();
-                        dialog.show();
+                        setAlert(Alert.AlertType.INFORMATION);
+                        alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                        alert.showAndWait();
                     }
                 });
                 //e.printStackTrace();

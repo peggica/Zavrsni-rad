@@ -877,6 +877,48 @@ public class Server extends Application {
                         outObj.writeObject("nepostoji");
                         outObj.flush();
                     }
+                } else if (zahtev.equals("loginInfoStudent")) {
+
+                    Student student = (Student) inObj.readObject();
+                    query = "SELECT korisnickoIme, lozinka FROM Login WHERE idStudenta = '" + student.getIdStudenta() + "' AND smer = '" + student.getSmer() + "' AND godinaUpisa = '" + student.getGodinaUpisa() + "'";
+                    resultset = statement.executeQuery(query);
+
+                    if (!resultset.next()) {
+                        odgovor = "nepostoji";
+                        outObj.writeObject(odgovor);
+                        outObj.flush();
+                    } else {
+                        String korisnickoIme = resultset.getString("korisnickoIme");
+                        String lozinka = resultset.getString("lozinka");
+                        Login login = new Login(korisnickoIme, lozinka);
+                        odgovor = "postoji";
+                        outObj.writeObject(odgovor);
+                        outObj.flush();
+                        odgovor = login;
+                        outObj.writeObject(odgovor);
+                        outObj.flush();
+                    }
+                } else if (zahtev.equals("loginInfoZaposleni")) {
+
+                    Zaposleni zaposleni = (Zaposleni) inObj.readObject();
+                    query = "SELECT korisnickoIme, lozinka FROM Login WHERE idZaposlenog = '" + zaposleni.getIdZaposlenog() + "'";
+                    resultset = statement.executeQuery(query);
+
+                    if (!resultset.next()) {
+                        odgovor = "nepostoji";
+                        outObj.writeObject(odgovor);
+                        outObj.flush();
+                    } else {
+                        String korisnickoIme = resultset.getString("korisnickoIme");
+                        String lozinka = resultset.getString("lozinka");
+                        Login login = new Login(korisnickoIme, lozinka);
+                        odgovor = "postoji";
+                        outObj.writeObject(odgovor);
+                        outObj.flush();
+                        odgovor = login;
+                        outObj.writeObject(odgovor);
+                        outObj.flush();
+                    }
                 }
                 //ZATVARANJE KONEKCIJE SA BAZOM
                 try {

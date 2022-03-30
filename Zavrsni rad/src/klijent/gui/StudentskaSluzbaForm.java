@@ -9,10 +9,11 @@ import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.*;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 import javafx.util.Duration;
 import javafx.util.converter.IntegerStringConverter;
@@ -41,11 +42,13 @@ public class StudentskaSluzbaForm extends Stage {
     private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
     Pattern patternEmail = Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
     Pattern patternTelefon = Pattern.compile("^(\\+\\d{1,3}( )?)?((\\(\\d{1,3}\\))|\\d{1,3})[- .]?\\d{3,4}[- .]?\\d{4}$");
+    private static Alert alert = new Alert(Alert.AlertType.NONE);
 
     public static Stage getStage() {
 
         return stage;
     }
+
 
     public void setSviIspitniRokovi(ObservableList<IspitniRok> sviIspitniRokovi) {
         this.sviIspitniRokovi = sviIspitniRokovi;
@@ -65,6 +68,21 @@ public class StudentskaSluzbaForm extends Stage {
 
     public void setSveSale(ObservableList<Sala> sveSale) {
         this.sveSale = sveSale;
+    }
+
+    /**
+     * Setuje tip i naslov statičkog alerta u zavisnosti od prosleđenog tipa
+     */
+    public static void setAlert(Alert.AlertType at) {
+        if (at == Alert.AlertType.ERROR) {
+            alert.setAlertType(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("");
+        } else if (at == Alert.AlertType.INFORMATION) {
+            alert.setAlertType(Alert.AlertType.INFORMATION);
+            alert.setTitle("Info");
+            alert.setHeaderText("");
+        }
     }
 
     /**
@@ -108,6 +126,10 @@ public class StudentskaSluzbaForm extends Stage {
     public StudentskaSluzbaForm(Stage stage, ObservableList<IspitniRok> sviIspitniRokovi, ObservableList<Student> sviStudenti, ObservableList<Zaposleni> sviZaposleni, HashMap<Predmet, Zaposleni> polozeniPredmeti, ObservableList<Sala> sveSale) {
 
         super();
+        stage.setOnCloseRequest(event -> {
+            Platform.exit();
+            System.exit(0);
+        });
         initOwner(stage);
 
         setSviIspitniRokovi(sviIspitniRokovi);
@@ -213,9 +235,9 @@ public class StudentskaSluzbaForm extends Stage {
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Stage dialog = new Dialog(getStage(), "Molim vas unesite ime za studenta");
-                                            dialog.sizeToScene();
-                                            dialog.show();
+                                            setAlert(Alert.AlertType.ERROR);
+                                            alert.setContentText("Molim vas unesite ime za studenta");
+                                            alert.showAndWait();
                                             //.setStyle("-fx-border-color: red;");
                                         }
                                     });
@@ -250,9 +272,9 @@ public class StudentskaSluzbaForm extends Stage {
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Stage dialog = new Dialog(getStage(), "Molim vas unesite prezime za studenta");
-                                            dialog.sizeToScene();
-                                            dialog.show();
+                                            setAlert(Alert.AlertType.ERROR);
+                                            alert.setContentText("Molim vas unesite prezime za studenta");
+                                            alert.showAndWait();
                                         }
                                     });
                                     //da osvezi podatke na formi
@@ -323,9 +345,9 @@ public class StudentskaSluzbaForm extends Stage {
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Stage dialog = new Dialog(getStage(), "Molim vas unesite email ispravno");
-                                            dialog.sizeToScene();
-                                            dialog.show();
+                                            setAlert(Alert.AlertType.ERROR);
+                                            alert.setContentText("Molim vas unesite email ispravno");
+                                            alert.showAndWait();
                                         }
                                     });
                                     //da osvezi podatke na formi
@@ -367,9 +389,9 @@ public class StudentskaSluzbaForm extends Stage {
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Stage dialog = new Dialog(getStage(), "Molim vas unesite broj telefona ispravno");
-                                            dialog.sizeToScene();
-                                            dialog.show();
+                                            setAlert(Alert.AlertType.ERROR);
+                                            alert.setContentText("Molim vas unesite broj telefona ispravno");
+                                            alert.showAndWait();
                                         }
                                     });
                                     //da osvezi podatke na formi
@@ -422,6 +444,21 @@ public class StudentskaSluzbaForm extends Stage {
             tableStudenti.getColumns().addAll(colIme, colPrezime, colIndex, colFinansiranje, colAdresa, colEmail, colTelefon, colAktivan);
             tableStudenti.getSortOrder().add(colIndex);
             tableStudenti.sort();
+
+            //ukoliko je pritisnut desni klik miša, prikaz login podataka za odgovarajućeg studenta
+            tableStudenti.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
+
+                @Override
+                public void handle(MouseEvent me) {
+                    if(me.getButton() == MouseButton.SECONDARY) {
+
+                        Student izabraniStudent = tableStudenti.getFocusModel().getFocusedItem();
+                        Thread t = new Thread(new RunnableZahtevServeru("loginInfo", izabraniStudent));
+                        t.setDaemon(true);
+                        t.start();
+                    }
+                }
+            });
 
             TextField txtIme = new TextField("");
             txtIme.setPromptText("Ime");
@@ -512,9 +549,9 @@ public class StudentskaSluzbaForm extends Stage {
                                     txtTelefon.setStyle("-fx-border-width: 0;");
                                 }
                             }
-                            Stage dialog = new Dialog(getStage(), "Molim vas unesite podatke");
-                            dialog.sizeToScene();
-                            dialog.show();
+                            setAlert(Alert.AlertType.ERROR);
+                            alert.setContentText("Molim vas unesite podatke");
+                            alert.showAndWait();
                         }
                     });
                 }
@@ -532,9 +569,9 @@ public class StudentskaSluzbaForm extends Stage {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            Stage dialog = new Dialog(getStage(), "Molim vas izaberite studenta u tabeli");
-                            dialog.sizeToScene();
-                            dialog.show();
+                            setAlert(Alert.AlertType.ERROR);
+                            alert.setContentText("Molim vas izaberite studenta u tabeli");
+                            alert.showAndWait();
                         }
                     });
                 }
@@ -617,9 +654,9 @@ public class StudentskaSluzbaForm extends Stage {
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Stage dialog = new Dialog(getStage(), "Molim vas unesite ime za zaposlenog");
-                                            dialog.sizeToScene();
-                                            dialog.show();
+                                            setAlert(Alert.AlertType.ERROR);
+                                            alert.setContentText("Molim vas unesite ime za zaposlenog");
+                                            alert.showAndWait();
                                         }
                                     });
                                     //da osvezi podatke na formi
@@ -657,9 +694,9 @@ public class StudentskaSluzbaForm extends Stage {
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Stage dialog = new Dialog(getStage(), "Molim vas unesite prezime za zaposlenog");
-                                            dialog.sizeToScene();
-                                            dialog.show();
+                                            setAlert(Alert.AlertType.ERROR);
+                                            alert.setContentText("Molim vas unesite prezime za zaposlenog");
+                                            alert.showAndWait();
                                         }
                                     });
                                     //da osvezi podatke na formi
@@ -725,9 +762,9 @@ public class StudentskaSluzbaForm extends Stage {
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Stage dialog = new Dialog(getStage(), "Molim vas unesite email ispravno");
-                                            dialog.sizeToScene();
-                                            dialog.show();
+                                            setAlert(Alert.AlertType.ERROR);
+                                            alert.setContentText("Molim vas unesite email ispravno");
+                                            alert.showAndWait();
                                         }
                                     });
                                     //da osvezi podatke na formi
@@ -769,9 +806,9 @@ public class StudentskaSluzbaForm extends Stage {
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Stage dialog = new Dialog(getStage(), "Molim vas unesite broj telefona ispravno");
-                                            dialog.sizeToScene();
-                                            dialog.show();
+                                            setAlert(Alert.AlertType.ERROR);
+                                            alert.setContentText("Molim vas unesite broj telefona ispravno");
+                                            alert.showAndWait();
                                         }
                                     });
                                     //da osvezi podatke na formi
@@ -820,6 +857,20 @@ public class StudentskaSluzbaForm extends Stage {
             tableZaposleni.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableZaposleni.setPrefHeight(500);
             tableZaposleni.getColumns().addAll(colPozicija, colIme, colPrezime, colAdresa, colEmail, colTelefon, colAktivan);
+            //ukoliko je pritisnut desni klik miša, prikaz login podataka za odgovarajućeg zaposlenog
+            tableZaposleni.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>() {
+
+                @Override
+                public void handle(MouseEvent me) {
+                    if(me.getButton() == MouseButton.SECONDARY) {
+
+                        Zaposleni izabraniZaposleni = tableZaposleni.getFocusModel().getFocusedItem();
+                        Thread t = new Thread(new RunnableZahtevServeru("loginInfo", izabraniZaposleni));
+                        t.setDaemon(true);
+                        t.start();
+                    }
+                }
+            });
 
             Label lblPozicija = new Label("Pozicija: ");
             lblPozicija.setMinWidth(Region.USE_PREF_SIZE);
@@ -902,9 +953,9 @@ public class StudentskaSluzbaForm extends Stage {
                                     txtTelefon.setStyle("-fx-border-width: 0;");
                                 }
                             }
-                            Stage dialog = new Dialog(getStage(), "Molim vas unesite podatke");
-                            dialog.sizeToScene();
-                            dialog.show();
+                            setAlert(Alert.AlertType.ERROR);
+                            alert.setContentText("Molim vas unesite podatke");
+                            alert.showAndWait();
                         }
                     });
                 }
@@ -922,9 +973,9 @@ public class StudentskaSluzbaForm extends Stage {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            Stage dialog = new Dialog(getStage(), "Molim vas izaberite zaposlenog u tabeli");
-                            dialog.sizeToScene();
-                            dialog.show();
+                            setAlert(Alert.AlertType.ERROR);
+                            alert.setContentText("Molim vas izaberite zaposlenog u tabeli");
+                            alert.showAndWait();
                         }
                     });
                 }
@@ -1028,9 +1079,9 @@ public class StudentskaSluzbaForm extends Stage {
                             Platform.runLater(new Runnable() {
                                 @Override
                                 public void run() {
-                                    Stage dialog = new Dialog(getStage(), "Molim vas unesite naziv predmeta");
-                                    dialog.sizeToScene();
-                                    dialog.show();
+                                    setAlert(Alert.AlertType.ERROR);
+                                    alert.setContentText("Molim vas unesite naziv predmeta");
+                                    alert.showAndWait();
                                 }
                             });
                             //da osvezi podatke na formi
@@ -1247,9 +1298,9 @@ public class StudentskaSluzbaForm extends Stage {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            Stage dialog = new Dialog(getStage(), "Molim vas unesite podatke");
-                            dialog.sizeToScene();
-                            dialog.show();
+                            setAlert(Alert.AlertType.ERROR);
+                            alert.setContentText("Molim vas unesite podatke");
+                            alert.showAndWait();
                         }
                     });
                 }
@@ -1267,9 +1318,9 @@ public class StudentskaSluzbaForm extends Stage {
                             Platform.runLater(new Runnable() {
                                 @Override
                                 public void run() {
-                                    Stage dialog = new Dialog(getStage(), "Molim vas izaberite predmet u tabeli");
-                                    dialog.sizeToScene();
-                                    dialog.show();
+                                    setAlert(Alert.AlertType.ERROR);
+                                    alert.setContentText("Molim vas izaberite predmet u tabeli");
+                                    alert.showAndWait();
                                 }
                             });
                         }
@@ -1345,9 +1396,9 @@ public class StudentskaSluzbaForm extends Stage {
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Stage dialog = new Dialog(getStage(), "Molim vas unesite naziv za salu");
-                                            dialog.sizeToScene();
-                                            dialog.show();
+                                            setAlert(Alert.AlertType.ERROR);
+                                            alert.setContentText("Molim vas unesite naziv za salu");
+                                            alert.showAndWait();
                                             //.setStyle("-fx-border-color: red;");
                                         }
                                     });
@@ -1369,9 +1420,9 @@ public class StudentskaSluzbaForm extends Stage {
                         Platform.runLater(new Runnable() {
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Molim vas unesite broj");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.ERROR);
+                                alert.setContentText("Molim vas unesite broj");
+                                alert.showAndWait();
                             }
                         });
 
@@ -1511,9 +1562,9 @@ public class StudentskaSluzbaForm extends Stage {
                         public void run() {
                             if (naziv.length() == 0) {
                                 txtNaziv.setStyle("-fx-border-color: red;");
-                                Stage dialog = new Dialog(getStage(), "Molim vas unesite naziv sale");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.ERROR);
+                                alert.setContentText("Molim vas unesite naziv sale");
+                                alert.showAndWait();
                             } else {
                                 txtNaziv.setStyle("-fx-border-width: 0;");
                             }
@@ -1528,16 +1579,15 @@ public class StudentskaSluzbaForm extends Stage {
                         public void run() {
 
                             txtKapacitet.setStyle("-fx-border-color: red;");
-                            Stage dialog;
+                            setAlert(Alert.AlertType.ERROR);
                             if (naziv.length() == 0) {
                                 txtNaziv.setStyle("-fx-border-color: red;");
-                                dialog = new Dialog(getStage(), "Molim vas unesite podatke");
+                                alert.setContentText("Molim vas unesite podatke");
                             } else {
                                 txtNaziv.setStyle("-fx-border-width: 0;");
-                                dialog = new Dialog(getStage(), "Molim vas unesite broj");
+                                alert.setContentText("Molim vas unesite broj");
                             }
-                            dialog.sizeToScene();
-                            dialog.show();
+                            alert.showAndWait();
                         }
                     });
                 }
@@ -1554,9 +1604,9 @@ public class StudentskaSluzbaForm extends Stage {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            Stage dialog = new Dialog(getStage(), "Molim vas izaberite predmet u tabeli");
-                            dialog.sizeToScene();
-                            dialog.show();
+                            setAlert(Alert.AlertType.ERROR);
+                            alert.setContentText("Molim vas izaberite predmet u tabeli");
+                            alert.showAndWait();
                         }
                     });
                 }
@@ -1614,9 +1664,9 @@ public class StudentskaSluzbaForm extends Stage {
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Stage dialog = new Dialog(getStage(), "Molim vas unesite naziv za ispitni rok");
-                                            dialog.sizeToScene();
-                                            dialog.show();
+                                            setAlert(Alert.AlertType.ERROR);
+                                            alert.setContentText("Molim vas unesite naziv za ispitni rok");
+                                            alert.showAndWait();
                                             //.setStyle("-fx-border-color: red;");
                                         }
                                     });
@@ -1775,9 +1825,9 @@ public class StudentskaSluzbaForm extends Stage {
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Stage dialog = new Dialog(getStage(), "Ne mogu biti dva ispitna roka u toku");
-                                            dialog.sizeToScene();
-                                            dialog.show();
+                                            setAlert(Alert.AlertType.ERROR);
+                                            alert.setContentText("Ne mogu biti dva ispitna roka u toku!");
+                                            alert.showAndWait();
                                             //.setStyle("-fx-border-color: red;");
                                         }
                                     });
@@ -1888,9 +1938,9 @@ public class StudentskaSluzbaForm extends Stage {
                             } else {
                                 dateOd.setStyle("-fx-border-width: 0;");
                             }
-                            Stage dialog = new Dialog(getStage(), "Molim vas unesite podatke");
-                            dialog.sizeToScene();
-                            dialog.show();
+                            setAlert(Alert.AlertType.ERROR);
+                            alert.setContentText("Molim vas unesite podatke");
+                            alert.showAndWait();
                         }
                     });
                 }
@@ -2001,7 +2051,7 @@ public class StudentskaSluzbaForm extends Stage {
             this.zahtev = zahtev;
         }
 
-        //konstruktori za izmenu
+        //konstruktori za izmenu/login podatke
         public RunnableZahtevServeru(Object zahtev, Student student) {
             this.zahtev = zahtev;
             this.student = student;
@@ -2116,9 +2166,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                     @Override
                     public void run() {
-                        Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                        dialog.sizeToScene();
-                        dialog.show();
+                        setAlert(Alert.AlertType.INFORMATION);
+                        alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                        alert.showAndWait();
                     }
                 });
                 e.printStackTrace();
@@ -2212,13 +2262,97 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
                     } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else if (zahtev.equals("loginInfo")) {
+                if (student != null) {
+                    try {
+                        outObj.writeObject(zahtev + "Student");
+                        outObj.writeObject(student);
+                        try {
+                            odgovor = inObj.readObject();
+                            if (odgovor.equals("postoji")) {
+                                Login login = (Login) inObj.readObject();
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                        public void run() {
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Korisničko ime: " + login.getKorisnickoIme() + "\nLozinka: " + login.getLozinka());
+                                        alert.showAndWait();
+                                    }
+                                });
+                            } else if (odgovor.equals("nepostoji")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Ne postoje Login podaci za izabranog studenta");
+                                        alert.showAndWait();
+                                    }
+                                });
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
+                            }
+                        });
+                        e.printStackTrace();
+                    }
+                } else if (zaposleni != null) {
+                    try {
+                        outObj.writeObject(zahtev + "Zaposleni");
+                        outObj.writeObject(zaposleni);
+                        try {
+                            odgovor = inObj.readObject();
+                            if (odgovor.equals("postoji")) {
+                                Login login = (Login) inObj.readObject();
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Korisničko ime: " + login.getKorisnickoIme() + "\nLozinka: " + login.getLozinka());
+                                        alert.showAndWait();
+                                    }
+                                });
+                            } else if (odgovor.equals("nepostoji")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Ne postoje Login podaci za izabranog zaposlenog");
+                                        alert.showAndWait();
+                                    }
+                                });
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
+                            }
+                        });
                         e.printStackTrace();
                     }
                 }
@@ -2233,9 +2367,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Uspesno izmenjeni podaci za studenta");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspesno izmenjeni podaci za studenta");
+                                        alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
@@ -2247,9 +2381,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Nije uspela izmena podataka za studenta");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.ERROR);
+                                        alert.setContentText("Nije uspela izmena podataka za studenta");
+                                        alert.showAndWait();
                                     }
                                 });
                             }
@@ -2261,9 +2395,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
@@ -2278,9 +2412,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Uspesno izmenjeni podaci za zaposlenog");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspešno izmenjeni podaci za zaposlenog");
+                                        alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
@@ -2292,9 +2426,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Nije uspela izmena podataka za zaposlenog");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.ERROR);
+                                        alert.setContentText("Nije uspela izmena podataka za zaposlenog");
+                                        alert.showAndWait();
                                     }
                                 });
                             }
@@ -2306,9 +2440,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
@@ -2323,9 +2457,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Uspesno izmenjeni podaci za predmet");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspešno izmenjeni podaci za predmet");
+                                        alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
@@ -2337,9 +2471,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Nije uspela izmena podataka za predmet");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.ERROR);
+                                        alert.setContentText("Nije uspela izmena podataka za predmet");
+                                        alert.showAndWait();
                                     }
                                 });
                             }
@@ -2351,9 +2485,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
@@ -2368,9 +2502,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Uspesno izmenjeni podaci za salu");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspešno izmenjeni podaci za salu");
+                                        alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
@@ -2382,9 +2516,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Nije uspela izmena podataka za salu");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.ERROR);
+                                        alert.setContentText("Nije uspela izmena podataka za salu");
+                                        alert.showAndWait();
                                     }
                                 });
                             }
@@ -2396,9 +2530,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
@@ -2413,9 +2547,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Uspesno izmenjeni podaci za ispitni rok");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspesno izmenjeni podaci za ispitni rok");
+                                        alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
@@ -2427,9 +2561,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Nije uspela izmena podataka za ispitni rok");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.ERROR);
+                                        alert.setContentText("Nije uspela izmena podataka za ispitni rok");
+                                        alert.showAndWait();
                                     }
                                 });
                             }
@@ -2441,9 +2575,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
@@ -2462,9 +2596,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Uspesno dodat student u Bazu");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspešno dodat student u Bazu");
+                                        alert.showAndWait();
                                         txtIme.setStyle("-fx-border-width: 0;");
                                         txtPrezime.setStyle("-fx-border-width: 0;");
                                         txtAdresa.setStyle("-fx-border-width: 0;");
@@ -2488,9 +2622,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Taj student vec postoji u Bazi");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Taj student već postoji u Bazi");
+                                        alert.showAndWait();
                                     }
                                 });
                             }
@@ -2502,9 +2636,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
@@ -2521,9 +2655,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Uspesno dodat zaposleni u Bazu");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspešno dodat zaposleni u Bazu");
+                                        alert.showAndWait();
                                         txtIme.setStyle("-fx-border-width: 0;");
                                         txtPrezime.setStyle("-fx-border-width: 0;");
                                         txtMail.setStyle("-fx-border-width: 0;");
@@ -2545,9 +2679,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Taj zaposleni vec postoji u Bazi");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Taj zaposleni već postoji u Bazi");
+                                        alert.showAndWait();
                                     }
                                 });
                             }
@@ -2559,9 +2693,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
@@ -2578,9 +2712,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Uspesno dodat predmet u Bazu");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspešno dodat predmet u Bazu");
+                                        alert.showAndWait();
                                         txtNaziv.setStyle("-fx-border-width: 0;");
                                         cmbSmer.setValue(null);
                                         vfSemestar.setValue(0);
@@ -2598,9 +2732,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Taj predmet vec postoji u Bazi");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Taj predmet već postoji u Bazi");
+                                        alert.showAndWait();
                                     }
                                 });
                             }
@@ -2612,9 +2746,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
@@ -2631,9 +2765,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Uspesno dodata sala u Bazu");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspešno dodata sala u Bazu");
+                                        alert.showAndWait();
                                         txtNaziv.setStyle("-fx-border-width: 0;");
                                         txtKapacitet.setStyle("-fx-border-width: 0;");
                                         cmbOprema.setValue(Sala.tipOpreme.ništa);
@@ -2650,9 +2784,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Nije uspelo dodavanje sale u Bazu");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.ERROR);
+                                        alert.setContentText("Nije uspelo dodavanje sale u Bazu");
+                                        alert.showAndWait();
                                     }
                                 });
                             }
@@ -2664,9 +2798,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
@@ -2683,9 +2817,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Uspesno dodat ispitni rok u Bazu");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspešno dodat ispitni rok u Bazu");
+                                        alert.showAndWait();
                                         txtNaziv.setStyle("-fx-border-width: 0;");
                                         dateOd.setStyle("-fx-border-width: 0;");
                                         dateDo.setStyle("-fx-border-width: 0;");
@@ -2703,9 +2837,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Nije uspelo dodavanje ispitnog roka u Bazu");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.ERROR);
+                                        alert.setContentText("Nije uspelo dodavanje ispitnog roka u Bazu");
+                                        alert.showAndWait();
                                     }
                                 });
                             }
@@ -2717,9 +2851,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
@@ -2737,9 +2871,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Uspesno obrisan student");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspešno obrisan student");
+                                        alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
@@ -2751,9 +2885,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "...");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Nije uspelo brisanje studenta");
+                                        alert.showAndWait();
                                     }
                                 });
                             }
@@ -2765,9 +2899,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
@@ -2782,9 +2916,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Uspesno obrisan zaposleni");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspešno obrisan zaposleni");
+                                        alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
@@ -2796,9 +2930,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "...");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Nije uspelo brisanje zaposlenog");
+                                        alert.showAndWait();
                                     }
                                 });
                             }
@@ -2810,9 +2944,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
@@ -2827,9 +2961,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Uspesno obrisan predmet");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspešno obrisan predmet");
+                                        alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
@@ -2841,9 +2975,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "...");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Nije uspelo brisanje predmeta");
+                                        alert.showAndWait();
                                     }
                                 });
                             }
@@ -2855,9 +2989,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
@@ -2872,9 +3006,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "Uspesno obrisana sala");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspešno obrisana sala");
+                                        alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
@@ -2886,9 +3020,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-                                        Stage dialog = new Dialog(getStage(), "...");
-                                        dialog.sizeToScene();
-                                        dialog.show();
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Nije uspelo brisanje sale");
+                                        alert.showAndWait();
                                     }
                                 });
                             }
@@ -2900,9 +3034,9 @@ public class StudentskaSluzbaForm extends Stage {
 
                             @Override
                             public void run() {
-                                Stage dialog = new Dialog(getStage(), "Server je trenutno nedostupan!", "Molimo vas pokusajte kasnije");
-                                dialog.sizeToScene();
-                                dialog.show();
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
                             }
                         });
                         //e.printStackTrace();
