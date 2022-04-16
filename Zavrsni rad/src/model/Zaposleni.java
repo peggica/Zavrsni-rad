@@ -84,6 +84,10 @@ public class Zaposleni implements Serializable {
         return brojTelefona;
     }
 
+    public String getImePrezime() {
+        return ime + " " +prezime;
+    }
+
     public void setBrojTelefona(String brojTelefona) {
         this.brojTelefona = brojTelefona;
     }

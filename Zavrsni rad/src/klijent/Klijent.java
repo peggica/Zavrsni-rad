@@ -17,6 +17,7 @@ import model.*;
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /** Klase Klijent i RunnableKlijent namenjene za povezivanje klijenta sa serverom i razmenu zahteva/odgovora,
@@ -33,6 +34,7 @@ public class Klijent extends Application {
     private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
     private HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
     private ObservableList<Predmet> nepolozeniPredmeti = FXCollections.observableArrayList();
+    private HashMap<ZakazivanjeSale, ArrayList<String>> sveZakazaneSale = new HashMap<>();
     private StudentskaSluzbaForm studentskaSluzbaForm;
     private ZaposleniForm zaposleniForm;
     private StudentForm studentForm;
@@ -288,13 +290,19 @@ public class Klijent extends Application {
                         sveSale.clear();
                         while (true) { //nisam sigurna za ovu proveru
                             odgovor = inObj.readObject();
-                            if (odgovor.toString().equals("kraj")) {
+                            if (odgovor.toString().equals("svezakazanesale")) {
                                 break;
                             } else {
                                 Sala sala = (Sala) odgovor;
                                 sveSale.add(sala);
                             }
                         }
+                    }
+                    if (odgovor.toString().equals("svezakazanesale")) {
+
+                        sveZakazaneSale.clear();
+                        odgovor = inObj.readObject();
+                        sveZakazaneSale = (HashMap) odgovor;
                     }
 
                     //update na JavaFx application niti
@@ -304,7 +312,7 @@ public class Klijent extends Application {
                         public void run() {
 
                             //prikaz forme za studentsku sluzbu
-                            studentskaSluzbaForm = new StudentskaSluzbaForm(getStage(), sviIspitniRokovi, sviStudenti, sviZaposleni, sviPredmeti, sveSale);
+                            studentskaSluzbaForm = new StudentskaSluzbaForm(getStage(), sviIspitniRokovi, sviStudenti, sviZaposleni, sviPredmeti, sveSale, sveZakazaneSale);
                             getStage().close();
                             studentskaSluzbaForm.show();
 

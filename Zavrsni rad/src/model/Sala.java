@@ -72,5 +72,4 @@ public class Sala implements Serializable {
         return vidljiv;
     }
 
-
 }
