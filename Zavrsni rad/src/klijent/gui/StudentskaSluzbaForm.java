@@ -569,7 +569,7 @@ public class StudentskaSluzbaForm extends Stage {
             btnObrisi.setOnAction(e -> {
                 if (tableStudenti.getSelectionModel().getSelectedItem() != null) {
                     Student izabraniStudent = tableStudenti.getSelectionModel().getSelectedItem();
-                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", tableStudenti, izabraniStudent));
+                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabraniStudent));
                     t.setDaemon(true);
                     t.start();
                 } else {
@@ -973,7 +973,7 @@ public class StudentskaSluzbaForm extends Stage {
             btnObrisi.setOnAction(e -> {
                 if (tableZaposleni.getSelectionModel().getSelectedItem() != null) {
                     Zaposleni izabraniZaposleni = tableZaposleni.getSelectionModel().getSelectedItem();
-                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", tableZaposleni, izabraniZaposleni));
+                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabraniZaposleni));
                     t.setDaemon(true);
                     t.start();
 
@@ -1320,7 +1320,7 @@ public class StudentskaSluzbaForm extends Stage {
                         if (tablePredmeti.getSelectionModel().getSelectedItem() != null) {
                             //TODO: srediti za brisanje predmeta da se azurira i profesor u tabeli raspodela predmeta
                             Map.Entry<Predmet, Zaposleni> izabraniPredmet = tablePredmeti.getSelectionModel().getSelectedItem();
-                            Thread t = new Thread(new RunnableZahtevServeru("obrisi", tablePredmeti, izabraniPredmet.getKey()));
+                            Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabraniPredmet.getKey()));
                             t.setDaemon(true);
                             t.start();
                         } else {
@@ -1607,7 +1607,7 @@ public class StudentskaSluzbaForm extends Stage {
             btnObrisi.setOnAction(e -> {
                 if (tableSale.getSelectionModel().getSelectedItem() != null) {
                     Sala izabranaSala = tableSale.getSelectionModel().getSelectedItem();
-                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", tableSale, izabranaSala));
+                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabranaSala));
                     t.setDaemon(true);
                     t.start();
                 } else {
@@ -1675,27 +1675,133 @@ public class StudentskaSluzbaForm extends Stage {
 
             });
             colZaposleni.setMinWidth(200);
-            TableColumn<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Date> colDatum = new TableColumn("Datum");
-            colDatum.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Date>, ObservableValue<Date>>() {
+            TableColumn<Map.Entry<ZakazivanjeSale, ArrayList<String>>, DatePicker> colDatum = new TableColumn("Datum");
+            colDatum.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, DatePicker>, ObservableValue<DatePicker>>() {
 
-                public SimpleObjectProperty<Date> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Date> zs) {
-                    return new SimpleObjectProperty<Date>(zs.getValue().getKey().getDatum());
+                public SimpleObjectProperty<DatePicker> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, DatePicker> arg0) {
+                    //return new SimpleObjectProperty<DatePicker>(zs.getValue().getKey().getDatum());
+                    ZakazivanjeSale mp = arg0.getValue().getKey();
+
+                    DatePicker datePicker = new DatePicker();
+                    datePicker.setDayCellFactory(picker -> new DateCell() {
+                        public void updateItem(LocalDate date, boolean empty) {
+                            super.updateItem(date, empty);
+                            LocalDate danas = LocalDate.now();
+
+                            setDisable(empty || date.compareTo(danas) < 0 );
+                        }
+                    });
+
+                    datePicker.valueProperty().setValue(LocalDate.parse(mp.getDatum().toString()));
+                    datePicker.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
+
+                        //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
+                        if (!nova_vrednost.equals(stara_vrednost)) {
+                            mp.setDatum(Date.valueOf(nova_vrednost));
+                            ZakazivanjeSale izabranaZakazanaSala = arg0.getValue().getKey();
+                            izabranaZakazanaSala.setDatum(Date.valueOf(nova_vrednost));
+                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabranaZakazanaSala));
+                            t.setDaemon(true);
+                            t.start();
+                        }
+                    });
+                    return new SimpleObjectProperty<DatePicker>(datePicker);
                 }
             });
             colDatum.setMinWidth(150);
-            TableColumn<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Time> colVremeOd = new TableColumn("Vreme početka");
-            colVremeOd.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Time>, ObservableValue<Time>>() {
+            TableColumn<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Spinner> colVremeOd = new TableColumn("Vreme početka");
+            TableColumn<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Spinner> colVremeDo = new TableColumn("Vreme kraja");
+            colVremeOd.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Spinner>, ObservableValue<Spinner>>() {
 
-                public SimpleObjectProperty<Time> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Time> zs) {
-                    return new SimpleObjectProperty<Time>(zs.getValue().getKey().getVremePocetka());
+                public SimpleObjectProperty<Spinner> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Spinner> arg0) {
+
+                    ObservableList<String> vreme = FXCollections.observableArrayList(
+                            "08:00:00", "08:15:00", "08:30:00", "08:45:00", "09:00:00", "09:15:00", "09:30:00", "09:45:00", "10:00:00", "10:15:00", "10:30:00", "10:45:00",
+                            "11:00:00", "11:15:00", "11:30:00", "11:45:00", "12:00:00", "12:15:00", "12:30:00", "12:45:00", "13:00:00", "13:15:00", "13:30:00", "13:45:00",
+                            "14:00:00", "14:15:00", "14:30:00", "14:45:00", "15:00:00", "15:15:00", "15:30:00", "15:45:00", "16:00:00", "16:15:00", "16:30:00", "16:45:00",
+                            "17:00:00", "17:15:00", "17:30:00", "17:45:00", "18:00:00", "18:15:00", "18:30:00", "18:45:00", "19:00:00", "19:15:00", "19:30:00", "19:45:00",
+                            "20:00:00", "20:15:00", "20:30:00", "20:45:00");
+                    Spinner<String> spPocetak = new Spinner();
+                    SpinnerValueFactory<String> vfPocetak = new SpinnerValueFactory.ListSpinnerValueFactory<String>(vreme);
+                    vfPocetak.setValue(arg0.getValue().getKey().getVremePocetka().toString());
+                    spPocetak.setValueFactory(vfPocetak);
+                    spPocetak.setInitialDelay(new Duration(1000));
+                    spPocetak.setRepeatDelay(new Duration(1000));
+
+                    //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
+                    spPocetak.valueProperty().addListener((obs, stara_vrednost, nova_vrednost) -> {
+                        if(nova_vrednost != stara_vrednost) {
+                            if (nova_vrednost.compareTo(arg0.getValue().getKey().getVremeKraja().toString()) < 0) {
+                                vfPocetak.setValue(nova_vrednost);
+                                spPocetak.setOnMouseReleased(e -> {
+                                    ZakazivanjeSale izabranaZakazanaSala = arg0.getValue().getKey();
+                                    izabranaZakazanaSala.setVremePocetka(Time.valueOf(nova_vrednost));
+                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabranaZakazanaSala));
+                                    t.setDaemon(true);
+                                    t.start();
+                                });
+                            } else {
+                                /*Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        setAlert(Alert.AlertType.ERROR);
+                                        alert.setContentText("Vreme početka mora biti pre vremena kraja");
+                                        alert.showAndWait();
+                                        //TODO: da osvezi tabelu
+                                    }
+                                });*/
+                            }
+                        }
+                    });
+
+                    return new SimpleObjectProperty<Spinner>(spPocetak);
+
                 }
             });
             colVremeOd.setMinWidth(100);
-            TableColumn<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Time> colVremeDo = new TableColumn("Vreme kraja");
-            colVremeDo.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Time>, ObservableValue<Time>>() {
+            colVremeDo.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Spinner>, ObservableValue<Spinner>>() {
 
-                public SimpleObjectProperty<Time> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Time> zs) {
-                    return new SimpleObjectProperty<Time>(zs.getValue().getKey().getVremeKraja());
+                public SimpleObjectProperty<Spinner> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Spinner> arg0) {
+                    ObservableList<String> vreme = FXCollections.observableArrayList(
+                            "09:00:00", "09:15:00", "09:30:00", "09:45:00", "10:00:00", "10:15:00", "10:30:00", "10:45:00", "11:00:00", "11:15:00", "11:30:00", "11:45:00",
+                            "12:00:00", "12:15:00", "12:30:00", "12:45:00", "13:00:00", "13:15:00", "13:30:00", "13:45:00", "14:00:00", "14:15:00", "14:30:00", "14:45:00",
+                            "15:00:00", "15:15:00", "15:30:00", "15:45:00", "16:00:00", "16:15:00", "16:30:00", "16:45:00", "17:00:00", "17:15:00", "17:30:00", "17:45:00",
+                            "18:00:00", "18:15:00", "18:30:00", "18:45:00", "19:00:00", "19:15:00", "19:30:00", "19:45:00", "20:00:00", "20:15:00", "20:30:00", "20:45:00");
+                    Spinner<String> spKraj = new Spinner();
+                    SpinnerValueFactory<String> vfKraj = new SpinnerValueFactory.ListSpinnerValueFactory<String>(vreme);
+                    vfKraj.setValue(arg0.getValue().getKey().getVremeKraja().toString());
+                    spKraj.setValueFactory(vfKraj);
+                    spKraj.setInitialDelay(new Duration(1000));
+                    spKraj.setRepeatDelay(new Duration(1000));
+
+                    //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
+                    spKraj.valueProperty().addListener((obs, stara_vrednost, nova_vrednost) -> {
+                        if(nova_vrednost != stara_vrednost) {
+                            //vremePocetka.compareTo(vremeKraja) < 0
+                            if (nova_vrednost.compareTo(arg0.getValue().getKey().getVremePocetka().toString()) > 0) {
+                                vfKraj.setValue(nova_vrednost);
+                                spKraj.setOnMouseReleased(e -> {
+                                    ZakazivanjeSale izabranaZakazanaSala = arg0.getValue().getKey();
+                                    izabranaZakazanaSala.setVremeKraja(Time.valueOf(nova_vrednost));
+                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabranaZakazanaSala));
+                                    t.setDaemon(true);
+                                    t.start();
+                                });
+                            } else {
+                                /*Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        setAlert(Alert.AlertType.ERROR);
+                                        alert.setContentText("Vreme kraja mora biti posle vremena početka");
+                                        alert.showAndWait();
+                                        //TODO: da osvezi tabelu
+                                    }
+                                });*/
+                            }
+                        }
+                    });
+
+                    return new SimpleObjectProperty<Spinner>(spKraj);
                 }
             });
             colVremeDo.setMinWidth(100);
@@ -1706,8 +1812,6 @@ public class StudentskaSluzbaForm extends Stage {
             tableRasporedPoSalama.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableRasporedPoSalama.setPrefHeight(500);
             tableRasporedPoSalama.getColumns().addAll(colSala, colPredmet, colZaposleni, colDatum, colVremeOd, colVremeDo);
-
-            //TODO: dodati za dodavanje/izmenu/oslobadjanje
 
             Label lblSala = new Label("Sala: ");
             lblSala.setMinWidth(Region.USE_PREF_SIZE);
@@ -1783,7 +1887,7 @@ public class StudentskaSluzbaForm extends Stage {
             spMinutiDo.setMaxWidth(50);
 
             Button btnDodaj = new Button("Dodaj");
-            btnDodaj.setMinWidth(60);
+            btnDodaj.setMinWidth(30);
             btnDodaj.setOnMouseClicked(e -> {
 
                 String nazivSale = cmbSala.getValue() == null ? null : cmbSala.getValue().toString();
@@ -1845,12 +1949,31 @@ public class StudentskaSluzbaForm extends Stage {
                     });
                 }
             });
+            Button btnObrisi = new Button("Obriši");
+            btnObrisi.setMinWidth(30);
+            btnObrisi.setOnAction(e -> {
+                if (tableRasporedPoSalama.getSelectionModel().getSelectedItem() != null) {
+                    ZakazivanjeSale IzabranaZakazanaSala = tableRasporedPoSalama.getSelectionModel().getSelectedItem().getKey();
+                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", IzabranaZakazanaSala));
+                    t.setDaemon(true);
+                    t.start();
+                } else {
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.ERROR);
+                            alert.setContentText("Molim vas izaberite zakazanu salu u tabeli");
+                            alert.showAndWait();
+                        }
+                    });
+                }
+            });
 
             HBox hboxAkcija = new HBox();
-            hboxAkcija.setSpacing(5);
+            hboxAkcija.setSpacing(3);
             hboxAkcija.setPadding(new Insets(5, 0, 0, 0));
             hboxAkcija.setAlignment(Pos.BOTTOM_LEFT);
-            hboxAkcija.getChildren().addAll(lblSala, cmbSala, lblPredmet, cmbPredmet, lblPredavac, cmbZaposleni, lblDatum, dpDatum, lblVremeOd, spSatiOd, lblOdvojiOd, spMinutiOd, lblVremeDo, spSatiDo, lblOdvojiDo, spMinutiDo, btnDodaj);
+            hboxAkcija.getChildren().addAll(lblSala, cmbSala, lblPredmet, cmbPredmet, lblPredavac, cmbZaposleni, lblDatum, dpDatum, lblVremeOd, spSatiOd, lblOdvojiOd, spMinutiOd, lblVremeDo, spSatiDo, lblOdvojiDo, spMinutiDo, btnDodaj, btnObrisi);
 
             vbox.getChildren().addAll(tableRasporedPoSalama, hboxAkcija);
             root.setCenter(vbox);
@@ -2277,7 +2400,6 @@ public class StudentskaSluzbaForm extends Stage {
         private Sala sala;
         private IspitniRok ispitniRok;
         private ZakazivanjeSale zakazivanjeSale;
-        private TableView tabela;
         //TODO: Obrisati duplikate, nije potrebno za svako posebno da ima
         private TextField txtIme;
         private TextField txtPrezime;
@@ -2305,7 +2427,7 @@ public class StudentskaSluzbaForm extends Stage {
             this.zahtev = zahtev;
         }
 
-        //konstruktori za izmenu/login podatke
+        //konstruktori za brisanje/izmenu/login podatke
         public RunnableZahtevServeru(Object zahtev, Student student) {
             this.zahtev = zahtev;
             this.student = student;
@@ -2329,6 +2451,11 @@ public class StudentskaSluzbaForm extends Stage {
         public RunnableZahtevServeru(Object zahtev, IspitniRok ispitniRok) {
             this.zahtev = zahtev;
             this.ispitniRok = ispitniRok;
+        }
+
+        public RunnableZahtevServeru(Object zahtev, ZakazivanjeSale zakazivanjeSale) {
+            this.zahtev = zahtev;
+            this.zakazivanjeSale = zakazivanjeSale;
         }
 
         //konstruktori za dodavanje
@@ -2389,31 +2516,6 @@ public class StudentskaSluzbaForm extends Stage {
             this.cmbPredmet = cmbPredmet;
             this.dpDatum = dpDatum;
             //*
-        }
-
-        //konstruktori za brisanje
-        public RunnableZahtevServeru(Object zahtev, TableView<Student> tabela, Student student) {
-            this.zahtev = zahtev;
-            this.tabela = tabela;
-            this.student = student;
-        }
-
-        public RunnableZahtevServeru(Object zahtev, TableView<Zaposleni> tabela, Zaposleni zaposleni) {
-            this.zahtev = zahtev;
-            this.tabela = tabela;
-            this.zaposleni = zaposleni;
-        }
-
-        public RunnableZahtevServeru(Object zahtev, TableView<HashMap.Entry<Predmet, Zaposleni>> tabela, Predmet predmet) {
-            this.zahtev = zahtev;
-            this.tabela = tabela;
-            this.predmet = predmet;
-        }
-
-        public RunnableZahtevServeru(Object zahtev, TableView<Sala> tabela, Sala sala) {
-            this.zahtev = zahtev;
-            this.tabela = tabela;
-            this.sala = sala;
         }
 
         @Override
@@ -2853,6 +2955,51 @@ public class StudentskaSluzbaForm extends Stage {
                         });
                         //e.printStackTrace();
                     }
+                } else if (zakazivanjeSale != null) {
+                    try {
+                        outObj.writeObject(zahtev + "ZakazanuSalu");
+                        outObj.writeObject(zakazivanjeSale);
+                        try {
+                            odgovor = inObj.readObject();
+                            if (odgovor.equals("uspelo")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspesno izmenjeni podaci za zakazanu salu");
+                                        alert.showAndWait();
+                                    }
+                                });
+                                //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
+                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osvezi"));
+                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                                runnableZahtevServeru.setDaemon(true);
+                                runnableZahtevServeru.start();
+                            } else {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        setAlert(Alert.AlertType.ERROR);
+                                        alert.setContentText("Nije uspela izmena podataka za zakazanu salu");
+                                        alert.showAndWait();
+                                    }
+                                });
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
+                            }
+                        });
+                        //e.printStackTrace();
+                    }
                 }
             } else if (zahtev.equals("dodaj")) {
                 if (student != null) {
@@ -3185,7 +3332,7 @@ public class StudentskaSluzbaForm extends Stage {
                     }
                 }
             } else if (zahtev.equals("obrisi")) {
-                //ukoliko je pozvan konstruktor za brisanje studenta/zaposlenog/predmeta/sale
+                //ukoliko je pozvan konstruktor za brisanje studenta/zaposlenog/predmeta/sale/zakazane sale
                 if (student != null) {
                     try {
                         outObj.writeObject(zahtev + "Studenta");
@@ -3366,11 +3513,59 @@ public class StudentskaSluzbaForm extends Stage {
                         });
                         //e.printStackTrace();
                     }
+                }  else if (zakazivanjeSale != null) {
+                    try {
+                        outObj.writeObject(zahtev + "ZakazanuSalu");
+                        outObj.writeObject(zakazivanjeSale);
+                        try {
+                            odgovor = inObj.readObject();
+                            if (odgovor.equals("uspelo")) {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Uspešno oslobođena sala");
+                                        alert.showAndWait();
+                                    }
+                                });
+                                //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
+                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osvezi"));
+                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                                runnableZahtevServeru.setDaemon(true);
+                                runnableZahtevServeru.start();
+                            } else {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        setAlert(Alert.AlertType.INFORMATION);
+                                        alert.setContentText("Nije uspelo oslobađanje sale");
+                                        alert.showAndWait();
+                                    }
+                                });
+                            }
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (IOException e) {
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.showAndWait();
+                            }
+                        });
+                        //e.printStackTrace();
+                    }
                 }
             }
             student = null;
             zaposleni = null;
             predmet = null;
+            sala = null;
+            ispitniRok = null;
+            zakazivanjeSale = null;
             //ZATVARANJE KONEKCIJE
             if (socket != null && (inObj != null || outObj != null)) {
                 try {

@@ -40,12 +40,24 @@ public class ZakazivanjeSale implements Serializable {
         return datum;
     }
 
+    public void setDatum(Date datum) {
+        this.datum = datum;
+    }
+
     public Time getVremePocetka() {
         return vremePocetka;
     }
 
+    public void setVremePocetka(Time vremePocetka) {
+        this.vremePocetka = vremePocetka;
+    }
+
     public Time getVremeKraja() {
         return vremeKraja;
+    }
+
+    public void setVremeKraja(Time vremeKraja) {
+        this.vremeKraja = vremeKraja;
     }
 
 }

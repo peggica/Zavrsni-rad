@@ -782,6 +782,48 @@ public class Server extends Application {
                         outObj.writeObject("nijeUspelo");
                         outObj.flush();
                     }
+                } else if (zahtev.equals("izmeniZakazanuSalu")) {
+
+                    ZakazivanjeSale zakazivanjeSale = (ZakazivanjeSale) inObj.readObject();
+                    String query1 = "SELECT * FROM ZakazivanjeSale WHERE datum = '" + zakazivanjeSale.getDatum() + "' AND (('" + zakazivanjeSale.getVremePocetka() + "'>= vremePocetka AND '" + zakazivanjeSale.getVremePocetka() + "' < vremeKraja) OR ('" + zakazivanjeSale.getVremeKraja() + "' > vremePocetka AND '" + zakazivanjeSale.getVremeKraja() + "' <= vremeKraja)) AND idSale = '" + zakazivanjeSale.getIdSale() + "'";
+                    resultset = statement.executeQuery(query1);
+                    int brojac = 0;
+                    int idSale = 0;
+                    while (resultset.next()) {
+                        idSale = resultset.getInt("idSale");
+                        brojac++;
+                    }
+                    if (brojac != 0) {
+                        if (brojac == 1) {
+                            if (idSale == zakazivanjeSale.getIdSale()) {
+                                String query2 = "UPDATE ZakazivanjeSale SET `datum` = '" + zakazivanjeSale.getDatum() + "', `vremePocetka` = '" + zakazivanjeSale.getVremePocetka() + "', `vremeKraja` = '" + zakazivanjeSale.getVremeKraja() + "' WHERE `idSale` = '" + zakazivanjeSale.getIdSale() + "' AND `idPredmeta` = '" + zakazivanjeSale.getIdPredmeta() + "' AND `idZaposlenog` = '" + zakazivanjeSale.getIdZaposlenog() + "'";
+                                int izmena = statement.executeUpdate(query2);
+                                if (izmena != 0) {
+                                    outObj.writeObject("uspelo");
+                                    outObj.flush();
+                                } else {
+                                    outObj.writeObject("nijeUspelo");
+                                    outObj.flush();
+                                }
+                            } else {
+                                outObj.writeObject("nijeUspelo");
+                                outObj.flush();
+                            }
+                        } else {
+                            outObj.writeObject("nijeUspelo");
+                            outObj.flush();
+                        }
+                    } else {
+                        String query2 = "UPDATE ZakazivanjeSale SET `datum` = '" + zakazivanjeSale.getDatum() + "', `vremePocetka` = '" + zakazivanjeSale.getVremePocetka() + "', `vremeKraja` = '" + zakazivanjeSale.getVremeKraja() + "' WHERE `idSale` = '" + zakazivanjeSale.getIdSale() + "' AND `idPredmeta` = '" + zakazivanjeSale.getIdPredmeta() + "' AND `idZaposlenog` = '" + zakazivanjeSale.getIdZaposlenog() + "'";
+                        int izmena = statement.executeUpdate(query2);
+                        if (izmena != 0) {
+                            outObj.writeObject("uspelo");
+                            outObj.flush();
+                        } else {
+                            outObj.writeObject("nijeUspelo");
+                            outObj.flush();
+                        }
+                    }
                 } else if (zahtev.equals("dodajStudenta")) {
 
                     Student student = (Student) inObj.readObject();
@@ -877,24 +919,21 @@ public class Server extends Application {
                 } else if (zahtev.equals("dodajZakazivanjeSale")) {
 
                     ZakazivanjeSale zakazivanjeSale = (ZakazivanjeSale) inObj.readObject();
-                    String query1 = "SELECT * FROM ZakazivanjeSale WHERE datum = '" + zakazivanjeSale.getDatum() + "' AND '" + zakazivanjeSale.getVremePocetka() + "'BETWEEN vremePocetka AND vremeKraja OR '" + zakazivanjeSale.getVremeKraja() + "'BETWEEN vremePocetka AND vremeKraja";
+                    String query1 = "SELECT * FROM ZakazivanjeSale WHERE datum = '" + zakazivanjeSale.getDatum() + "' AND (('" + zakazivanjeSale.getVremePocetka() + "'>= vremePocetka AND '" + zakazivanjeSale.getVremePocetka() + "' < vremeKraja) OR ('" + zakazivanjeSale.getVremeKraja() + "' > vremePocetka AND '" + zakazivanjeSale.getVremeKraja() + "' <= vremeKraja)) AND idSale = '" + zakazivanjeSale.getIdSale() + "'";
                     resultset = statement.executeQuery(query1);
                     if (!resultset.next()) {
-                        int izmena = 0;
                         String query2 = "INSERT INTO ZakazivanjeSale(idSale, idPredmeta, idZaposlenog, datum, vremePocetka, vremeKraja) VALUES ('" + zakazivanjeSale.getIdSale() + "', '" + zakazivanjeSale.getIdPredmeta() + "', '" + zakazivanjeSale.getIdZaposlenog() + "', '" + zakazivanjeSale.getDatum() + "', '" + zakazivanjeSale.getVremePocetka() + "', '" + zakazivanjeSale.getVremeKraja() + "')";
-                        izmena = statement.executeUpdate(query2);
+                        int izmena = statement.executeUpdate(query2);
                         if (izmena != 0) {
                             outObj.writeObject("uspelo");
                             outObj.flush();
                         } else {
                             outObj.writeObject("nijeUspelo");
                             outObj.flush();
-                            System.out.println('b');
                         }
                     } else {
                         outObj.writeObject("nijeUspelo");
                         outObj.flush();
-                        System.out.println("a");
                     }
                 } else if (zahtev.equals("obrisiStudenta")) {
 
@@ -946,6 +985,18 @@ public class Server extends Application {
 
                     Sala sala = (Sala) inObj.readObject();
                     query = "UPDATE Sala SET `vidljiv` = '0' WHERE (`idSale` = '" + sala.getIdSale() + "')";
+                    int izmena = statement.executeUpdate(query);
+                    if (izmena != 0) {
+                        outObj.writeObject("uspelo");
+                        outObj.flush();
+                    } else {
+                        outObj.writeObject("nepostoji");
+                        outObj.flush();
+                    }
+                } else if (zahtev.equals("obrisiZakazanuSalu")) {
+
+                    ZakazivanjeSale zakazivanjeSale = (ZakazivanjeSale) inObj.readObject();
+                    query = "DELETE FROM ZakazivanjeSale WHERE `idSale` = '" + zakazivanjeSale.getIdSale() + "' AND `idPredmeta` = '" + zakazivanjeSale.getIdPredmeta() + "' AND `idZaposlenog` = '" + zakazivanjeSale.getIdZaposlenog() + "' AND `datum` = '" + zakazivanjeSale.getDatum() + "' AND `vremePocetka` = '" + zakazivanjeSale.getVremePocetka() + "'";
                     int izmena = statement.executeUpdate(query);
                     if (izmena != 0) {
                         outObj.writeObject("uspelo");
