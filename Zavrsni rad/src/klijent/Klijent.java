@@ -357,7 +357,7 @@ public class Klijent extends Application {
 
                         }
                     });
-                    while(true) {
+                    while (true) {
 
                         //na svakih 10 sekundi da ponovo pokrene nit i na taj nacin osvezi podatke
                         try {
@@ -365,13 +365,13 @@ public class Klijent extends Application {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajZaposleni));
+                        //Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajZaposleni));
                         //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                        runnableKlijentOsvezi.setDaemon(true);
-                        runnableKlijentOsvezi.start();
+                        //runnableKlijentOsvezi.setDaemon(true);
+                        //runnableKlijentOsvezi.start();
                     }
 
-                }  else if (odgovor.equals("student")) {
+                } else if (odgovor.equals("student")) {
 
                     odgovor = inObj.readObject();
                     ovajStudent = (Student) odgovor;
@@ -410,7 +410,7 @@ public class Klijent extends Application {
 
                         }
                     });
-                    while(true) {
+                    while (true) {
 
                         //na svakih 10 sekundi da ponovo pokrene nit i na taj nacin osvezi podatke
                         try {
@@ -418,10 +418,10 @@ public class Klijent extends Application {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajStudent));
+                        //Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajStudent));
                         //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                        runnableKlijentOsvezi.setDaemon(true);
-                        runnableKlijentOsvezi.start();
+                        //runnableKlijentOsvezi.setDaemon(true);
+                        //runnableKlijentOsvezi.start();
                     }
                 }
             } catch (UnknownHostException e) {
@@ -458,147 +458,4 @@ public class Klijent extends Application {
             }
         }
     }
-
-    /** Klasa RunnableKlijentOsveziZaposleni namenjena za osvezavanje tj ponovno
-     *  preuzimanje vrednosti sa servera za prikaz na formi korisnika.
-     *  @author Biljana Stanojevic  */
-    private class RunnableKlijentOsvezi implements Runnable {
-
-        private Socket socket = null;
-        private ObjectInputStream inObj;
-        private ObjectOutputStream outObj;
-        private Object odgovor;
-        private Student student;
-        private Zaposleni zaposleni;
-
-        public RunnableKlijentOsvezi(Zaposleni zaposleni) {
-            this.zaposleni = zaposleni;
-        }
-
-        public RunnableKlijentOsvezi(Student student) {
-            this.student = student;
-        }
-
-        @Override
-        public void run() {
-
-            //OTVARANJE KONEKCIJE
-            try {
-                InetAddress addr = InetAddress.getByName("127.0.0.1");
-                Socket socket = new Socket(addr, TCP_PORT);
-                inObj = new ObjectInputStream(socket.getInputStream());
-                outObj = new ObjectOutputStream(socket.getOutputStream());
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if (zaposleni != null) {
-
-                //ukoliko je pozvan konstruktor za zaposlenog
-                try {
-                    outObj.writeObject("zaposleni");
-                    try {
-                        odgovor = inObj.readObject();
-                    } catch (ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                if (odgovor.toString().equals("sviispitnirokovi")) {
-
-                    sviIspitniRokovi.clear();
-                    while (true) { //nisam sigurna za ovu proveru
-                        try {
-                            odgovor = inObj.readObject();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } catch (ClassNotFoundException e) {
-                            e.printStackTrace();
-                        }
-                        if (odgovor.toString().equals("kraj")) {
-                            break;
-                        } else {
-                            IspitniRok ispitniRok = (IspitniRok) odgovor;
-                            sviIspitniRokovi.add(ispitniRok);
-                        }
-                    }
-                }
-                //update na JavaFx application niti
-                Platform.runLater(new Runnable() {
-
-                    @Override
-                    public void run() {
-
-                        //azuriranje/ponovno popunjavanje svih listi
-                        zaposleniForm.setSviIspitniRokovi(sviIspitniRokovi);
-                        System.out.println("Osvezeni podaci sa strane servera");
-
-                    }
-                });
-            } else if (student != null) {
-
-                //ukoliko je pozvan konstruktor za studenta
-                try {
-                    outObj.writeObject("student");
-                    try {
-                        odgovor = inObj.readObject();
-                    } catch (ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                if (odgovor.toString().equals("sviispitnirokovi")) {
-
-                    sviIspitniRokovi.clear();
-                    while (true) { //nisam sigurna za ovu proveru
-                        try {
-                            odgovor = inObj.readObject();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } catch (ClassNotFoundException e) {
-                            e.printStackTrace();
-                        }
-                        if (odgovor.toString().equals("kraj")) {
-                            break;
-                        } else {
-                            IspitniRok ispitniRok = (IspitniRok) odgovor;
-                            sviIspitniRokovi.add(ispitniRok);
-                        }
-                    }
-                }
-                //update na JavaFx application niti
-                Platform.runLater(new Runnable() {
-
-                    @Override
-                    public void run() {
-
-                        //azuriranje/ponovno popunjavanje svih listi
-                        //TODO: da li mi treba da se osvezavaju stalno polozeni-nepolozeni predmeti?
-                        studentForm.setSviIspitniRokovi(sviIspitniRokovi);
-                        studentForm.setPolozeniPredmeti(polozeniPredmeti);
-                        studentForm.setNepolozeniPredmeti(nepolozeniPredmeti);
-                        System.out.println("Osvezeni podaci sa strane servera");
-
-                    }
-                });
-
-            }
-            //ZATVARANJE KONEKCIJE
-            if (socket != null && (inObj != null || outObj != null)) {
-                try {
-                    socket.close();
-                    inObj.close();
-                    outObj.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
 }

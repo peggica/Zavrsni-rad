@@ -81,6 +81,10 @@ public class Student implements Serializable {
         return finansiranje;
     }
 
+    public void setFinansiranje(tipFinansiranja tipFin) {
+        this.finansiranje = tipFin.toString();
+    }
+
     public String getAdresa() {
         return adresa;
     }
