@@ -35,6 +35,7 @@ public class Klijent extends Application {
     private HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
     private ObservableList<Predmet> nepolozeniPredmeti = FXCollections.observableArrayList();
     private HashMap<ZakazivanjeSale, ArrayList<String>> sveZakazaneSale = new HashMap<>();
+    private HashMap<ZakazivanjeSale, ArrayList<String>> rasporedIspita = new HashMap<>();
     private StudentskaSluzbaForm studentskaSluzbaForm;
     private ZaposleniForm zaposleniForm;
     private StudentForm studentForm;
@@ -304,6 +305,12 @@ public class Klijent extends Application {
                         odgovor = inObj.readObject();
                         sveZakazaneSale = (HashMap) odgovor;
                     }
+                    if (odgovor.toString().equals("rasporedispita")) {
+
+                        rasporedIspita.clear();
+                        odgovor = inObj.readObject();
+                        rasporedIspita = (HashMap) odgovor;
+                    }
 
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
@@ -312,7 +319,7 @@ public class Klijent extends Application {
                         public void run() {
 
                             //prikaz forme za studentsku sluzbu
-                            studentskaSluzbaForm = new StudentskaSluzbaForm(getStage(), sviIspitniRokovi, sviStudenti, sviZaposleni, sviPredmeti, sveSale, sveZakazaneSale);
+                            studentskaSluzbaForm = new StudentskaSluzbaForm(getStage(), sviIspitniRokovi, sviStudenti, sviZaposleni, sviPredmeti, sveSale, sveZakazaneSale, rasporedIspita);
                             getStage().close();
                             studentskaSluzbaForm.show();
 

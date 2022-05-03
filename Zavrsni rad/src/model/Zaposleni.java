@@ -17,6 +17,11 @@ public class Zaposleni implements Serializable {
     private String brojTelefona;
     private boolean vidljiv;
 
+    public Zaposleni() {
+        this.setIme("");
+        this.setPrezime("");
+    }
+
     public Zaposleni(int idZaposlenog, tipZaposlenog tip, String ime, String prezime, String adresa, String email, String brojTelefona, boolean vidljiv) {
 
         this.idZaposlenog = idZaposlenog;

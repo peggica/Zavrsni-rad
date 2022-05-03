@@ -42,9 +42,11 @@ public class StudentskaSluzbaForm extends Stage {
     private HashMap<Predmet, Zaposleni> sviPredmeti = new HashMap<>();
     private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
     private HashMap<ZakazivanjeSale, ArrayList<String>> sveZakazaneSale = new HashMap<>();
+    private HashMap<ZakazivanjeSale, ArrayList<String>> rasporedIspita = new HashMap<>();
     Pattern patternEmail = Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
     Pattern patternTelefon = Pattern.compile("^(\\+\\d{1,3}( )?)?((\\(\\d{1,3}\\))|\\d{1,3})[- .]?\\d{3,4}[- .]?\\d{4}$");
     private static Alert alert = new Alert(Alert.AlertType.NONE);
+    private TableView tabela;
 
     public static Stage getStage() {
 
@@ -71,8 +73,21 @@ public class StudentskaSluzbaForm extends Stage {
         this.sveSale = sveSale;
     }
 
+    //TODO: refresh za predmete, sve zakazane sale i raspored ispita naizmenicno radi - HashMape
     public void setSveZakazaneSale(HashMap<ZakazivanjeSale, ArrayList<String>> sveZakazaneSale) {
         this.sveZakazaneSale = sveZakazaneSale;
+    }
+
+    public void setRasporedIspita(HashMap<ZakazivanjeSale, ArrayList<String>> rasporedIspita) {
+        this.rasporedIspita = rasporedIspita;
+    }
+
+    public void setTabela(TableView tabela) {
+        this.tabela = tabela;
+    }
+
+    public TableView getTabela() {
+        return tabela;
     }
 
     /**
@@ -128,7 +143,7 @@ public class StudentskaSluzbaForm extends Stage {
         root.setCenter(null);
     }
 
-    public StudentskaSluzbaForm(Stage stage, ObservableList<IspitniRok> sviIspitniRokovi, ObservableList<Student> sviStudenti, ObservableList<Zaposleni> sviZaposleni, HashMap<Predmet, Zaposleni> predmeti, ObservableList<Sala> sveSale, HashMap<ZakazivanjeSale, ArrayList<String>> zakazaneSale) {
+    public StudentskaSluzbaForm(Stage stage, ObservableList<IspitniRok> sviIspitniRokovi, ObservableList<Student> sviStudenti, ObservableList<Zaposleni> sviZaposleni, HashMap<Predmet, Zaposleni> predmeti, ObservableList<Sala> sveSale, HashMap<ZakazivanjeSale, ArrayList<String>> zakazaneSale, HashMap<ZakazivanjeSale, ArrayList<String>> ispitiRaspored) {
 
         super();
         stage.setOnCloseRequest(event -> {
@@ -143,6 +158,7 @@ public class StudentskaSluzbaForm extends Stage {
         setSviPredmeti(predmeti);
         setSveSale(sveSale);
         setSveZakazaneSale(zakazaneSale);
+        setRasporedIspita(ispitiRaspored);
 
         BorderPane root = new BorderPane();
         MenuBar menuBar = new MenuBar();
@@ -547,6 +563,7 @@ public class StudentskaSluzbaForm extends Stage {
                 //AKO SU UNETI SAMO IME I PREZIME ILI AKO SU UNETI SVI ILI EMAIL ILI TELEFON ALI ISPRAVNO
                 if ((ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && validniTelefon) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && validniTelefon)) {
                 //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
+                    setTabela(tableStudenti);
                     Student student = new Student(Student.idNovogStudenta(sviStudenti, smer, godinaUpisa), godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, brojTelefona, true);
                     Thread t = new Thread(new RunnableZahtevServeru("dodaj", student, txtIme, txtPrezime, txtAdresa, txtMail, txtTelefon, cmbSmer, cmbFinansiranje));
                     t.setDaemon(true);
@@ -594,6 +611,7 @@ public class StudentskaSluzbaForm extends Stage {
             btnObrisi.setOnAction(e -> {
                 if (tableStudenti.getSelectionModel().getSelectedItem() != null) {
                     Student izabraniStudent = tableStudenti.getSelectionModel().getSelectedItem();
+                    setTabela(tableStudenti);
                     Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabraniStudent));
                     t.setDaemon(true);
                     t.start();
@@ -954,6 +972,7 @@ public class StudentskaSluzbaForm extends Stage {
                 if ((ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && validniTelefon) || (ime.length() != 0 && prezime.length() != 0 && validniEmail && brojTelefona.length() == 0) || (ime.length() != 0 && prezime.length() != 0 && email.length() == 0 && validniTelefon)) {
                     //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
                     Zaposleni zaposleni = new Zaposleni(Zaposleni.idNovogZaposlenog(sviZaposleni, pozicija), Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, brojTelefona, true);
+                    setTabela(tableZaposleni);
                     Thread t = new Thread(new RunnableZahtevServeru("dodaj", zaposleni, cmbPozicija, txtIme, txtPrezime, txtMail, txtTelefon, txtAdresa));
                     t.setDaemon(true);
                     t.start();
@@ -997,6 +1016,7 @@ public class StudentskaSluzbaForm extends Stage {
             btnObrisi.setMinWidth(60);
             btnObrisi.setOnAction(e -> {
                 if (tableZaposleni.getSelectionModel().getSelectedItem() != null) {
+                    setTabela(tableZaposleni);
                     Zaposleni izabraniZaposleni = tableZaposleni.getSelectionModel().getSelectedItem();
                     Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabraniZaposleni));
                     t.setDaemon(true);
@@ -1312,7 +1332,6 @@ public class StudentskaSluzbaForm extends Stage {
                 }
                 int semestar = vfSemestar.getValue();
                 int espb = vfEspb.getValue();
-                String profesor = txtProfesor.getText();
 
                 //AKO JE UNET NAZIV, OSTALI SU OPCIONI JER SMER MOZE BITI ZAJEDNICKI
                 if (naziv.length() != 0) {
@@ -1322,6 +1341,7 @@ public class StudentskaSluzbaForm extends Stage {
                     } else {
                         predmet = new Predmet(Predmet.idNovogPredmeta(FXCollections.observableArrayList(sviPredmeti.keySet()), smer), naziv, null, semestar, espb, true);
                     }
+                    setTabela(tablePredmeti);
                     Thread t = new Thread(new RunnableZahtevServeru("dodaj", predmet, txtNaziv, cmbSmer, vfSemestar, vfEspb, txtProfesor));
                     t.setDaemon(true);
                     t.start();
@@ -1344,8 +1364,9 @@ public class StudentskaSluzbaForm extends Stage {
             btnObrisi.setOnAction(e -> {
                         if (tablePredmeti.getSelectionModel().getSelectedItem() != null) {
                             //TODO: srediti za brisanje predmeta da se azurira i profesor u tabeli raspodela predmeta
-                            Map.Entry<Predmet, Zaposleni> izabraniPredmet = tablePredmeti.getSelectionModel().getSelectedItem();
-                            Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabraniPredmet.getKey()));
+                            Map.Entry<Predmet, Zaposleni> predmet = tablePredmeti.getSelectionModel().getSelectedItem();
+                            setTabela(tablePredmeti);
+                            Thread t = new Thread(new RunnableZahtevServeru("obrisi", predmet.getKey(), predmet.getValue().getIdZaposlenog()));
                             t.setDaemon(true);
                             t.start();
                         } else {
@@ -1587,6 +1608,7 @@ public class StudentskaSluzbaForm extends Stage {
                     //AKO JE UNETI NAZIV I KAPACITET, OPREMA NIJE OBAVEZNA
                     if (naziv.length() != 0 && brojMesta >= 0) {
                         Sala sala = new Sala(naziv, brojMesta, Sala.tipOpreme.valueOf(oprema.equals("/") ? "ništa" : oprema), true);
+                        setTabela(tableSale);
                         Thread t = new Thread(new RunnableZahtevServeru("dodaj", sala, txtNaziv, txtKapacitet, cmbOprema));
                         t.setDaemon(true);
                         t.start();
@@ -1632,6 +1654,7 @@ public class StudentskaSluzbaForm extends Stage {
             btnObrisi.setOnAction(e -> {
                 if (tableSale.getSelectionModel().getSelectedItem() != null) {
                     Sala izabranaSala = tableSale.getSelectionModel().getSelectedItem();
+                    setTabela(tableSale);
                     Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabranaSala));
                     t.setDaemon(true);
                     t.start();
@@ -1717,6 +1740,7 @@ public class StudentskaSluzbaForm extends Stage {
                         }
                     });
 
+                    //TODO: proveriti za null
                     datePicker.valueProperty().setValue(LocalDate.parse(mp.getDatum().toString()));
                     datePicker.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
 
@@ -1938,7 +1962,12 @@ public class StudentskaSluzbaForm extends Stage {
                     OptionalInt idPredmeta = sviPredmeti.keySet().stream().filter(p -> p.getNaziv().equals(nazivPredmeta)).mapToInt(Predmet::getIdPredmeta).findFirst();
                     OptionalInt idZaposlenog = sviZaposleni.stream().filter(z -> z.getImePrezime().equals(zaposleni)).mapToInt(Zaposleni::getIdZaposlenog).findFirst();
                     ZakazivanjeSale zakazivanjeSale = new ZakazivanjeSale(idSale.getAsInt(), idPredmeta.getAsInt(), idZaposlenog.getAsInt(), datum, vremePocetka, vremeKraja);
-                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", zakazivanjeSale, cmbSala, cmbZaposleni, cmbPredmet, dpDatum, spSatiOd, spMinutiOd, spSatiDo, spMinutiDo));
+                    ArrayList<String> vrednost = new ArrayList<>();
+                    vrednost.add(nazivSale);
+                    vrednost.add(nazivPredmeta);
+                    vrednost.add(zaposleni);
+                    setTabela(tableRasporedPoSalama);
+                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", zakazivanjeSale, vrednost, cmbSala, cmbZaposleni, cmbPredmet, dpDatum, spSatiOd, spMinutiOd, spSatiDo, spMinutiDo));
                     t.setDaemon(true);
                     t.start();
                 } else {
@@ -1978,18 +2007,16 @@ public class StudentskaSluzbaForm extends Stage {
                         }
                     });
                 }
-                tableRasporedPoSalama.refresh();
             });
             Button btnObrisi = new Button("Obriši");
             btnObrisi.setMinWidth(30);
             btnObrisi.setOnAction(e -> {
                 if (tableRasporedPoSalama.getSelectionModel().getSelectedItem() != null) {
-                    ZakazivanjeSale IzabranaZakazanaSala = tableRasporedPoSalama.getSelectionModel().getSelectedItem().getKey();
-                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", IzabranaZakazanaSala));
+                    ZakazivanjeSale izabranaZakazanaSala = tableRasporedPoSalama.getSelectionModel().getSelectedItem().getKey();
+                    setTabela(tableRasporedPoSalama);
+                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabranaZakazanaSala));
                     t.setDaemon(true);
                     t.start();
-                    //treba da osvezim tabelu na formi da se vidi promena
-                    //System.out.println(zakazaneSale); - zasto su prazne?
                 } else {
                     Platform.runLater(new Runnable() {
                         @Override
@@ -2000,7 +2027,6 @@ public class StudentskaSluzbaForm extends Stage {
                         }
                     });
                 }
-                tableRasporedPoSalama.refresh();
             });
 
             HBox hboxAkcija = new HBox();
@@ -2317,6 +2343,7 @@ public class StudentskaSluzbaForm extends Stage {
                 if ((naziv.length() != 0 && dateOd.getValue() != null && dateDo.getValue() != null && dateDo.getValue().isAfter(dateOd.getValue())) || (naziv.length() != 0 && dateOd.getValue() == null && dateDo.getValue() == null)) {
 
                     //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
+                    setTabela(tableIspitniRokovi);
                     IspitniRok ispitniRok = new IspitniRok(naziv, pocetakRoka, krajRoka, false);
                     Thread t = new Thread(new RunnableZahtevServeru("dodaj", ispitniRok, txtNaziv, dateOd, dateDo));
                     t.setDaemon(true);
@@ -2377,33 +2404,89 @@ public class StudentskaSluzbaForm extends Stage {
 
             Label lblPretraga = new Label("Ispiti: ");
             lblPretraga.setFont(font15);
-
             TextField txtPretraga = new TextField();
 
+            TableView<Map.Entry<ZakazivanjeSale, ArrayList<String>>> tableRasporedIspita = new TableView<>();
+
             Button btnPretrazi = new Button("pretraži");
+            btnPretrazi.setFont(font15);
+            btnPretrazi.setOnMouseClicked(e -> {
+                String trazeno = txtPretraga.getText().toLowerCase();
+                ObservableList<HashMap.Entry<ZakazivanjeSale, ArrayList<String>>> nadjeni = FXCollections.observableArrayList(rasporedIspita.entrySet().stream().filter(map -> map.getValue().get(0).toLowerCase().contains(trazeno) || map.getValue().get(1).toLowerCase().contains(trazeno) || map.getValue().get(2).equals(trazeno) || sveSale.stream().anyMatch(s -> s.getNaziv().toLowerCase().contains(trazeno)) || map.getKey().getDatum().toString().contains(trazeno) || map.getKey().getVremePocetka().toString().contains(trazeno)).collect(Collectors.toMap(map -> map.getKey(), map -> map.getValue())).entrySet());
+                tableRasporedIspita.setItems(nadjeni);
+            });
             hBoxPretraga.getChildren().addAll(lblPretraga, txtPretraga, btnPretrazi);
 
-            TableView<String> tableRasporedIspita = new TableView<String>();
-            tableRasporedIspita.setPlaceholder(new Label("Ne postoji ni jedan zakazani ispit u Bazi Podataka"));
+            tableRasporedIspita.setPlaceholder(new Label("Ne postoji ni jedan zakazani ispit za ispitni rok u Bazi Podataka"));
             tableRasporedIspita.getColumns().clear();
 
-            TableColumn<String, String> colSifra = new TableColumn("Šifra");
-            colSifra.setMinWidth(100);
-            TableColumn<String, String> colPredmet = new TableColumn("Predmet");
-            colPredmet.setMinWidth(240);
-            TableColumn<String, String> colProfesor = new TableColumn("Profesor");
-            colProfesor.setMinWidth(200);
-            TableColumn<String, String> colDatum = new TableColumn("Datum");
+            TableColumn colPredmet = new TableColumn("Predmet");
+            colPredmet.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String>, ObservableValue<String>>() {
+
+                @Override
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String> zs) {
+                    return new SimpleObjectProperty<String>(zs.getValue().getValue().get(0));
+                }
+
+            });
+            colPredmet.setMinWidth(300);
+            TableColumn colProfesor = new TableColumn("Profesor");
+            colProfesor.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String>, ObservableValue<String>>() {
+
+                @Override
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String> zs) {
+                    return new SimpleObjectProperty<String>(zs.getValue().getValue().get(1));
+                }
+
+            });
+            colProfesor.setMinWidth(300);
+            TableColumn colDatum = new TableColumn("Datum");
+            colDatum.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Date>, ObservableValue<Date>>() {
+
+                @Override
+                public ObservableValue<Date> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Date> zs) {
+                    return new SimpleObjectProperty<Date>(zs.getValue().getKey().getDatum());
+                }
+
+            });
             colDatum.setMinWidth(100);
-            TableColumn<String, String> colVreme = new TableColumn("Vreme");
+            TableColumn colVreme = new TableColumn("Vreme");
+            colVreme.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Time>, ObservableValue<Time>>() {
+
+                @Override
+                public ObservableValue<Time> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Time> zs) {
+                    return new SimpleObjectProperty<Time>(zs.getValue().getKey().getVremePocetka());
+                }
+
+            });
             colVreme.setMinWidth(50);
-            TableColumn<String, String> colSala = new TableColumn("Sala");
-            colSala.setMinWidth(50);
-            TableColumn<String, String> colBrPrijava = new TableColumn("Prijave");
+            TableColumn colSala = new TableColumn("Sala");
+            colSala.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String>, ObservableValue<String>>() {
+
+                @Override
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String> zs) {
+                    return new SimpleObjectProperty<String>(sveSale.stream().filter(s -> s.getIdSale() == zs.getValue().getKey().getIdSale()).map(i -> i.getNaziv()).findFirst().map(Object::toString).orElse(null));
+                }
+
+            });
+            colSala.setMinWidth(150);
+            TableColumn colBrPrijava = new TableColumn("Prijave");
+            colBrPrijava.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String>, ObservableValue<String>>() {
+
+                @Override
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String> zs) {
+                    return new SimpleObjectProperty<String>(zs.getValue().getValue().get(2));
+                }
+
+            });
             colBrPrijava.setMinWidth(50);
 
+            ObservableList<HashMap.Entry<ZakazivanjeSale, ArrayList<String>>> stavke = FXCollections.observableArrayList(rasporedIspita.entrySet());
+            tableRasporedIspita.setItems(stavke);
+            //prijavljeni ispit+br prijava
+            //sredjuje problem za dodatu kolonu
             tableRasporedIspita.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-            tableRasporedIspita.getColumns().addAll(colSifra, colPredmet, colProfesor, colDatum, colVreme, colSala, colBrPrijava);
+            tableRasporedIspita.getColumns().addAll(colPredmet, colProfesor, colDatum, colVreme, colSala, colBrPrijava);
             tableRasporedIspita.setPrefHeight(550);
             //TODO: na klik broja prijava da vidi detaljno sve brojeve indeksa
 
@@ -2434,6 +2517,8 @@ public class StudentskaSluzbaForm extends Stage {
         private Sala sala;
         private IspitniRok ispitniRok;
         private ZakazivanjeSale zakazivanjeSale;
+        private ArrayList vrednosti;
+        private int idZaposlenog;
         //TODO: Obrisati duplikate, nije potrebno za svako posebno da ima
         private TextField txtIme;
         private TextField txtPrezime;
@@ -2475,6 +2560,12 @@ public class StudentskaSluzbaForm extends Stage {
         public RunnableZahtevServeru(Object zahtev, Predmet predmet) {
             this.zahtev = zahtev;
             this.predmet = predmet;
+        }
+
+        public RunnableZahtevServeru(Object zahtev, Predmet predmet, int idZaposlenog) {
+            this.zahtev = zahtev;
+            this.predmet = predmet;
+            this.idZaposlenog = idZaposlenog;
         }
 
         public RunnableZahtevServeru(Object zahtev, Sala sala) {
@@ -2542,9 +2633,10 @@ public class StudentskaSluzbaForm extends Stage {
             this.dateDo = dateDo;
         }
 
-        public RunnableZahtevServeru(Object zahtev, ZakazivanjeSale zakazivanjeSale, ComboBox cmbSala, ComboBox cmbZaposleni, ComboBox cmbPredmet, DatePicker dpDatum, Spinner spSatiOd, Spinner spMinutiOd, Spinner spSatiDo, Spinner spMinutiDo) {
+        public RunnableZahtevServeru(Object zahtev, ZakazivanjeSale zakazivanjeSale, ArrayList vrednosti, ComboBox cmbSala, ComboBox cmbZaposleni, ComboBox cmbPredmet, DatePicker dpDatum, Spinner spSatiOd, Spinner spMinutiOd, Spinner spSatiDo, Spinner spMinutiDo) {
             this.zahtev = zahtev;
             this.zakazivanjeSale = zakazivanjeSale;
+            this.vrednosti = vrednosti;
             this.cmbSala = cmbSala;
             this.cmbZaposleni = cmbZaposleni;
             this.cmbPredmet = cmbPredmet;
@@ -2813,11 +2905,48 @@ public class StudentskaSluzbaForm extends Stage {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
+            } else if (zahtev.equals("osveziRasporedIspita")) {
+                try {
+                    outObj.writeObject("osvezi" + "Sluzba");
+                    outObj.flush();
+                    outObj.writeObject(zahtev);
+                    outObj.flush();
+                    rasporedIspita.clear();
+                    odgovor = inObj.readObject();
+                    rasporedIspita = (HashMap) odgovor;
+                    //update na JavaFx application niti
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+
+                            //azuriranje/ponovno popunjavanje liste
+                            setRasporedIspita(rasporedIspita);
+                            System.out.println("Osvezeni podaci sa strane servera");
+
+                        }
+                    });
+                } catch (IOException e) {
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.INFORMATION);
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.showAndWait();
+                        }
+                    });
+                    //e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
             } else if (zahtev.equals("loginInfo")) {
                 if (student != null) {
                     try {
                         outObj.writeObject(zahtev + "Student");
+                        outObj.flush();
                         outObj.writeObject(student);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("postoji")) {
@@ -2858,7 +2987,9 @@ public class StudentskaSluzbaForm extends Stage {
                 } else if (zaposleni != null) {
                     try {
                         outObj.writeObject(zahtev + "Zaposleni");
+                        outObj.flush();
                         outObj.writeObject(zaposleni);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("postoji")) {
@@ -2901,7 +3032,9 @@ public class StudentskaSluzbaForm extends Stage {
                 if (student != null) {
                     try {
                         outObj.writeObject(zahtev + "Studenta");
+                        outObj.flush();
                         outObj.writeObject(student);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
@@ -2946,7 +3079,9 @@ public class StudentskaSluzbaForm extends Stage {
                 } else if (zaposleni != null) {
                     try {
                         outObj.writeObject(zahtev + "Zaposlenog");
+                        outObj.flush();
                         outObj.writeObject(zaposleni);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
@@ -2991,7 +3126,9 @@ public class StudentskaSluzbaForm extends Stage {
                 } else if (predmet != null) {
                     try {
                         outObj.writeObject(zahtev + "Predmet");
+                        outObj.flush();
                         outObj.writeObject(predmet);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
@@ -3036,7 +3173,9 @@ public class StudentskaSluzbaForm extends Stage {
                 } else if (sala != null) {
                     try {
                         outObj.writeObject(zahtev + "Salu");
+                        outObj.flush();
                         outObj.writeObject(sala);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
@@ -3081,7 +3220,9 @@ public class StudentskaSluzbaForm extends Stage {
                 } else if (ispitniRok != null) {
                     try {
                         outObj.writeObject(zahtev + "IspitniRok");
+                        outObj.flush();
                         outObj.writeObject(ispitniRok);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
@@ -3126,7 +3267,9 @@ public class StudentskaSluzbaForm extends Stage {
                 } else if (zakazivanjeSale != null) {
                     try {
                         outObj.writeObject(zahtev + "ZakazanuSalu");
+                        outObj.flush();
                         outObj.writeObject(zakazivanjeSale);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
@@ -3175,13 +3318,18 @@ public class StudentskaSluzbaForm extends Stage {
                     //ukoliko je pozvan konstruktor za studenta
                     try {
                         outObj.writeObject(zahtev + "Studenta");
+                        outObj.flush();
                         outObj.writeObject(student);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
+                                        sviStudenti.add(student);
+                                        getTabela().setItems(sviStudenti);
+                                        getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
                                         alert.setContentText("Uspešno dodat student u Bazu");
                                         alert.showAndWait();
@@ -3234,13 +3382,18 @@ public class StudentskaSluzbaForm extends Stage {
                     //ukoliko je pozvan konstruktor za zaposlenog
                     try {
                         outObj.writeObject(zahtev + "Zaposlenog");
+                        outObj.flush();
                         outObj.writeObject(zaposleni);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
+                                        sviZaposleni.add(zaposleni);
+                                        getTabela().setItems(sviZaposleni);
+                                        getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
                                         alert.setContentText("Uspešno dodat zaposleni u Bazu");
                                         alert.showAndWait();
@@ -3291,13 +3444,22 @@ public class StudentskaSluzbaForm extends Stage {
                     //ukoliko je pozvan konstruktor za predmet
                     try {
                         outObj.writeObject(zahtev + "Predmet");
+                        outObj.flush();
                         outObj.writeObject(predmet);
+                        outObj.flush();
+                        String idZaposlenog = String.valueOf(sviZaposleni.stream().filter(z -> z.getImePrezime().equals(txtProfesor.getText())).mapToInt(Zaposleni::getIdZaposlenog).findFirst().orElse(0));
+                        outObj.writeObject(idZaposlenog);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
+                                        sviPredmeti.put(predmet, (Zaposleni) sviZaposleni.stream().filter(z -> z.getImePrezime().equals(txtProfesor.getText())).findFirst().orElse(new Zaposleni()));
+                                        ObservableList<HashMap.Entry<Predmet, Zaposleni>> stavke = FXCollections.observableArrayList(sviPredmeti.entrySet());
+                                        getTabela().setItems(stavke);
+                                        getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
                                         alert.setContentText("Uspešno dodat predmet u Bazu");
                                         alert.showAndWait();
@@ -3337,20 +3499,25 @@ public class StudentskaSluzbaForm extends Stage {
                                 alert.showAndWait();
                             }
                         });
-                        //e.printStackTrace();
+                        e.printStackTrace();
                     }
                 } else if (sala != null) {
 
                     //ukoliko je pozvan konstruktor za salu
                     try {
                         outObj.writeObject(zahtev + "Salu");
+                        outObj.flush();
                         outObj.writeObject(sala);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
+                                        sveSale.add(sala);
+                                        getTabela().setItems(sveSale);
+                                        getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
                                         alert.setContentText("Uspešno dodata sala u Bazu");
                                         alert.showAndWait();
@@ -3396,13 +3563,18 @@ public class StudentskaSluzbaForm extends Stage {
                     //ukoliko je pozvan konstruktor za ispitni rok
                     try {
                         outObj.writeObject(zahtev + "IspitniRok");
+                        outObj.flush();
                         outObj.writeObject(ispitniRok);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
+                                        sviIspitniRokovi.add(ispitniRok);
+                                        getTabela().setItems(sviIspitniRokovi);
+                                        getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
                                         alert.setContentText("Uspešno dodat ispitni rok u Bazu");
                                         alert.showAndWait();
@@ -3448,13 +3620,19 @@ public class StudentskaSluzbaForm extends Stage {
                     //ukoliko je pozvan konstruktor za zakazivanje sale
                     try {
                         outObj.writeObject(zahtev + "ZakazivanjeSale");
+                        outObj.flush();
                         outObj.writeObject(zakazivanjeSale);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
+                                        sveZakazaneSale.put(zakazivanjeSale, vrednosti);
+                                        ObservableList<HashMap.Entry<ZakazivanjeSale, ArrayList<String>>> stavke = FXCollections.observableArrayList(sveZakazaneSale.entrySet());
+                                        getTabela().setItems(stavke);
+                                        getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
                                         alert.setContentText("Uspešno zakazana sala u Bazi");
                                         alert.showAndWait();
@@ -3504,13 +3682,18 @@ public class StudentskaSluzbaForm extends Stage {
                 if (student != null) {
                     try {
                         outObj.writeObject(zahtev + "Studenta");
+                        outObj.flush();
                         outObj.writeObject(student);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
+                                        sviStudenti.stream().filter(s -> s.getIdStudenta() == student.getIdStudenta()).map(s -> { s.setVidljiv(false); return s;});
+                                        getTabela().setItems(sviStudenti);
+                                        getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
                                         alert.setContentText("Uspešno obrisan student");
                                         alert.showAndWait();
@@ -3549,13 +3732,18 @@ public class StudentskaSluzbaForm extends Stage {
                 } else if (zaposleni != null) {
                     try {
                         outObj.writeObject(zahtev + "Zaposlenog");
+                        outObj.flush();
                         outObj.writeObject(zaposleni);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
+                                        sviZaposleni.stream().filter(z -> z.getIdZaposlenog() == zaposleni.getIdZaposlenog()).map(z -> { z.setVidljiv(false); return z;});
+                                        getTabela().setItems(sviZaposleni);
+                                        getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
                                         alert.setContentText("Uspešno obrisan zaposleni");
                                         alert.showAndWait();
@@ -3594,13 +3782,19 @@ public class StudentskaSluzbaForm extends Stage {
                 } else if (predmet != null) {
                     try {
                         outObj.writeObject(zahtev + "Predmet");
+                        outObj.flush();
                         outObj.writeObject(predmet);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
+                                sviPredmeti.entrySet().stream().filter(p -> p.getKey().getIdPredmeta() == predmet.getIdPredmeta() && idZaposlenog == p.getValue().getIdZaposlenog()).map(p -> { p.getKey().setVidljiv(false); return p;});
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
+                                        ObservableList<HashMap.Entry<Predmet, Zaposleni>> stavke = FXCollections.observableArrayList(sviPredmeti.entrySet());
+                                        getTabela().setItems(stavke);
+                                        getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
                                         alert.setContentText("Uspešno obrisan predmet");
                                         alert.showAndWait();
@@ -3639,13 +3833,18 @@ public class StudentskaSluzbaForm extends Stage {
                 } else if (sala != null) {
                     try {
                         outObj.writeObject(zahtev + "Salu");
+                        outObj.flush();
                         outObj.writeObject(sala);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
+                                        sveSale.stream().filter(s -> s.getIdSale() == sala.getIdSale()).map(s -> { s.setVidljiv(false); return s;});
+                                        getTabela().setItems(sveSale);
+                                        getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
                                         alert.setContentText("Uspešno obrisana sala");
                                         alert.showAndWait();
@@ -3684,13 +3883,19 @@ public class StudentskaSluzbaForm extends Stage {
                 }  else if (zakazivanjeSale != null) {
                     try {
                         outObj.writeObject(zahtev + "ZakazanuSalu");
+                        outObj.flush();
                         outObj.writeObject(zakazivanjeSale);
+                        outObj.flush();
                         try {
                             odgovor = inObj.readObject();
                             if (odgovor.equals("uspelo")) {
+                                sveZakazaneSale.entrySet().removeIf(s -> s.getKey().getIdSale() == zakazivanjeSale.getIdSale() && s.getKey().getVremePocetka() == zakazivanjeSale.getVremePocetka() && s.getKey().getDatum() == zakazivanjeSale.getDatum());
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
+                                        ObservableList<HashMap.Entry<ZakazivanjeSale, ArrayList<String>>> stavke = FXCollections.observableArrayList(sveZakazaneSale.entrySet());
+                                        getTabela().setItems(stavke);
+                                        getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
                                         alert.setContentText("Uspešno oslobođena sala");
                                         alert.showAndWait();
