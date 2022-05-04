@@ -1239,6 +1239,79 @@ public class Server extends Application {
                         outObj.writeObject(odgovor);
                         outObj.flush();
                     }
+                } else if (zahtev.equals("osveziStudenta")) {
+
+                    zahtev = inObj.readObject();
+                    if (zahtev.equals("osveziIspitneRokove")) {
+                        query = "SELECT * FROM IspitniRok";
+                        resultset = statement.executeQuery(query);
+
+                        while (resultset.next()) {
+                            int idRoka = resultset.getInt("idRoka");
+                            String naziv = resultset.getString("naziv");
+                            Date datumPocetka = resultset.getDate("datumPocetka");
+                            Date datumKraja = resultset.getDate("datumKraja");
+                            boolean aktivnost = resultset.getBoolean("aktivnost");
+                            IspitniRok ispitniRok = new IspitniRok(idRoka, naziv, datumPocetka, datumKraja, aktivnost);
+                            odgovor = ispitniRok;
+                            outObj.writeObject(odgovor);
+                            outObj.flush();
+                        }
+
+                        outObj.writeObject("kraj");
+                        outObj.flush();
+
+                    } else if (zahtev.equals("osveziPredmete")) {
+
+                        Student student = (Student) inObj.readObject();
+
+                        query = "SELECT p.idPredmeta, p.naziv, p.studijskiSmer, p.semestar, p.espb, z.ocena FROM predmet AS p JOIN zapisnik AS z ON p.idPredmeta = z.idPredmeta WHERE z.idStudenta = '" + student.getIdStudenta() + "' AND z.smer = '" + student.getSmer() + "' AND z.godinaUpisa = '" + student.getGodinaUpisa() + "'";
+                        resultset = statement.executeQuery(query);
+                        HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
+                        while (resultset.next()) {
+                            int idPredmeta = resultset.getInt("idPredmeta");
+                            String naziv = resultset.getString("naziv");
+                            String studijskiSmer = resultset.getString("studijskiSmer");
+                            int semestar = resultset.getInt("semestar");
+                            int espb = resultset.getInt("espb");
+                            int ocena = resultset.getInt("ocena");
+                            //boolean vidljiv = resultset.getBoolean("vidljiv");
+                            Predmet predmet;
+                            if (studijskiSmer != null) {
+                                predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
+                            } else {
+                                predmet = new Predmet(idPredmeta, naziv, null, semestar, espb);
+                            }
+                            polozeniPredmeti.put(predmet, ocena);
+                        }
+
+                        odgovor = polozeniPredmeti;
+                        outObj.writeObject(odgovor);
+                        outObj.flush();
+
+                        query = "SELECT * FROM predmet WHERE idPredmeta IN (SELECT idPredmeta FROM izabranipredmeti WHERE idStudenta = '" + student.getIdStudenta() + "' AND smer = '" + student.getSmer() + "' AND godinaUpisa = '" + student.getGodinaUpisa() + "') AND idPredmeta NOT IN (SELECT idPredmeta FROM zapisnik WHERE idStudenta  = '" + student.getIdStudenta() + "' AND smer = '" + student.getSmer() + "' AND godinaUpisa = '" + student.getGodinaUpisa() + "' AND ocena > 5)";
+                        resultset = statement.executeQuery(query);
+                        while (resultset.next()) {
+                            int idPredmeta = resultset.getInt("idPredmeta");
+                            String naziv = resultset.getString("naziv");
+                            String studijskiSmer = resultset.getString("studijSkismer");
+                            int semestar = resultset.getInt("semestar");
+                            int espb = resultset.getInt("espb");
+                            boolean vidljiv = resultset.getBoolean("vidljiv");
+                            Predmet predmet;
+                            if (studijskiSmer != null) {
+                                predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb, vidljiv);
+                            } else {
+                                predmet = new Predmet(idPredmeta, naziv, null, semestar, espb, vidljiv);
+                            }
+                            odgovor = predmet;
+                            outObj.writeObject(odgovor);
+                            outObj.flush();
+                        }
+
+                        outObj.writeObject("kraj");
+                        outObj.flush();
+                    }
                 }
                 //ZATVARANJE KONEKCIJE SA BAZOM
                 try {

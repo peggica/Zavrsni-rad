@@ -2500,8 +2500,8 @@ public class StudentskaSluzbaForm extends Stage {
 
     }
 
-    /** Klasa RunnableZahtevServeru namenjena za slanje zahteva serveru i
-     * dodavanje/izmenu/brisanje studenta/zaposlenog/predmeta.
+    /** Klasa RunnableZahtevServeru namenjena za razmenjivanje objekata sa serverom.
+     * Za osvezavanje podataka na formi i dodavanje/izmenu/brisanje studenta/zaposlenog/predmeta/sala/ispitnih rokova/zakazanih sala.
      * @author Biljana Stanojevic   */
     private class RunnableZahtevServeru implements Runnable {
 

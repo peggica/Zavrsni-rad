@@ -1,5 +1,6 @@
 package klijent.gui;
 
+import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.*;
@@ -13,6 +14,12 @@ import javafx.stage.Stage;
 import javafx.util.Callback;
 import model.*;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.*;
 
 /** Klasa namenjena za prikaz Studentske Forme u JavaFx-u
@@ -26,6 +33,7 @@ public class StudentForm extends Stage {
     private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
     private HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
     private ObservableList<Predmet> nepolozeniPredmeti = FXCollections.observableArrayList();
+    private static Alert alert = new Alert(Alert.AlertType.NONE);
 
     public void setStudent(Student student) {
         this.student = student;
@@ -41,6 +49,25 @@ public class StudentForm extends Stage {
 
     public void setNepolozeniPredmeti(ObservableList<Predmet> nepolozeniPredmeti) {
         this.nepolozeniPredmeti = nepolozeniPredmeti;
+    }
+
+    public Student getStudent() {
+        return student;
+    }
+
+    /**
+     * Setuje tip i naslov statičkog alerta u zavisnosti od prosleđenog tipa
+     */
+    public static void setAlert(Alert.AlertType at) {
+        if (at == Alert.AlertType.ERROR) {
+            alert.setAlertType(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("");
+        } else if (at == Alert.AlertType.INFORMATION) {
+            alert.setAlertType(Alert.AlertType.INFORMATION);
+            alert.setTitle("Info");
+            alert.setHeaderText("");
+        }
     }
 
     /** Proverava da li ima aktivnih ispitnih rokova ili ne, pa postavlja prikaz za stavku Pocetna iz Menija    */
@@ -76,14 +103,14 @@ public class StudentForm extends Stage {
         root.setCenter(null);
     }
 
-    public StudentForm(Stage stage, Student student, ObservableList<IspitniRok> sviIspitniRokovi, HashMap<Predmet, Integer> polozeniPredmeti, ObservableList<Predmet> nepolozeniPredmeti) {
+    public StudentForm(Stage stage, Student student, ObservableList<IspitniRok> sviIspitniRokovi, HashMap<Predmet, Integer> polozeni, ObservableList<Predmet> nepolozeni) {
 
         super();
         initOwner(stage);
         setStudent(student);
         setSviIspitniRokovi(sviIspitniRokovi);
-        setPolozeniPredmeti(polozeniPredmeti);
-        setNepolozeniPredmeti(nepolozeniPredmeti);
+        setPolozeniPredmeti(polozeni);
+        setNepolozeniPredmeti(nepolozeni);
 
         BorderPane root = new BorderPane();
         MenuBar menuBar = new MenuBar();
@@ -100,6 +127,12 @@ public class StudentForm extends Stage {
         Label lblPocetna = new Label("POČETNA");
         lblPocetna.setOnMouseClicked(mouseEvent -> {
 
+            //kada se prebaci na drugu stavku iz menija da osvezi podatke
+            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziIspitneRokove"));
+            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+            runnableZahtevServeru.setDaemon(true);
+            runnableZahtevServeru.start();
+
             ocistiPane(root);
             pocetniPrikaz(root);
         });
@@ -108,6 +141,12 @@ public class StudentForm extends Stage {
         //Klikom na stavku PREDMETI iz Menija poziva se metoda ocistiPane() za ciscenje svih strana BorderPane-a, nakon cega se u tabelama prikazuju svi položeni i nepoloženi predmeti za tog studenta
         Label lblPredmeti = new Label("PREDMETI");
         lblPredmeti.setOnMouseClicked(mouseEvent -> {
+
+            //kada se prebaci na drugu stavku iz menija da osvezi podatke
+            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziPredmete"));
+            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+            runnableZahtevServeru.setDaemon(true);
+            runnableZahtevServeru.start();
 
             ocistiPane(root);
             VBox vbox = new VBox();
@@ -119,6 +158,7 @@ public class StudentForm extends Stage {
             lblPolozeni.setPadding(new Insets(0,10,5,0));
 
             TableView<HashMap.Entry<Predmet, Integer>> tablePolozeni = new TableView<>();
+            tablePolozeni.setPlaceholder(new Label("Nije položen nijedan ispit"));
             tablePolozeni.getColumns().clear();
 
             TableColumn<Map.Entry<Predmet, Integer>, Integer> colSifra = new TableColumn<>("Šifra");
@@ -185,6 +225,7 @@ public class StudentForm extends Stage {
             lblNepolozeni.setPadding(new Insets(5,10,5,0));
 
             TableView<Predmet> tableNeplozeni = new TableView<>();
+            tableNeplozeni.setPlaceholder(new Label("Nema nepoloženih ispita"));
             tableNeplozeni.getColumns().clear();
 
             TableColumn colSifraNe = new TableColumn("Šifra");
@@ -215,6 +256,12 @@ public class StudentForm extends Stage {
         //Klikom na stavku PRIJAVA ISPITA iz Menija poziva se metoda ocistiPane() za ciscenje svih strana BorderPane-a, nakon cega se u tabeli prikazuju nepolozeni ispiti koji se mogu prijaviti za vreme aktivnog ispitnog roka ukoliko student ima dovoljno novcanih sredstava
         Label lblPrijava = new Label("PRIJAVA ISPITA");
         lblPrijava.setOnMouseClicked(mouseEvent -> {
+
+            //kada se prebaci na drugu stavku iz menija da osvezi podatke
+            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziPrijave"));
+            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+            runnableZahtevServeru.setDaemon(true);
+            runnableZahtevServeru.start();
 
             ocistiPane(root);
 
@@ -263,6 +310,12 @@ public class StudentForm extends Stage {
         //Klikom na stavku ŠKOLARINE iz Menija poziva se metoda ocistiPane() za ciscenje svih strana BorderPane-a, nakon cega se u tabeli prikazuju sve dosadašnje uplate, a ispod njih preostala dugovanja skolarine za studenta ako postoje
         Label lblSkolarine = new Label("ŠKOLARINE");
         lblSkolarine.setOnMouseClicked(mouseEvent -> {
+
+            //kada se prebaci na drugu stavku iz menija da osvezi podatke
+            /*Thread runnableZahtevServeru = new Thread(new StudentskaSluzbaForm("osveziSkolarine"));
+            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+            runnableZahtevServeru.setDaemon(true);
+            runnableZahtevServeru.start();*/
 
             ocistiPane(root);
 
@@ -351,4 +404,143 @@ public class StudentForm extends Stage {
 
     }
 
+    /** Klasa RunnableZahtevServeru namenjena za razmenjivanje objekata sa serverom.
+     * Za osvezavanje podataka na formi i prijavu ispita.
+     * @author Biljana Stanojevic   */
+    private class RunnableZahtevServeru implements Runnable {
+
+        private static final int TCP_PORT = 9000;
+        private Socket socket = null;
+        private ObjectInputStream inObj;
+        private ObjectOutputStream outObj;
+        private Object zahtev;
+        private Object odgovor;
+
+        //konstuktor za osvezavanje podataka
+        public RunnableZahtevServeru(Object zahtev) {
+            this.zahtev = zahtev;
+        }
+
+        @Override
+        public void run() {
+
+            //OTVARANJE KONEKCIJE
+            try {
+                InetAddress addr = InetAddress.getByName("127.0.0.1");
+                Socket socket = new Socket(addr, TCP_PORT);
+                inObj = new ObjectInputStream(socket.getInputStream());
+                outObj = new ObjectOutputStream(socket.getOutputStream());
+            } catch (UnknownHostException e) {
+                Platform.runLater(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        setAlert(Alert.AlertType.INFORMATION);
+                        alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                        alert.showAndWait();
+                    }
+                });
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            if (zahtev.equals("osveziIspitneRokove")) {
+                try {
+                    outObj.writeObject("osvezi" + "Studenta");
+                    outObj.flush();
+                    outObj.writeObject(zahtev);
+                    outObj.flush();
+                    sviIspitniRokovi.clear();
+                    while (true) { //nisam sigurna za ovu proveru
+                        odgovor = inObj.readObject();
+                        if (odgovor.toString().equals("kraj")) {
+                            break;
+                        } else {
+                            IspitniRok ispitniRok = (IspitniRok) odgovor;
+                            sviIspitniRokovi.add(ispitniRok);
+                        }
+                    }
+                    //update na JavaFx application niti
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+
+                            //azuriranje/ponovno popunjavanje liste
+                            setSviIspitniRokovi(sviIspitniRokovi);
+                            System.out.println("Osvezeni podaci sa strane servera");
+
+                        }
+                    });
+                } catch (IOException e) {
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.INFORMATION);
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.showAndWait();
+                        }
+                    });
+                    //e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            } else if (zahtev.equals("osveziPredmete")) {
+                try {
+                    outObj.writeObject("osvezi" + "Studenta");
+                    outObj.flush();
+                    outObj.writeObject(zahtev);
+                    outObj.flush();
+                    outObj.writeObject(getStudent());
+                    outObj.flush();
+
+                    polozeniPredmeti.clear();
+                    nepolozeniPredmeti.clear();
+                    odgovor = inObj.readObject();
+                    polozeniPredmeti = (HashMap) odgovor;
+
+                    while (true) {
+                        odgovor = inObj.readObject();
+                        if (odgovor.equals("kraj")) {
+                            break;
+                        }
+                        Predmet predmet = (Predmet) odgovor;
+                        nepolozeniPredmeti.add(predmet);
+                    }
+                    //update na JavaFx application niti
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+
+                            //azuriranje/ponovno popunjavanje liste
+                            setPolozeniPredmeti(polozeniPredmeti);
+                            setNepolozeniPredmeti(nepolozeniPredmeti);
+                            System.out.println("Osvezeni podaci sa strane servera");
+
+                        }
+                    });
+                } catch (IOException e) {
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.INFORMATION);
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.showAndWait();
+                        }
+                    });
+                    //e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            } else if (zahtev.equals("osveziPrijave")) {
+
+            } else if (zahtev.equals("osveziSkolarine")) {
+
+            }
+        }
+    }
 }

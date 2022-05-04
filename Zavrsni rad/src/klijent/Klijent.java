@@ -364,19 +364,6 @@ public class Klijent extends Application {
 
                         }
                     });
-                    while (true) {
-
-                        //na svakih 10 sekundi da ponovo pokrene nit i na taj nacin osvezi podatke
-                        try {
-                            Thread.sleep(10000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        //Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajZaposleni));
-                        //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                        //runnableKlijentOsvezi.setDaemon(true);
-                        //runnableKlijentOsvezi.start();
-                    }
 
                 } else if (odgovor.equals("student")) {
 
@@ -417,19 +404,6 @@ public class Klijent extends Application {
 
                         }
                     });
-                    while (true) {
-
-                        //na svakih 10 sekundi da ponovo pokrene nit i na taj nacin osvezi podatke
-                        try {
-                            Thread.sleep(10000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        //Thread runnableKlijentOsvezi = new Thread(new RunnableKlijentOsvezi(ovajStudent));
-                        //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                        //runnableKlijentOsvezi.setDaemon(true);
-                        //runnableKlijentOsvezi.start();
-                    }
                 }
             } catch (UnknownHostException e) {
                 e.printStackTrace();
