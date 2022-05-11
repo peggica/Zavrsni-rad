@@ -33,6 +33,7 @@ public class StudentForm extends Stage {
     private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
     private HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
     private ObservableList<Predmet> nepolozeniPredmeti = FXCollections.observableArrayList();
+    private HashMap<Predmet, ArrayList> prijavaIspita = new HashMap<>();
     private static Alert alert = new Alert(Alert.AlertType.NONE);
 
     public void setStudent(Student student) {
@@ -49,6 +50,10 @@ public class StudentForm extends Stage {
 
     public void setNepolozeniPredmeti(ObservableList<Predmet> nepolozeniPredmeti) {
         this.nepolozeniPredmeti = nepolozeniPredmeti;
+    }
+
+    public void setPrijavaIspita(HashMap<Predmet, ArrayList> prijavaIspita) {
+        this.prijavaIspita = prijavaIspita;
     }
 
     public Student getStudent() {
@@ -103,7 +108,7 @@ public class StudentForm extends Stage {
         root.setCenter(null);
     }
 
-    public StudentForm(Stage stage, Student student, ObservableList<IspitniRok> sviIspitniRokovi, HashMap<Predmet, Integer> polozeni, ObservableList<Predmet> nepolozeni) {
+    public StudentForm(Stage stage, Student student, ObservableList<IspitniRok> sviIspitniRokovi, HashMap<Predmet, Integer> polozeni, ObservableList<Predmet> nepolozeni, HashMap<Predmet, ArrayList> prijave) {
 
         super();
         initOwner(stage);
@@ -111,6 +116,7 @@ public class StudentForm extends Stage {
         setSviIspitniRokovi(sviIspitniRokovi);
         setPolozeniPredmeti(polozeni);
         setNepolozeniPredmeti(nepolozeni);
+        setPrijavaIspita(prijave);
 
         BorderPane root = new BorderPane();
         MenuBar menuBar = new MenuBar();
@@ -273,25 +279,57 @@ public class StudentForm extends Stage {
             lblPrijavaIspita.setAlignment(Pos.CENTER_LEFT);
             lblPrijavaIspita.setPadding(new Insets(0,10,5,0));
 
-            TableView<String> tablePrijava = new TableView<String>();
+            TableView<HashMap.Entry<Predmet, ArrayList>> tablePrijava = new TableView();
+            tablePrijava.setPlaceholder(new Label("Ne postoji nijedan ispit za prijavu"));
             tablePrijava.getColumns().clear();
 
-            TableColumn<String, String> colSifra = new TableColumn("Šifra");    //TODO: nazive kolona dobiti iz baze
-            colSifra.setMinWidth(75);
-            TableColumn<String, String> colNaziv = new TableColumn("Naziv predmeta");
-            colNaziv.setMinWidth(250);
-            TableColumn<String, String> colEspb = new TableColumn("Espb");
-            colEspb.setMinWidth(75);
-            TableColumn<String, String> colSemestar = new TableColumn("Semestar");
-            colSemestar.setMinWidth(75);
-            TableColumn<String, String> colProfesor = new TableColumn("Profesor");
-            colProfesor.setMinWidth(250);
-            TableColumn<String, String> colCena = new TableColumn("Cena");
-            colCena.setMinWidth(75);
+            TableColumn<Map.Entry<Predmet, ArrayList>, Integer> colSifra = new TableColumn<>("Šifra");
+            colSifra.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, ArrayList>, Integer>, ObservableValue<Integer>>() {
 
+                @Override
+                public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, ArrayList>, Integer> p) {
+                    return new SimpleObjectProperty<Integer>(p.getValue().getKey().getIdPredmeta());
+                }
+
+            });
+            colSifra.setMinWidth(100);
+            TableColumn<Map.Entry<Predmet, ArrayList>, String> colNaziv = new TableColumn<>("Naziv predmeta");
+            colNaziv.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, ArrayList>, String>, ObservableValue<String>>() {
+
+                @Override
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, ArrayList>, String> p) {
+                    return new SimpleObjectProperty<String>(p.getValue().getKey().getNaziv());
+                }
+
+            });
+            colNaziv.setMinWidth(300);
+            TableColumn<Map.Entry<Predmet, ArrayList>, String> colProfesor = new TableColumn<>("Profesor");
+            colProfesor.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, ArrayList>, String>, ObservableValue<String>>() {
+
+                @Override
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, ArrayList>, String> p) {
+                    return new SimpleObjectProperty<String>((String) p.getValue().getValue().get(0));
+                }
+
+            });
+            colProfesor.setMinWidth(300);
+            TableColumn<Map.Entry<Predmet, ArrayList>, Double> colCena = new TableColumn<>("Cena");
+            colCena.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, ArrayList>, Double>, ObservableValue<Double>>() {
+
+
+                @Override
+                public ObservableValue<Double> call(TableColumn.CellDataFeatures<Map.Entry<Predmet, ArrayList>, Double> p) {
+                    return new SimpleObjectProperty<Double>((Double) p.getValue().getValue().get(1));
+                }
+            });
+            colCena.setMinWidth(100);
+
+            ObservableList<HashMap.Entry<Predmet, ArrayList>> stavke = FXCollections.observableArrayList(prijavaIspita.entrySet());
+            tablePrijava.setItems(stavke);
+            //sredjuje problem za dodatu kolonu
             tablePrijava.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tablePrijava.setPrefHeight(550);
-            tablePrijava.getColumns().addAll(colSifra, colNaziv, colEspb, colSemestar, colProfesor, colCena);
+            tablePrijava.getColumns().addAll(colSifra, colNaziv, colProfesor, colCena);
 
             HBox hboxPrijavi = new HBox();
             hboxPrijavi.setAlignment(Pos.BOTTOM_RIGHT);
@@ -300,6 +338,24 @@ public class StudentForm extends Stage {
             Button btnPrijavi = new Button("Prijavi ispit");
             btnPrijavi.setMinWidth(100);
             btnPrijavi.setFont(font15);
+            btnPrijavi.setOnMouseClicked(e -> {
+                if (tablePrijava.getSelectionModel().getSelectedItem() != null) {
+                    HashMap.Entry<Predmet, ArrayList> izabraniIspit = tablePrijava.getSelectionModel().getSelectedItem();
+                    //setTabela(tablePrijava);
+                    /*Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabraniIspit));
+                    t.setDaemon(true);
+                    t.start();*/
+                } else {
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.ERROR);
+                            alert.setContentText("Molim vas izaberite neki ispit u tabeli");
+                            alert.showAndWait();
+                        }
+                    });
+                }
+            });
             hboxPrijavi.getChildren().add(btnPrijavi);
             vbox.getChildren().addAll(lblPrijavaIspita, tablePrijava, hboxPrijavi);
 
@@ -328,6 +384,7 @@ public class StudentForm extends Stage {
             lblSkolarineIspis.setPadding(new Insets(0,10,5,0));
 
             TableView<String> tableSkolarine = new TableView<String>();
+            tableSkolarine.setPlaceholder(new Label("Nema podataka za školarinu"));
             tableSkolarine.getColumns().clear();
 
             TableColumn<String, String> colDatum = new TableColumn("Datum");    //TODO: nazive kolona dobiti iz baze
@@ -537,7 +594,44 @@ public class StudentForm extends Stage {
                     e.printStackTrace();
                 }
             } else if (zahtev.equals("osveziPrijave")) {
+                try {
+                    outObj.writeObject("osvezi" + "Studenta");
+                    outObj.flush();
+                    outObj.writeObject(zahtev);
+                    outObj.flush();
+                    outObj.writeObject(getStudent());
+                    outObj.flush();
 
+                    prijavaIspita.clear();
+                    odgovor = inObj.readObject();
+                    prijavaIspita = (HashMap) odgovor;
+
+                    //update na JavaFx application niti
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+
+                            //azuriranje/ponovno popunjavanje liste
+                            setPrijavaIspita(prijavaIspita);
+                            System.out.println("Osvezeni podaci sa strane servera");
+
+                        }
+                    });
+                } catch (IOException e) {
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.INFORMATION);
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.showAndWait();
+                        }
+                    });
+                    //e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
             } else if (zahtev.equals("osveziSkolarine")) {
 
             }

@@ -2,7 +2,7 @@ package model;
 
 import java.io.Serializable;
 
-public class PrijavaIspita implements Serializable {
+public class PrijaveIspita implements Serializable {
 
     private static final long serialVersionUID = 5L;
     private int idPredmeta;
@@ -12,7 +12,7 @@ public class PrijavaIspita implements Serializable {
     private int godinaUpisa;
     private int idRoka;
 
-    public PrijavaIspita(int idPredmeta, int idStudenta, tipSmera tip, int godinaUpisa, int idRoka) {
+    public PrijaveIspita(int idPredmeta, int idStudenta, tipSmera tip, int godinaUpisa, int idRoka) {
 
         this.idPredmeta = idPredmeta;
         this.idStudenta = idStudenta;

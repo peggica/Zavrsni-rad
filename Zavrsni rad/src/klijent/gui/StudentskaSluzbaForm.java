@@ -143,7 +143,7 @@ public class StudentskaSluzbaForm extends Stage {
         root.setCenter(null);
     }
 
-    public StudentskaSluzbaForm(Stage stage, ObservableList<IspitniRok> sviIspitniRokovi, ObservableList<Student> sviStudenti, ObservableList<Zaposleni> sviZaposleni, HashMap<Predmet, Zaposleni> predmeti, ObservableList<Sala> sveSale, HashMap<ZakazivanjeSale, ArrayList<String>> zakazaneSale, HashMap<ZakazivanjeSale, ArrayList<String>> ispitiRaspored) {
+    public StudentskaSluzbaForm(Stage stage, ObservableList<IspitniRok> ispitniRokovi, ObservableList<Student> sviStudenti, ObservableList<Zaposleni> sviZaposleni, HashMap<Predmet, Zaposleni> predmeti, ObservableList<Sala> sveSale, HashMap<ZakazivanjeSale, ArrayList<String>> zakazaneSale, HashMap<ZakazivanjeSale, ArrayList<String>> ispitiRaspored) {
 
         super();
         stage.setOnCloseRequest(event -> {
@@ -152,7 +152,7 @@ public class StudentskaSluzbaForm extends Stage {
         });
         initOwner(stage);
 
-        setSviIspitniRokovi(sviIspitniRokovi);
+        setSviIspitniRokovi(ispitniRokovi);
         setSviStudenti(sviStudenti);
         setSviZaposleni(sviZaposleni);
         setSviPredmeti(predmeti);

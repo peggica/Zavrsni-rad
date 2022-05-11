@@ -1,6 +1,8 @@
 package server;
 
 import javafx.application.*;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -10,7 +12,6 @@ import javafx.stage.*;
 import model.*;
 
 import java.io.*;
-import java.lang.reflect.Type;
 import java.net.*;
 import java.sql.*;
 import java.util.ArrayList;
@@ -225,6 +226,50 @@ public class Server extends Application {
                                 outObj.flush();
                             }
 
+                            outObj.writeObject("predmeti");
+                            outObj.flush();
+
+                            String query1 = "SELECT * FROM predmet AS p JOIN raspodelapredmeta AS rp ON p.idPredmeta = rp.idPredmeta JOIN zaposleni AS z ON rp.idZaposlenog = z.idZaposlenog WHERE rp.idZaposlenog = '" + idZaposlenog + "'";
+                            resultset = statement.executeQuery(query1);
+                            ObservableList<PrijaveIspita> prijaveIspita = FXCollections.observableArrayList();
+
+                            while (resultset.next()) {
+
+                                int idPredmeta = resultset.getInt("idPredmeta");
+                                String naziv = resultset.getString("naziv");
+                                Predmet predmet = new Predmet(idPredmeta, naziv);
+                                odgovor = predmet;
+                                outObj.writeObject(odgovor);
+                                outObj.flush();
+
+                                String query2 = "SELECT * FROM ispitnirok WHERE aktivnost = '1' LIMIT 1";
+                                Statement statement1 = connection.createStatement();
+                                ResultSet resultset1 = statement1.executeQuery(query2);
+                                if (resultset1.next()) {
+
+                                    int idRoka = resultset1.getInt("idRoka");
+                                    String query3 = "SELECT * FROM prijaveIspita WHERE idRoka = '" + idRoka + "' AND idPredmeta = '" + idPredmeta + "'";
+                                    Statement statement2 = connection.createStatement();
+                                    ResultSet resultset2 = statement2.executeQuery(query3);
+
+                                    while (resultset2.next()) {
+
+                                        idStudenta = resultset2.getInt("idStudenta");
+                                        smer = resultset2.getString("smer");
+                                        godinaUpisa = resultset2.getInt("godinaUpisa");
+                                        prijaveIspita.add(new PrijaveIspita(idPredmeta, idStudenta, PrijaveIspita.tipSmera.valueOf(smer), godinaUpisa, idRoka));
+                                    }
+                                }
+                            }
+
+                            outObj.writeObject("prijaveIspita");
+                            outObj.flush();
+
+                            for (PrijaveIspita pi : prijaveIspita) {
+                                outObj.writeObject(pi);
+                                outObj.flush();
+                            }
+
                             outObj.writeObject("kraj");
                             outObj.flush();
 
@@ -248,7 +293,7 @@ public class Server extends Application {
                                 outObj.writeObject(odgovor);
                                 outObj.flush();
                             }
-                            query = "SELECT p.idPredmeta, p.naziv, p.studijskiSmer, p.semestar, p.espb, z.ocena FROM predmet AS p JOIN zapisnik AS z ON p.idPredmeta = z.idPredmeta WHERE z.idStudenta = '" + idStudenta + "' AND z.smer = '" + smer + "' AND z.godinaUpisa = '" + godinaUpisa + "'";
+                            query = "SELECT p.idPredmeta, p.naziv, p.studijskiSmer, p.semestar, p.espb, z.ocena FROM predmet AS p JOIN zapisnik AS z ON p.idPredmeta = z.idPredmeta WHERE z.idStudenta = '" + idStudenta + "' AND z.smer = '" + smer + "' AND z.godinaUpisa = '" + godinaUpisa + "' AND ocena > 5";
                             resultset = statement.executeQuery(query);
                             HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
                             while (resultset.next()) {
@@ -310,93 +355,45 @@ public class Server extends Application {
                                 outObj.flush();
                             }
 
-                            outObj.writeObject("kraj");
+                            odgovor = "prijavaIspita";
+                            outObj.writeObject(odgovor);
                             outObj.flush();
 
-                        } else if (idStudenta != 0 && smer != null && godinaUpisa != 0) {
+                            String query1 = "SELECT * FROM ispitnirok WHERE aktivnost = '1' LIMIT 1";
+                            resultset = statement.executeQuery(query1);
+                            HashMap<Predmet, ArrayList<String>> prijavaIspita = new HashMap<>();
 
-                            query = "SELECT * FROM Student WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "'";
-                            resultset = statement.executeQuery(query);
                             if (resultset.next()) {
-                                String ime = resultset.getString("ime");
-                                String prezime = resultset.getString("prezime");
-                                String finansiranje = resultset.getString("finansiranje");
-                                String adresa = resultset.getString("adresa");
-                                String email = resultset.getString("email");
-                                String telefon = resultset.getString("telefon");
-                                boolean vidljiv = resultset.getBoolean("vidljiv");
-                                Student student = new Student(idStudenta, godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, telefon, vidljiv);
-                                odgovor = "student";
-                                outObj.writeObject(odgovor);
-                                outObj.flush();
-                                odgovor = student;
-                                outObj.writeObject(odgovor);
-                                outObj.flush();
-                            }
-                            query = "SELECT p.idPredmeta, p.naziv, p.studijskiSmer, p.semestar, p.espb, z.ocena FROM predmet AS p JOIN zapisnik AS z ON p.idPredmeta = z.idPredmeta WHERE z.idStudenta = '" + idStudenta + "' AND z.smer = '" + smer + "' AND z.godinaUpisa = '" + godinaUpisa + "'";
-                            resultset = statement.executeQuery(query);
-                            HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
-                            while (resultset.next()) {
-                                int idPredmeta = resultset.getInt("idPredmeta");
-                                String naziv = resultset.getString("naziv");
-                                String studijskiSmer = resultset.getString("studijskiSmer");
-                                int semestar = resultset.getInt("semestar");
-                                int espb = resultset.getInt("espb");
-                                int ocena = resultset.getInt("ocena");
-                                //boolean vidljiv = resultset.getBoolean("vidljiv");
-                                Predmet predmet;
-                                if (studijskiSmer != null) {
-                                    predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb);
-                                } else {
-                                    predmet = new Predmet(idPredmeta, naziv, null, semestar, espb);
+
+                                // String query2 = "SELECT p.idPredmeta, p.naziv, z.ime, z.prezime, (SELECT COUNT(*) FROM prijaveispita WHERE idPredmeta = p.idPredmeta AND idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "') as brojPrijava FROM predmet p LEFT JOIN zaposleni z WHERE idPredmeta IN (SELECT idPredmeta FROM izabranipredmeti WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "') AND idPredmeta NOT IN (SELECT idPredmeta FROM zapisnik WHERE idStudenta  = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "' AND ocena > 5) AND z.pozicija = 'profesor'";
+                                String query2 = "SELECT p.idPredmeta, p.naziv, z.ime, z.prezime FROM predmet p JOIN raspodelapredmeta rp ON p.idPredmeta = rp.idPredmeta JOIN zaposleni z ON rp.idZaposlenog = z.idZaposlenog WHERE p.idPredmeta IN (SELECT idPredmeta FROM izabranipredmeti WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "') AND p.idPredmeta NOT IN(SELECT idPredmeta FROM zapisnik WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "' AND ocena > 5) AND z.pozicija = 'profesor' ORDER BY p.idPredmeta";
+                                resultset = statement.executeQuery(query2);
+                                while (resultset.next()) {
+                                    int idPredmeta = resultset.getInt("p.idPredmeta");
+                                    String naziv = resultset.getString("p.naziv");
+                                    String zaposleni = resultset.getString("z.ime") + " " + resultset.getString("z.prezime");
+                                    String query3 = "SELECT SUM(idPredmeta = '" + idPredmeta + "' AND idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "') as brojPrijava FROM prijaveispita";
+                                    Statement statement1 = connection.createStatement();
+                                    ResultSet resultset1 = statement1.executeQuery(query3);
+                                    double cena = 0.00;
+                                    if (resultset1.next()) {
+                                            cena = resultset1.getInt("brojPrijava") < 2 ? 0.00 : 1000.00;
+                                    }
+                                    Predmet predmet = new Predmet(idPredmeta, naziv);
+                                    ArrayList podaciPredmet = new ArrayList();
+                                    podaciPredmet.add(zaposleni);
+                                    podaciPredmet.add(cena);
+
+                                    if (prijavaIspita.entrySet().stream().filter(p -> p.getKey().getIdPredmeta() == idPredmeta).map(p -> { p.getValue().set(0, p.getValue().get(0) + ", " + zaposleni); return p;}).count() == 0) {
+                                        prijavaIspita.put(predmet, podaciPredmet);
+                                    }
                                 }
-                                polozeniPredmeti.put(predmet, ocena);
                             }
 
-                            odgovor = polozeniPredmeti;
+                            odgovor = prijavaIspita;
                             outObj.writeObject(odgovor);
                             outObj.flush();
-
-                            query = "SELECT * FROM predmet WHERE idPredmeta IN (SELECT idPredmeta FROM izabranipredmeti WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "') AND idPredmeta NOT IN (SELECT idPredmeta FROM zapisnik WHERE idStudenta  = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "' AND ocena > 5)";
-                            resultset = statement.executeQuery(query);
-                            while (resultset.next()) {
-                                int idPredmeta = resultset.getInt("idPredmeta");
-                                String naziv = resultset.getString("naziv");
-                                String studijskiSmer = resultset.getString("studijSkismer");
-                                int semestar = resultset.getInt("semestar");
-                                int espb = resultset.getInt("espb");
-                                boolean vidljiv = resultset.getBoolean("vidljiv");
-                                Predmet predmet;
-                                if (studijskiSmer != null) {
-                                    predmet = new Predmet(idPredmeta, naziv, Predmet.tipSmera.valueOf(studijskiSmer), semestar, espb, vidljiv);
-                                } else {
-                                    predmet = new Predmet(idPredmeta, naziv, null, semestar, espb, vidljiv);
-                                }
-                                odgovor = predmet;
-                                outObj.writeObject(odgovor);
-                                outObj.flush();
-                            }
-
-                            odgovor = "sviispitnirokovi";
-                            outObj.writeObject(odgovor);
-                            outObj.flush();
-                            query = "SELECT * FROM IspitniRok";
-                            resultset = statement.executeQuery(query);
-
-                            while (resultset.next()) {
-                                int idRoka = resultset.getInt("idRoka");
-                                String naziv = resultset.getString("naziv");
-                                Date datumPocetka = resultset.getDate("datumPocetka");
-                                Date datumKraja = resultset.getDate("datumKraja");
-                                boolean aktivnost = resultset.getBoolean("aktivnost");
-                                IspitniRok ispitniRok = new IspitniRok(idRoka, naziv, datumPocetka, datumKraja, aktivnost);
-                                odgovor = ispitniRok;
-                                outObj.writeObject(odgovor);
-                                outObj.flush();
-                            }
-
-                            outObj.writeObject("kraj");
-                            outObj.flush();
+                            //outObj.writeObject("kraj");
 
                         } else {
 
@@ -1311,8 +1308,109 @@ public class Server extends Application {
 
                         outObj.writeObject("kraj");
                         outObj.flush();
+
+                    } else if (zahtev.equals("osveziPrijave")) {
+                        Student student = (Student) inObj.readObject();
+
+                        String query1 = "SELECT * FROM ispitnirok WHERE aktivnost = '1' LIMIT 1";
+                        resultset = statement.executeQuery(query1);
+                        HashMap<Predmet, ArrayList<String>> prijavaIspita = new HashMap<>();
+
+                        if (resultset.next()) {
+
+                            // String query2 = "SELECT p.idPredmeta, p.naziv, z.ime, z.prezime, (SELECT COUNT(*) FROM prijaveispita WHERE idPredmeta = p.idPredmeta AND idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "') as brojPrijava FROM predmet p LEFT JOIN zaposleni z WHERE idPredmeta IN (SELECT idPredmeta FROM izabranipredmeti WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "') AND idPredmeta NOT IN (SELECT idPredmeta FROM zapisnik WHERE idStudenta  = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "' AND ocena > 5) AND z.pozicija = 'profesor'";
+                            String query2 = "SELECT p.idPredmeta, p.naziv, z.ime, z.prezime FROM predmet p JOIN raspodelapredmeta rp ON p.idPredmeta = rp.idPredmeta JOIN zaposleni z ON rp.idZaposlenog = z.idZaposlenog WHERE p.idPredmeta IN (SELECT idPredmeta FROM izabranipredmeti WHERE idStudenta = '" + student.getIdStudenta() + "' AND smer = '" + student.getSmer() + "' AND godinaUpisa = '" + student.getGodinaUpisa() + "') AND p.idPredmeta NOT IN(SELECT idPredmeta FROM zapisnik WHERE idStudenta = '" + student.getIdStudenta() + "' AND smer = '" + student.getSmer() + "' AND godinaUpisa = '" + student.getGodinaUpisa() + "' AND ocena > 5) AND z.pozicija = 'profesor' ORDER BY p.idPredmeta";
+                            resultset = statement.executeQuery(query2);
+                            while (resultset.next()) {
+                                int idPredmeta = resultset.getInt("p.idPredmeta");
+                                String naziv = resultset.getString("p.naziv");
+                                String zaposleni = resultset.getString("z.ime") + " " + resultset.getString("z.prezime");
+                                String query3 = "SELECT SUM(idPredmeta = '" + idPredmeta + "' AND idStudenta = '" + student.getIdStudenta() + "' AND smer = '" + student.getSmer() + "' AND godinaUpisa = '" + student.getGodinaUpisa() + "') as brojPrijava FROM prijaveispita";
+                                Statement statement1 = connection.createStatement();
+                                ResultSet resultset1 = statement1.executeQuery(query3);
+                                double cena = 0.00;
+                                if (resultset1.next()) {
+                                    cena = resultset1.getInt("brojPrijava") < 2 ? 0.00 : 1000.00;
+                                }
+                                Predmet predmet = new Predmet(idPredmeta, naziv);
+                                ArrayList podaciPredmet = new ArrayList();
+                                podaciPredmet.add(zaposleni);
+                                podaciPredmet.add(cena);
+
+                                if (prijavaIspita.entrySet().stream().filter(p -> p.getKey().getIdPredmeta() == idPredmeta).map(p -> { p.getValue().set(0, p.getValue().get(0) + ", " + zaposleni); return p;}).count() == 0) {
+                                    prijavaIspita.put(predmet, podaciPredmet);
+                                }
+                            }
+                        }
+
+                        odgovor = prijavaIspita;
+                        outObj.writeObject(odgovor);
+                        outObj.flush();
+                        //outObj.writeObject("kraj");
+                    }
+                } else if (zahtev.equals("osveziZaposlenog")) {
+                    zahtev = inObj.readObject();
+                    if (zahtev.equals("osveziIspitneRokove")) {
+                        query = "SELECT * FROM IspitniRok";
+                        resultset = statement.executeQuery(query);
+
+                        while (resultset.next()) {
+                            int idRoka = resultset.getInt("idRoka");
+                            String naziv = resultset.getString("naziv");
+                            Date datumPocetka = resultset.getDate("datumPocetka");
+                            Date datumKraja = resultset.getDate("datumKraja");
+                            boolean aktivnost = resultset.getBoolean("aktivnost");
+                            IspitniRok ispitniRok = new IspitniRok(idRoka, naziv, datumPocetka, datumKraja, aktivnost);
+                            odgovor = ispitniRok;
+                            outObj.writeObject(odgovor);
+                            outObj.flush();
+                        }
+
+                        outObj.writeObject("kraj");
+                        outObj.flush();
+
+                    } else if (zahtev.equals("osveziPrijave")) {
+
+                        Zaposleni zaposleni = (Zaposleni) inObj.readObject();
+                        String query1 = "SELECT * FROM predmet AS p JOIN raspodelapredmeta AS rp ON p.idPredmeta = rp.idPredmeta JOIN zaposleni AS z ON rp.idZaposlenog = z.idZaposlenog WHERE rp.idZaposlenog = '" + zaposleni.getIdZaposlenog() + "'";
+                        resultset = statement.executeQuery(query1);
+                        ObservableList<PrijaveIspita> prijaveIspita = FXCollections.observableArrayList();
+
+                        while (resultset.next()) {
+
+                            int idPredmeta = resultset.getInt("idPredmeta");
+
+                            String query2 = "SELECT * FROM ispitnirok WHERE aktivnost = '1' LIMIT 1";
+                            Statement statement1 = connection.createStatement();
+                            ResultSet resultset1 = statement1.executeQuery(query2);
+                            if (resultset1.next()) {
+
+                                int idRoka = resultset1.getInt("idRoka");
+                                String query3 = "SELECT * FROM prijaveIspita WHERE idRoka = '" + idRoka + "' AND idPredmeta = '" + idPredmeta + "'";
+                                Statement statement2 = connection.createStatement();
+                                ResultSet resultset2 = statement2.executeQuery(query3);
+
+                                while (resultset2.next()) {
+
+                                    int idStudenta = resultset2.getInt("idStudenta");
+                                    String smer = resultset2.getString("smer");
+                                    int godinaUpisa = resultset2.getInt("godinaUpisa");
+                                    prijaveIspita.add(new PrijaveIspita(idPredmeta, idStudenta, PrijaveIspita.tipSmera.valueOf(smer), godinaUpisa, idRoka));
+                                }
+                            }
+                        }
+
+                        for (PrijaveIspita pi : prijaveIspita) {
+                            outObj.writeObject(pi);
+                            outObj.flush();
+                        }
+
+                        outObj.writeObject("kraj");
+                        outObj.flush();
+
                     }
                 }
+
                 //ZATVARANJE KONEKCIJE SA BAZOM
                 try {
 

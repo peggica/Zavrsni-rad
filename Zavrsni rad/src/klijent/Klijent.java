@@ -36,6 +36,7 @@ public class Klijent extends Application {
     private ObservableList<Predmet> nepolozeniPredmeti = FXCollections.observableArrayList();
     private HashMap<ZakazivanjeSale, ArrayList<String>> sveZakazaneSale = new HashMap<>();
     private HashMap<ZakazivanjeSale, ArrayList<String>> rasporedIspita = new HashMap<>();
+    private HashMap<Predmet, ArrayList> prijavaIspita = new HashMap<>();
     private StudentskaSluzbaForm studentskaSluzbaForm;
     private ZaposleniForm zaposleniForm;
     private StudentForm studentForm;
@@ -344,11 +345,29 @@ public class Klijent extends Application {
 
                     while (true) {
                         odgovor = inObj.readObject();
-                        if (odgovor.equals("kraj")) {
+                        if (odgovor.equals("predmeti")) {
                             break;
                         }
                         IspitniRok ispitniRok = (IspitniRok) odgovor;
                         sviIspitniRokovi.add(ispitniRok);
+                    }
+                    ObservableList<Predmet> predmeti = FXCollections.observableArrayList();
+                    while (true) {
+                        odgovor = inObj.readObject();
+                        if (odgovor.equals("prijaveIspita")) {
+                            break;
+                        }
+                        Predmet predmet = (Predmet) odgovor;
+                        predmeti.add(predmet);
+                    }
+                    ObservableList<PrijaveIspita> prijaveIspita = FXCollections.observableArrayList();
+                    while (true) {
+                        odgovor = inObj.readObject();
+                        if (odgovor.equals("kraj")) {
+                            break;
+                        }
+                        PrijaveIspita prijavaIspita = (PrijaveIspita) odgovor;
+                        prijaveIspita.add(prijavaIspita);
                     }
 
                     //update na JavaFx application niti
@@ -358,7 +377,7 @@ public class Klijent extends Application {
                         public void run() {
 
                             //prikaz forme za zaposlenog
-                            zaposleniForm = new ZaposleniForm(getStage(), sviIspitniRokovi);
+                            zaposleniForm = new ZaposleniForm(getStage(), ovajZaposleni, sviIspitniRokovi, predmeti, prijaveIspita);
                             getStage().close();
                             zaposleniForm.show();
 
@@ -384,12 +403,15 @@ public class Klijent extends Application {
 
                     while (true) {
                         odgovor = inObj.readObject();
-                        if (odgovor.equals("kraj")) {
+                        if (odgovor.equals("prijavaIspita")) {
                             break;
                         }
                         IspitniRok ispitniRok = (IspitniRok) odgovor;
                         sviIspitniRokovi.add(ispitniRok);
                     }
+
+                    odgovor = inObj.readObject();
+                    prijavaIspita = (HashMap) odgovor;
 
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
@@ -398,7 +420,7 @@ public class Klijent extends Application {
                         public void run() {
 
                             //prikaz forme za studenta
-                            studentForm = new StudentForm(getStage(), ovajStudent, sviIspitniRokovi, polozeniPredmeti, nepolozeniPredmeti);
+                            studentForm = new StudentForm(getStage(), ovajStudent, sviIspitniRokovi, polozeniPredmeti, nepolozeniPredmeti, prijavaIspita);
                             getStage().close();
                             studentForm.show();
 
