@@ -14,6 +14,8 @@ import model.*;
 import java.io.*;
 import java.net.*;
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -222,6 +224,25 @@ public class Server extends Application {
                                 boolean aktivnost = resultset.getBoolean("aktivnost");
                                 IspitniRok ispitniRok = new IspitniRok(idRoka, naziv, datumPocetka, datumKraja, aktivnost);
                                 odgovor = ispitniRok;
+                                outObj.writeObject(odgovor);
+                                outObj.flush();
+                            }
+
+                            outObj.writeObject("slobodneSale");
+                            outObj.flush();
+
+                            query = "SELECT * FROM Sala s WHERE s.idSale NOT IN (SELECT idSale FROM zakazivanjeSale WHERE datum = ' " + LocalDate.now() + "' AND ('" + ZonedDateTime.now().getHour() + 1 + "'>= vremePocetka AND '" + ZonedDateTime.now().getHour() + 1 + "' < vremeKraja) OR ('" + ZonedDateTime.now().getHour() + 2 + "' > vremePocetka AND '" + ZonedDateTime.now().getHour() + 2 + "' <= vremeKraja))";
+                            resultset = statement.executeQuery(query);
+
+                            while (resultset.next()) {
+                                String naziv = resultset.getString("naziv");
+                                int kapacitet = resultset.getInt("brojMesta");
+                                String oprema = resultset.getString("oprema");
+                                if (oprema.equals("/")) {
+                                    oprema = "ništa";
+                                }
+                                Sala sala = new Sala(naziv, kapacitet, Sala.tipOpreme.valueOf(oprema));
+                                odgovor = sala;
                                 outObj.writeObject(odgovor);
                                 outObj.flush();
                             }

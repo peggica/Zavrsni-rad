@@ -113,7 +113,7 @@ public class Student implements Serializable {
         return brojIndeksa;
     }
 
-    public String imePrezime() {
+    public String getImePrezime() {
         return ime + " " + prezime;
     }
 

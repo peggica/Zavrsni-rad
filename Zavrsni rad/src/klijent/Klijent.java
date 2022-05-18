@@ -345,11 +345,20 @@ public class Klijent extends Application {
 
                     while (true) {
                         odgovor = inObj.readObject();
-                        if (odgovor.equals("predmeti")) {
+                        if (odgovor.equals("slobodneSale")) {
                             break;
                         }
                         IspitniRok ispitniRok = (IspitniRok) odgovor;
                         sviIspitniRokovi.add(ispitniRok);
+                    }
+                    ObservableList<Sala> sveSlobodneSale = FXCollections.observableArrayList();
+                    while (true) {
+                        odgovor = inObj.readObject();
+                        if (odgovor.equals("predmeti")) {
+                            break;
+                        }
+                        Sala sala = (Sala) odgovor;
+                        sveSlobodneSale.add(sala);
                     }
                     ObservableList<Predmet> predmeti = FXCollections.observableArrayList();
                     while (true) {
@@ -377,7 +386,7 @@ public class Klijent extends Application {
                         public void run() {
 
                             //prikaz forme za zaposlenog
-                            zaposleniForm = new ZaposleniForm(getStage(), ovajZaposleni, sviIspitniRokovi, predmeti, prijaveIspita);
+                            zaposleniForm = new ZaposleniForm(getStage(), ovajZaposleni, sviIspitniRokovi, predmeti, sveSlobodneSale, prijaveIspita);
                             getStage().close();
                             zaposleniForm.show();
 

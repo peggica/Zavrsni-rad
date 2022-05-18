@@ -127,7 +127,7 @@ public class StudentForm extends Stage {
         Scene scene = new Scene(root, 900, 700);
         setScene(scene);
         setResizable(false);
-        setTitle("Student");
+        setTitle("Student: " + student.getImePrezime());
 
         //Klikom na stavku Pocetna iz Menija poziva se metoda ocistiPane() za ciscenje svih strana BorderPane-a i poziva prikaz za pocetnu stranu
         Label lblPocetna = new Label("POČETNA");
@@ -387,7 +387,7 @@ public class StudentForm extends Stage {
             tableSkolarine.setPlaceholder(new Label("Nema podataka za školarinu"));
             tableSkolarine.getColumns().clear();
 
-            TableColumn<String, String> colDatum = new TableColumn("Datum");    //TODO: nazive kolona dobiti iz baze
+            TableColumn<String, String> colDatum = new TableColumn("Datum");
             colDatum.setMinWidth(250);
             TableColumn<String, String> colZaduzenja = new TableColumn("Zaduženja");
             colZaduzenja.setMinWidth(150);
@@ -427,7 +427,7 @@ public class StudentForm extends Stage {
             lblBrIndeksa.setPadding(new Insets(20,0,0,0));
             lblBrIndeksa.setFont(font15);
 
-            Label lblImePrezime = new Label("Ime i prezime: " + student.imePrezime());
+            Label lblImePrezime = new Label("Ime i prezime: " + student.getImePrezime());
             lblImePrezime.setPadding(new Insets(10,0,0,0));
             lblImePrezime.setFont(font15);
 

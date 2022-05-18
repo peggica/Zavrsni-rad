@@ -7,6 +7,7 @@ import javafx.collections.*;
 import javafx.geometry.*;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
@@ -19,6 +20,8 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.stream.Collectors;
 
 /** Klasa namenjena za prikaz Forme za Zaposlene u JavaFx-u
@@ -33,6 +36,7 @@ public class ZaposleniForm extends Stage {
     private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
     private ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
     private ObservableList<PrijaveIspita> svePrijaveIspita = FXCollections.observableArrayList();
+    private ObservableList<Sala> sveSlobodneSale = FXCollections.observableArrayList();
     private static Alert alert = new Alert(Alert.AlertType.NONE);
 
     public void setZaposleni(Zaposleni zaposleni) {
@@ -49,6 +53,10 @@ public class ZaposleniForm extends Stage {
 
     public void setPrijaveIspita(ObservableList<PrijaveIspita> svePrijaveIspita) {
         this.svePrijaveIspita = svePrijaveIspita;
+    }
+
+    public void setSveSlobodneSale(ObservableList<Sala> sveSlobodneSale) {
+        this.sveSlobodneSale = sveSlobodneSale;
     }
 
     /**
@@ -99,13 +107,14 @@ public class ZaposleniForm extends Stage {
         root.setCenter(null);
     }
 
-    public ZaposleniForm(Stage stage, Zaposleni zaposleni, ObservableList<IspitniRok> ispitniRokovi, ObservableList<Predmet> sviPredmeti, ObservableList<PrijaveIspita> prijaveIspita) {
+    public ZaposleniForm(Stage stage, Zaposleni zaposleni, ObservableList<IspitniRok> ispitniRokovi, ObservableList<Predmet> sviPredmeti, ObservableList<Sala> sveSale, ObservableList<PrijaveIspita> prijaveIspita) {
 
         super();
         initOwner(stage);
         setZaposleni(zaposleni);
         setSviIspitniRokovi(ispitniRokovi);
         setSviPredmeti(sviPredmeti);
+        setSveSlobodneSale(sveSale);
         setPrijaveIspita(prijaveIspita);
 
         BorderPane root = new BorderPane();
@@ -148,17 +157,18 @@ public class ZaposleniForm extends Stage {
             VBox vBox = new VBox();
             vBox.setPadding(new Insets(5, 10, 10, 10));
 
-            HBox hboxIspit = new HBox();
-            hboxIspit.setAlignment(Pos.CENTER_LEFT);
-            hboxIspit.setPadding(new Insets(0, 10, 5, 0));
-            hboxIspit.setSpacing(5);
+            HBox hboxPredmet = new HBox();
+            hboxPredmet.setAlignment(Pos.CENTER_LEFT);
+            hboxPredmet.setPadding(new Insets(0, 10, 5, 0));
+            hboxPredmet.setSpacing(5);
 
-            Label lblIspit = new Label("Ispit: ");
-            lblIspit.setFont(font15);
-            ComboBox cmbIspit = new ComboBox();
-            cmbIspit.getItems().addAll("ovde idu ispiti");  //TODO: da ucita iz baze
-            cmbIspit.setMinWidth(Region.USE_PREF_SIZE);
-            hboxIspit.getChildren().addAll(lblIspit, cmbIspit);
+            Label lblPredmet = new Label("Predmet: ");
+            lblPredmet.setFont(font15);
+            ComboBox cmbPredmet = new ComboBox();
+            cmbPredmet.getItems().addAll(sviPredmeti.stream().map(Predmet::getNaziv).collect(Collectors.toList()));
+            cmbPredmet.setValue(sviPredmeti.stream().map(Predmet::getNaziv).collect(Collectors.toList()).get(0));
+            cmbPredmet.setMinWidth(Region.USE_PREF_SIZE);
+            hboxPredmet.getChildren().addAll(lblPredmet, cmbPredmet);
 
             HBox hboxDatumVreme = new HBox();
             hboxDatumVreme.setAlignment(Pos.CENTER_LEFT);
@@ -168,12 +178,22 @@ public class ZaposleniForm extends Stage {
             Label lblDatum = new Label("Datum: ");
             lblDatum.setFont(font15);
             DatePicker datumDP = new DatePicker();
+            //zabranjen odabih dana pre današnjeg
+            datumDP.setDayCellFactory(picker -> new DateCell() {
+                public void updateItem(LocalDate date, boolean empty) {
+                    super.updateItem(date, empty);
+                    LocalDate danas = LocalDate.now();
+
+                    setDisable(empty || date.compareTo(danas) < 0 );
+                }
+            });
+            datumDP.setValue(LocalDate.now());
 
             Label lblVremeOd = new Label("od: ");
             lblVremeOd.setFont(font15);
             Spinner<Integer> spSatiOd = new Spinner();
             SpinnerValueFactory<Integer> vfSatiOd = new SpinnerValueFactory.IntegerSpinnerValueFactory(8, 20);
-            vfSatiOd.setValue(8);
+            vfSatiOd.setValue(ZonedDateTime.now().getHour() + 1);
             spSatiOd.setValueFactory(vfSatiOd);
             spSatiOd.setMinWidth(50);
             spSatiOd.setMaxWidth(50);
@@ -191,7 +211,7 @@ public class ZaposleniForm extends Stage {
             lblVremeDo.setFont(font15);
             Spinner<Integer> spSatiDo = new Spinner();
             SpinnerValueFactory<Integer> vfSatiDo = new SpinnerValueFactory.IntegerSpinnerValueFactory(9, 21);
-            vfSatiDo.setValue(9);
+            vfSatiDo.setValue(ZonedDateTime.now().getHour() + 2);
             spSatiDo.setValueFactory(vfSatiDo);
             spSatiDo.setMinWidth(50);
             spSatiDo.setMaxWidth(50);
@@ -214,15 +234,21 @@ public class ZaposleniForm extends Stage {
             Label lblSale = new Label("Dostupne sale: ");
             lblSale.setFont(font15);
 
-            TableView<String> tableSale = new TableView<String>();
+            TableView<Sala> tableSale = new TableView<>();
+            tableSale.setPlaceholder(new Label("Nije slobodna ni jedna sala za izabran datum i vreme"));
             tableSale.getColumns().clear();
-            TableColumn<String, String> colNaziv = new TableColumn("Naziv");    //TODO: nazive kolona dobiti iz baze
+
+            TableColumn<Sala, String> colNaziv = new TableColumn("Naziv");
+            colNaziv.setCellValueFactory(new PropertyValueFactory<>("naziv"));
             colNaziv.setMinWidth(200);
-            TableColumn<String, String> colKapacitet = new TableColumn("Broj mesta");
+            TableColumn<Sala, Integer> colKapacitet = new TableColumn("Broj mesta");
+            colKapacitet.setCellValueFactory(new PropertyValueFactory<>("brojMesta"));
             colKapacitet.setMinWidth(100);
-            TableColumn<String, String> colOprema = new TableColumn("Oprema");
+            TableColumn<Sala, String> colOprema = new TableColumn("Oprema");
+            colOprema.setCellValueFactory(new PropertyValueFactory<>("oprema"));
             colOprema.setMinWidth(200);
 
+            tableSale.setItems(sveSale);
             tableSale.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableSale.getColumns().addAll(colNaziv, colKapacitet, colOprema);
 
@@ -238,7 +264,7 @@ public class ZaposleniForm extends Stage {
             btnRezervisi.setMinWidth(60);
             hboxRezervisi.getChildren().add(btnRezervisi);
 
-            vBox.getChildren().addAll(hboxIspit, hboxDatumVreme, hboxSale, hboxRezervisi);
+            vBox.getChildren().addAll(hboxPredmet, hboxDatumVreme, hboxSale, hboxRezervisi);
             root.setCenter(vBox);
         });
         Menu zakaziSaluMenu = new Menu("", lblZakaziSalu);
@@ -262,24 +288,24 @@ public class ZaposleniForm extends Stage {
             hboxPredmet.setPadding(new Insets(0, 10, 5, 0));
             hboxPredmet.setSpacing(5);
 
-            Label lblPredmet = new Label("Predmet: ");
-            lblPredmet.setFont(font15);
-            ComboBox cmbPredmet = new ComboBox();
-            cmbPredmet.getItems().addAll(sviPredmeti.stream().map(Predmet::getNaziv).collect(Collectors.toList()));
-            cmbPredmet.setValue(sviPredmeti.stream().map(Predmet::getNaziv).collect(Collectors.toList()).get(0));
+            Label lblIspit = new Label("Ispit: ");
+            lblIspit.setFont(font15);
+            ComboBox cmbIspit = new ComboBox();
+            cmbIspit.getItems().addAll(sviPredmeti.stream().map(Predmet::getNaziv).collect(Collectors.toList()));
+            cmbIspit.setValue(sviPredmeti.stream().map(Predmet::getNaziv).collect(Collectors.toList()).get(0));
 
             TableView<PrijaveIspita> tablePrijave = new TableView();
-            tablePrijave.setItems(prijaveIspita.stream().filter(pi -> pi.getIdPredmeta() == sviPredmeti.stream().filter(p -> p.getNaziv().equals(cmbPredmet.getValue())).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0)).collect(Collectors.toCollection(FXCollections::observableArrayList)));
+            tablePrijave.setItems(prijaveIspita.stream().filter(pi -> pi.getIdPredmeta() == sviPredmeti.stream().filter(p -> p.getNaziv().equals(cmbIspit.getValue())).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0)).collect(Collectors.toCollection(FXCollections::observableArrayList)));
 
-            cmbPredmet.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
+            cmbIspit.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
 
                 //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                 if (!nova_vrednost.equals(stara_vrednost)) {
-                    tablePrijave.setItems(prijaveIspita.stream().filter(pi -> pi.getIdPredmeta() == sviPredmeti.stream().filter(p -> p.getNaziv().equals(cmbPredmet.getValue())).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0)).collect(Collectors.toCollection(FXCollections::observableArrayList)));
+                    tablePrijave.setItems(prijaveIspita.stream().filter(pi -> pi.getIdPredmeta() == sviPredmeti.stream().filter(p -> p.getNaziv().equals(cmbIspit.getValue())).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0)).collect(Collectors.toCollection(FXCollections::observableArrayList)));
                 }
             });
-            cmbPredmet.setMinWidth(Region.USE_PREF_SIZE);
-            hboxPredmet.getChildren().addAll(lblPredmet, cmbPredmet);
+            cmbIspit.setMinWidth(Region.USE_PREF_SIZE);
+            hboxPredmet.getChildren().addAll(lblIspit, cmbIspit);
 
             HBox hboxPrijave = new HBox();
             hboxPrijave.setAlignment(Pos.TOP_LEFT);

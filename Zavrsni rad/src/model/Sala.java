@@ -36,6 +36,14 @@ public class Sala implements Serializable {
 
     }
 
+    public Sala(String naziv, int brojMesta, tipOpreme tip) {
+
+        this.naziv = naziv;
+        this.brojMesta = brojMesta;
+        this.oprema = tip.toString();
+
+    }
+
     public int getIdSale() {
         return idSale;
     }
