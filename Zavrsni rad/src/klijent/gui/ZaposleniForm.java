@@ -20,6 +20,8 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.sql.Date;
+import java.sql.Time;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.stream.Collectors;
@@ -65,7 +67,7 @@ public class ZaposleniForm extends Stage {
     public static void setAlert(Alert.AlertType at) {
         if (at == Alert.AlertType.ERROR) {
             alert.setAlertType(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
+            alert.setTitle("Greška");
             alert.setHeaderText("");
         } else if (at == Alert.AlertType.INFORMATION) {
             alert.setAlertType(Alert.AlertType.INFORMATION);
@@ -157,6 +159,10 @@ public class ZaposleniForm extends Stage {
             VBox vBox = new VBox();
             vBox.setPadding(new Insets(5, 10, 10, 10));
 
+            TableView<Sala> tableSale = new TableView<>();
+            tableSale.setPlaceholder(new Label("Nije slobodna ni jedna sala za izabran datum i vreme"));
+            tableSale.getColumns().clear();
+
             HBox hboxPredmet = new HBox();
             hboxPredmet.setAlignment(Pos.CENTER_LEFT);
             hboxPredmet.setPadding(new Insets(0, 10, 5, 0));
@@ -188,40 +194,100 @@ public class ZaposleniForm extends Stage {
                 }
             });
             datumDP.setValue(LocalDate.now());
+            Spinner<Integer> spSatiOd = new Spinner();
+            Spinner<Integer> spMinutiOd = new Spinner();
+            Spinner<Integer> spSatiDo = new Spinner();
+            Spinner<Integer> spMinutiDo = new Spinner();
+            datumDP.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
+
+                //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
+                if (!nova_vrednost.equals(stara_vrednost)) {
+                    //poslati zahtev za proveru slobodnih sala serveru
+                    Thread t = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", Date.valueOf(nova_vrednost), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
+                    t.setDaemon(true);
+                    t.start();
+
+                    tableSale.refresh();
+                }
+            });
 
             Label lblVremeOd = new Label("od: ");
             lblVremeOd.setFont(font15);
-            Spinner<Integer> spSatiOd = new Spinner();
             SpinnerValueFactory<Integer> vfSatiOd = new SpinnerValueFactory.IntegerSpinnerValueFactory(8, 20);
             vfSatiOd.setValue(ZonedDateTime.now().getHour() + 1);
             spSatiOd.setValueFactory(vfSatiOd);
+            spSatiOd.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
+
+                //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
+                if (!nova_vrednost.equals(stara_vrednost)) {
+                    //poslati zahtev za proveru slobodnih sala serveru
+                    Thread t = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(nova_vrednost) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
+                    t.setDaemon(true);
+                    t.start();
+
+                    tableSale.refresh();
+                }
+            });
             spSatiOd.setMinWidth(50);
             spSatiOd.setMaxWidth(50);
 
             Label lblOdvojiOd = new Label(":");
             lblOdvojiOd.setFont(font15);
-            Spinner<Integer> spMinutiOd = new Spinner();
             SpinnerValueFactory<Integer> vfMinutiOd = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 45, 0, 15);
             vfMinutiOd.setValue(00);
             spMinutiOd.setValueFactory(vfMinutiOd);
+            spMinutiOd.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
+
+                //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
+                if (!nova_vrednost.equals(stara_vrednost)) {
+                    //poslati zahtev za proveru slobodnih sala serveru
+                    Thread t = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(nova_vrednost) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
+                    t.setDaemon(true);
+                    t.start();
+
+                    tableSale.refresh();
+                }
+            });
             spMinutiOd.setMinWidth(50);
             spMinutiOd.setMaxWidth(50);
 
             Label lblVremeDo = new Label("do: ");
             lblVremeDo.setFont(font15);
-            Spinner<Integer> spSatiDo = new Spinner();
             SpinnerValueFactory<Integer> vfSatiDo = new SpinnerValueFactory.IntegerSpinnerValueFactory(9, 21);
             vfSatiDo.setValue(ZonedDateTime.now().getHour() + 2);
             spSatiDo.setValueFactory(vfSatiDo);
+            spSatiDo.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
+
+                //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
+                if (!nova_vrednost.equals(stara_vrednost)) {
+                    //poslati zahtev za proveru slobodnih sala serveru
+                    Thread t = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(nova_vrednost) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
+                    t.setDaemon(true);
+                    t.start();
+
+                    tableSale.refresh();
+                }
+            });
             spSatiDo.setMinWidth(50);
             spSatiDo.setMaxWidth(50);
 
             Label lblOdvojiDo = new Label(":");
             lblOdvojiDo.setFont(font15);
-            Spinner<Integer> spMinutiDo = new Spinner();
             SpinnerValueFactory<Integer> vfMinutiDo = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 45, 0, 15);
             vfMinutiDo.setValue(00);
             spMinutiDo.setValueFactory(vfMinutiDo);
+            spMinutiDo.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
+
+                //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
+                if (!nova_vrednost.equals(stara_vrednost)) {
+                    //poslati zahtev za proveru slobodnih sala serveru
+                    Thread t = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(nova_vrednost) + ":00")));
+                    t.setDaemon(true);
+                    t.start();
+
+                    tableSale.refresh();
+                }
+            });
             spMinutiDo.setMinWidth(50);
             spMinutiDo.setMaxWidth(50);
 
@@ -233,10 +299,6 @@ public class ZaposleniForm extends Stage {
             hboxSale.setSpacing(12);
             Label lblSale = new Label("Dostupne sale: ");
             lblSale.setFont(font15);
-
-            TableView<Sala> tableSale = new TableView<>();
-            tableSale.setPlaceholder(new Label("Nije slobodna ni jedna sala za izabran datum i vreme"));
-            tableSale.getColumns().clear();
 
             TableColumn<Sala, String> colNaziv = new TableColumn("Naziv");
             colNaziv.setCellValueFactory(new PropertyValueFactory<>("naziv"));
@@ -260,6 +322,20 @@ public class ZaposleniForm extends Stage {
             hboxRezervisi.setSpacing(5);
 
             Button btnRezervisi = new Button("Rezerviši salu");
+            btnRezervisi.setOnMouseClicked(e -> {
+                if (tableSale.getSelectionModel().getSelectedItem() != null) {
+                    //System.out.println("nesto je selektovano u tabeli");
+                } else {
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.ERROR);
+                            alert.setContentText("Molim vas izaberite neku salu u tabeli");
+                            alert.showAndWait();
+                        }
+                    });
+                }
+            });
             btnRezervisi.setFont(font15);
             btnRezervisi.setMinWidth(60);
             hboxRezervisi.getChildren().add(btnRezervisi);
@@ -383,10 +459,21 @@ public class ZaposleniForm extends Stage {
         private ObjectOutputStream outObj;
         private Object zahtev;
         private Object odgovor;
+        private Date datum;
+        private Time vremePocetka;
+        private Time vremeKraja;
 
         //konstuktor za osvezavanje podataka
         public RunnableZahtevServeru(Object zahtev) {
             this.zahtev = zahtev;
+        }
+
+        //konstruktor za osvezavanje slobodnih sala
+        public RunnableZahtevServeru(Object zahtev, Date datum, Time vremePocetka, Time vremeKraja) {
+            this.zahtev = zahtev;
+            this.datum = datum;
+            this.vremePocetka = vremePocetka;
+            this.vremeKraja = vremeKraja;
         }
 
         @Override
@@ -481,6 +568,49 @@ public class ZaposleniForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setPrijaveIspita(svePrijaveIspita);
+                            System.out.println("Osvezeni podaci sa strane servera");
+
+                        }
+                    });
+                } catch (IOException e) {
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.INFORMATION);
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.showAndWait();
+                        }
+                    });
+                    //e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            } else if (zahtev.equals("osveziSlobodneSale")) {
+                try {
+                    outObj.writeObject("osvezi" + "Zaposlenog");
+                    outObj.flush();
+                    outObj.writeObject(zahtev);
+                    outObj.flush();
+                    outObj.writeObject(new ZakazivanjeSale(datum, vremePocetka, vremeKraja));
+                    outObj.flush();
+                    sveSlobodneSale.clear();
+                    while (true) {
+                        odgovor = inObj.readObject();
+                        if (odgovor.equals("kraj")) {
+                            break;
+                        }
+                        Sala sala = (Sala) odgovor;
+                        sveSlobodneSale.add(sala);
+                    }
+                    //update na JavaFx application niti
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+
+                            //azuriranje/ponovno popunjavanje liste
+                            setSveSlobodneSale(sveSlobodneSale);
                             System.out.println("Osvezeni podaci sa strane servera");
 
                         }

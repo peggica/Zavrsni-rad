@@ -54,7 +54,7 @@ public class Klijent extends Application {
     public static void setAlert(Alert.AlertType at) {
         if (at == Alert.AlertType.ERROR) {
             alert.setAlertType(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
+            alert.setTitle("Greška");
             alert.setHeaderText("");
         } else if (at == Alert.AlertType.INFORMATION) {
             alert.setAlertType(Alert.AlertType.INFORMATION);

@@ -1429,6 +1429,27 @@ public class Server extends Application {
                         outObj.writeObject("kraj");
                         outObj.flush();
 
+                    } else if (zahtev.equals("osveziSlobodneSale")) {
+
+                        ZakazivanjeSale zakazivanjeSale = (ZakazivanjeSale) inObj.readObject();
+                        query = "SELECT * FROM Sala s WHERE s.idSale NOT IN (SELECT idSale FROM zakazivanjeSale WHERE datum = ' " + zakazivanjeSale.getDatum().toLocalDate() + "' AND ('" + zakazivanjeSale.getVremePocetka() + 1 + "'>= vremePocetka AND '" + zakazivanjeSale.getVremePocetka() + "' < vremeKraja) OR ('" + zakazivanjeSale.getVremeKraja() + "' > vremePocetka AND '" + zakazivanjeSale.getVremeKraja() + "' <= vremeKraja))";
+                        resultset = statement.executeQuery(query);
+
+                        while (resultset.next()) {
+                            String naziv = resultset.getString("naziv");
+                            int kapacitet = resultset.getInt("brojMesta");
+                            String oprema = resultset.getString("oprema");
+                            if (oprema.equals("/")) {
+                                oprema = "ništa";
+                            }
+                            Sala sala = new Sala(naziv, kapacitet, Sala.tipOpreme.valueOf(oprema));
+                            odgovor = sala;
+                            outObj.writeObject(odgovor);
+                            outObj.flush();
+                        }
+
+                        outObj.writeObject("kraj");
+                        outObj.flush();
                     }
                 }
 
