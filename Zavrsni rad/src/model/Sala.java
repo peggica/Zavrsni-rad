@@ -27,21 +27,22 @@ public class Sala implements Serializable {
 
     }
 
+    public Sala(int idSale, String naziv, int brojMesta, tipOpreme tip) {
+
+        this.idSale = idSale;
+        this.naziv = naziv;
+        this.brojMesta = brojMesta;
+        this.oprema = tip.toString();
+
+    }
+
+
     public Sala(String naziv, int brojMesta, tipOpreme tip, boolean vidljiv) {
 
         this.naziv = naziv;
         this.brojMesta = brojMesta;
         this.oprema = tip.toString();
         this.vidljiv = vidljiv;
-
-    }
-
-    public Sala(String naziv, int brojMesta, tipOpreme tip) {
-
-        this.naziv = naziv;
-        this.brojMesta = brojMesta;
-        this.oprema = tip.toString();
-
     }
 
     public int getIdSale() {

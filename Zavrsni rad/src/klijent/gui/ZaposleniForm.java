@@ -23,7 +23,8 @@ import java.net.UnknownHostException;
 import java.sql.Date;
 import java.sql.Time;
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 
 /** Klasa namenjena za prikaz Forme za Zaposlene u JavaFx-u
@@ -40,6 +41,7 @@ public class ZaposleniForm extends Stage {
     private ObservableList<PrijaveIspita> svePrijaveIspita = FXCollections.observableArrayList();
     private ObservableList<Sala> sveSlobodneSale = FXCollections.observableArrayList();
     private static Alert alert = new Alert(Alert.AlertType.NONE);
+    private TableView tabela;
 
     public void setZaposleni(Zaposleni zaposleni) {
         this.zaposleni = zaposleni;
@@ -59,6 +61,14 @@ public class ZaposleniForm extends Stage {
 
     public void setSveSlobodneSale(ObservableList<Sala> sveSlobodneSale) {
         this.sveSlobodneSale = sveSlobodneSale;
+    }
+
+    public void setTabela(TableView tabela) {
+        this.tabela = tabela;
+    }
+
+    public TableView getTabela() {
+        return tabela;
     }
 
     /**
@@ -155,6 +165,12 @@ public class ZaposleniForm extends Stage {
         Label lblZakaziSalu = new Label("ZAKAŽI SALU");
         lblZakaziSalu.setOnMouseClicked(mouseEvent -> {
 
+            //kada se prebaci na drugu stavku iz menija da osvezi podatke
+            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", Date.valueOf(LocalDate.now()), Time.valueOf(LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1)), Time.valueOf(LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1).plusMinutes(15))));
+            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+            runnableZahtevServeru.setDaemon(true);
+            runnableZahtevServeru.start();
+
             ocistiPane(root);
             VBox vBox = new VBox();
             vBox.setPadding(new Insets(5, 10, 10, 10));
@@ -214,7 +230,7 @@ public class ZaposleniForm extends Stage {
             Label lblVremeOd = new Label("od: ");
             lblVremeOd.setFont(font15);
             SpinnerValueFactory<Integer> vfSatiOd = new SpinnerValueFactory.IntegerSpinnerValueFactory(8, 20);
-            vfSatiOd.setValue(ZonedDateTime.now().getHour() + 1);
+            vfSatiOd.setValue(LocalTime.now().getHour() + 1);
             spSatiOd.setValueFactory(vfSatiOd);
             spSatiOd.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
 
@@ -254,7 +270,7 @@ public class ZaposleniForm extends Stage {
             Label lblVremeDo = new Label("do: ");
             lblVremeDo.setFont(font15);
             SpinnerValueFactory<Integer> vfSatiDo = new SpinnerValueFactory.IntegerSpinnerValueFactory(9, 21);
-            vfSatiDo.setValue(ZonedDateTime.now().getHour() + 2);
+            vfSatiDo.setValue(LocalTime.now().getHour() + 1);
             spSatiDo.setValueFactory(vfSatiDo);
             spSatiDo.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
 
@@ -274,7 +290,7 @@ public class ZaposleniForm extends Stage {
             Label lblOdvojiDo = new Label(":");
             lblOdvojiDo.setFont(font15);
             SpinnerValueFactory<Integer> vfMinutiDo = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 45, 0, 15);
-            vfMinutiDo.setValue(00);
+            vfMinutiDo.setValue(15);
             spMinutiDo.setValueFactory(vfMinutiDo);
             spMinutiDo.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
 
@@ -310,7 +326,7 @@ public class ZaposleniForm extends Stage {
             colOprema.setCellValueFactory(new PropertyValueFactory<>("oprema"));
             colOprema.setMinWidth(200);
 
-            tableSale.setItems(sveSale);
+            tableSale.setItems(sveSlobodneSale);
             tableSale.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableSale.getColumns().addAll(colNaziv, colKapacitet, colOprema);
 
@@ -324,7 +340,16 @@ public class ZaposleniForm extends Stage {
             Button btnRezervisi = new Button("Rezerviši salu");
             btnRezervisi.setOnMouseClicked(e -> {
                 if (tableSale.getSelectionModel().getSelectedItem() != null) {
-                    //System.out.println("nesto je selektovano u tabeli");
+                    //ukoliko je neka sala u tabeli selektovana - poslati serveru podatke za rezervaciju, ukoliko je ta sala idalje slobodna
+
+                    Sala izabranaSala = (Sala) tableSale.getSelectionModel().getSelectedItem();
+                    setTabela(tableSale);
+                    int idPredmeta = sviPredmeti.stream().filter(p -> p.getNaziv().equals(cmbPredmet.getValue())).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0);
+                    Thread t = new Thread(new RunnableZahtevServeru("zakaziSalu", idPredmeta, izabranaSala, Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
+                    t.setDaemon(true);
+                    t.start();
+
+                    tableSale.refresh();
                 } else {
                     Platform.runLater(new Runnable() {
                         @Override
@@ -462,6 +487,8 @@ public class ZaposleniForm extends Stage {
         private Date datum;
         private Time vremePocetka;
         private Time vremeKraja;
+        private int idPredmeta;
+        private Sala sala;
 
         //konstuktor za osvezavanje podataka
         public RunnableZahtevServeru(Object zahtev) {
@@ -471,6 +498,16 @@ public class ZaposleniForm extends Stage {
         //konstruktor za osvezavanje slobodnih sala
         public RunnableZahtevServeru(Object zahtev, Date datum, Time vremePocetka, Time vremeKraja) {
             this.zahtev = zahtev;
+            this.datum = datum;
+            this.vremePocetka = vremePocetka;
+            this.vremeKraja = vremeKraja;
+        }
+
+        //konstruktor za zakazivanje sale
+        public RunnableZahtevServeru(Object zahtev, int idPredmeta, Sala sala, Date datum, Time vremePocetka, Time vremeKraja) {
+            this.zahtev = zahtev;
+            this.idPredmeta = idPredmeta;
+            this.sala = sala;
             this.datum = datum;
             this.vremePocetka = vremePocetka;
             this.vremeKraja = vremeKraja;
@@ -628,6 +665,59 @@ public class ZaposleniForm extends Stage {
                     //e.printStackTrace();
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
+                }
+            } else if (zahtev.equals("zakaziSalu")) {
+                //ukoliko je pozvan konstruktor za zakazivanje sale
+                try {
+                    outObj.writeObject(zahtev + "Zaposleni");
+                    outObj.flush();
+                    ZakazivanjeSale zakazivanjeSale = new ZakazivanjeSale(sala.getIdSale(), idPredmeta, zaposleni.getIdZaposlenog(), datum, vremePocetka, vremeKraja);
+                    outObj.writeObject(zakazivanjeSale);
+                    outObj.flush();
+                    try {
+                        odgovor = inObj.readObject();
+                        if (odgovor.equals("uspelo")) {
+                            Platform.runLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    sveSlobodneSale.remove(sala);
+                                    ObservableList<Sala> stavke = FXCollections.observableArrayList(sveSlobodneSale);
+                                    getTabela().setItems(stavke);
+                                    getTabela().refresh();
+                                    setAlert(Alert.AlertType.INFORMATION);
+                                    alert.setContentText("Uspešno zakazana sala u Bazi");
+                                    alert.showAndWait();
+                                }
+                            });
+                            //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
+                            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", datum, vremePocetka, vremeKraja));
+                            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                            runnableZahtevServeru.setDaemon(true);
+                            runnableZahtevServeru.start();
+                        } else {
+                            Platform.runLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    setAlert(Alert.AlertType.ERROR);
+                                    alert.setContentText("Ta sala je već zauzeta za izabran datum i vreme!");
+                                    alert.showAndWait();
+                                }
+                            });
+                        }
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                } catch (IOException e) {
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.INFORMATION);
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.showAndWait();
+                        }
+                    });
+                    //e.printStackTrace();
                 }
             }
         }

@@ -14,8 +14,10 @@ import model.*;
 import java.io.*;
 import java.net.*;
 import java.sql.*;
+import java.time.Clock;
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -231,17 +233,18 @@ public class Server extends Application {
                             outObj.writeObject("slobodneSale");
                             outObj.flush();
 
-                            query = "SELECT * FROM Sala s WHERE s.idSale NOT IN (SELECT idSale FROM zakazivanjeSale WHERE datum = ' " + LocalDate.now() + "' AND ('" + ZonedDateTime.now().getHour() + 1 + "'>= vremePocetka AND '" + ZonedDateTime.now().getHour() + 1 + "' < vremeKraja) OR ('" + ZonedDateTime.now().getHour() + 2 + "' > vremePocetka AND '" + ZonedDateTime.now().getHour() + 2 + "' <= vremeKraja))";
+                            query = "SELECT * FROM Sala s WHERE s.idSale NOT IN (SELECT idSale FROM zakazivanjeSale WHERE datum = ' " + LocalDate.now() + "' AND ('" + LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1) + "'>= vremePocetka AND '" + LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1).plusMinutes(15) + "' < vremeKraja) OR ('" + LocalTime.now().truncatedTo(ChronoUnit.HOURS) + "' > vremePocetka AND '" + LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusMinutes(1) + "' <= vremeKraja))";
                             resultset = statement.executeQuery(query);
 
                             while (resultset.next()) {
+                                int idSale = resultset.getInt("idSale");
                                 String naziv = resultset.getString("naziv");
                                 int kapacitet = resultset.getInt("brojMesta");
                                 String oprema = resultset.getString("oprema");
                                 if (oprema.equals("/")) {
                                     oprema = "ništa";
                                 }
-                                Sala sala = new Sala(naziv, kapacitet, Sala.tipOpreme.valueOf(oprema));
+                                Sala sala = new Sala(idSale, naziv, kapacitet, Sala.tipOpreme.valueOf(oprema));
                                 odgovor = sala;
                                 outObj.writeObject(odgovor);
                                 outObj.flush();
@@ -1432,23 +1435,48 @@ public class Server extends Application {
                     } else if (zahtev.equals("osveziSlobodneSale")) {
 
                         ZakazivanjeSale zakazivanjeSale = (ZakazivanjeSale) inObj.readObject();
-                        query = "SELECT * FROM Sala s WHERE s.idSale NOT IN (SELECT idSale FROM zakazivanjeSale WHERE datum = ' " + zakazivanjeSale.getDatum().toLocalDate() + "' AND ('" + zakazivanjeSale.getVremePocetka() + 1 + "'>= vremePocetka AND '" + zakazivanjeSale.getVremePocetka() + "' < vremeKraja) OR ('" + zakazivanjeSale.getVremeKraja() + "' > vremePocetka AND '" + zakazivanjeSale.getVremeKraja() + "' <= vremeKraja))";
+                        query = "SELECT * FROM Sala s WHERE s.idSale NOT IN (SELECT idSale FROM zakazivanjeSale WHERE datum = ' " + zakazivanjeSale.getDatum().toLocalDate() + "' AND ('" + zakazivanjeSale.getVremePocetka() + "'>= vremePocetka AND '" + zakazivanjeSale.getVremePocetka() + "' < vremeKraja) OR ('" + zakazivanjeSale.getVremeKraja() + "' > vremePocetka AND '" + zakazivanjeSale.getVremeKraja() + "' <= vremeKraja))";
                         resultset = statement.executeQuery(query);
 
                         while (resultset.next()) {
+                            int idSale = resultset.getInt("idSale");
                             String naziv = resultset.getString("naziv");
                             int kapacitet = resultset.getInt("brojMesta");
                             String oprema = resultset.getString("oprema");
                             if (oprema.equals("/")) {
                                 oprema = "ništa";
                             }
-                            Sala sala = new Sala(naziv, kapacitet, Sala.tipOpreme.valueOf(oprema));
+                            Sala sala = new Sala(idSale, naziv, kapacitet, Sala.tipOpreme.valueOf(oprema));
                             odgovor = sala;
                             outObj.writeObject(odgovor);
                             outObj.flush();
                         }
 
                         outObj.writeObject("kraj");
+                        outObj.flush();
+                    }
+
+                } else if (zahtev.equals("zakaziSaluZaposleni")) {
+
+                    ZakazivanjeSale zakazivanjeSale = (ZakazivanjeSale) inObj.readObject();
+                    String query1 = "SELECT * FROM ZakazivanjeSale WHERE datum = '" + zakazivanjeSale.getDatum() + "' AND (('" + zakazivanjeSale.getVremePocetka() + "'>= vremePocetka AND '" + zakazivanjeSale.getVremePocetka() + "' < vremeKraja) OR ('" + zakazivanjeSale.getVremeKraja() + "' > vremePocetka AND '" + zakazivanjeSale.getVremeKraja() + "' <= vremeKraja)) AND idSale = '" + zakazivanjeSale.getIdSale() + "'";
+                    resultset = statement.executeQuery(query1);
+                    if (!resultset.next()) {
+                        try {
+                            String query2 = "INSERT INTO ZakazivanjeSale(idSale, idPredmeta, idZaposlenog, datum, vremePocetka, vremeKraja) VALUES ('" + zakazivanjeSale.getIdSale() + "', '" + zakazivanjeSale.getIdPredmeta() + "', '" + zakazivanjeSale.getIdZaposlenog() + "', '" + zakazivanjeSale.getDatum() + "', '" + zakazivanjeSale.getVremePocetka() + "', '" + zakazivanjeSale.getVremeKraja() + "')";
+                            int izmena = statement.executeUpdate(query2);
+                            if (izmena != 0) {
+                                outObj.writeObject("uspelo");
+                                outObj.flush();
+                            } else {
+                                outObj.writeObject("nijeUspelo");
+                                outObj.flush();
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        outObj.writeObject("nijeUspelo");
                         outObj.flush();
                     }
                 }
