@@ -25,7 +25,10 @@ import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
+
+import static java.time.LocalDate.now;
 
 /** Klasa namenjena za prikaz Forme za Zaposlene u JavaFx-u
  *  Ukoliko je tip zaposlenog profesor u Meniju je dostupna i opcija za snimanje ocena u zapisnik - DODAJ U ZAPISNIK
@@ -38,10 +41,11 @@ public class ZaposleniForm extends Stage {
     private Zaposleni zaposleni;
     private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
     private ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
-    private ObservableList<PrijaveIspita> svePrijaveIspita = FXCollections.observableArrayList();
+    private ObservableList<Zapisnik> zapisnik = FXCollections.observableArrayList();
     private ObservableList<Sala> sveSlobodneSale = FXCollections.observableArrayList();
     private static Alert alert = new Alert(Alert.AlertType.NONE);
     private TableView tabela;
+    private int aktivniRok;
 
     public void setZaposleni(Zaposleni zaposleni) {
         this.zaposleni = zaposleni;
@@ -55,8 +59,8 @@ public class ZaposleniForm extends Stage {
         this.sviPredmeti = sviPredmeti;
     }
 
-    public void setPrijaveIspita(ObservableList<PrijaveIspita> svePrijaveIspita) {
-        this.svePrijaveIspita = svePrijaveIspita;
+    public void setZapisnik(ObservableList<Zapisnik> zapisnik) {
+        this.zapisnik = zapisnik;
     }
 
     public void setSveSlobodneSale(ObservableList<Sala> sveSlobodneSale) {
@@ -69,6 +73,14 @@ public class ZaposleniForm extends Stage {
 
     public TableView getTabela() {
         return tabela;
+    }
+
+    public int getAktivniRok() {
+        return aktivniRok;
+    }
+
+    public void setAktivniRok(int aktivniRok) {
+        this.aktivniRok = aktivniRok;
     }
 
     /**
@@ -89,10 +101,12 @@ public class ZaposleniForm extends Stage {
     /** Proverava da li ima aktivnih ispitnih rokova ili ne, pa postavlja prikaz za stavku Pocetna iz Menija    */
     private void pocetniPrikaz(BorderPane root){
 
+        setAktivniRok(0);
         boolean aktivan = false;
         for (IspitniRok ispitniRok:this.sviIspitniRokovi) {
             if (ispitniRok.isAktivnost()) {
                 aktivan = true;
+                setAktivniRok(ispitniRok.getIdRoka());
                 break;
             }
         }
@@ -119,7 +133,8 @@ public class ZaposleniForm extends Stage {
         root.setCenter(null);
     }
 
-    public ZaposleniForm(Stage stage, Zaposleni zaposleni, ObservableList<IspitniRok> ispitniRokovi, ObservableList<Predmet> sviPredmeti, ObservableList<Sala> sveSale, ObservableList<PrijaveIspita> prijaveIspita) {
+    /*TODO: konstruktor sta prima*/
+    public ZaposleniForm(Stage stage, Zaposleni zaposleni, ObservableList<IspitniRok> ispitniRokovi, ObservableList<Predmet> sviPredmeti, ObservableList<Sala> sveSale, ObservableList<Zapisnik> zapisnik) {
 
         super();
         initOwner(stage);
@@ -127,7 +142,7 @@ public class ZaposleniForm extends Stage {
         setSviIspitniRokovi(ispitniRokovi);
         setSviPredmeti(sviPredmeti);
         setSveSlobodneSale(sveSale);
-        setPrijaveIspita(prijaveIspita);
+        setZapisnik(zapisnik);
 
         BorderPane root = new BorderPane();
         MenuBar menuBar = new MenuBar();
@@ -166,7 +181,7 @@ public class ZaposleniForm extends Stage {
         lblZakaziSalu.setOnMouseClicked(mouseEvent -> {
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", Date.valueOf(LocalDate.now()), Time.valueOf(LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1)), Time.valueOf(LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1).plusMinutes(15))));
+            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", Date.valueOf(now()), Time.valueOf(LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1)), Time.valueOf(LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1).plusMinutes(15))));
             //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
             runnableZahtevServeru.setDaemon(true);
             runnableZahtevServeru.start();
@@ -204,12 +219,12 @@ public class ZaposleniForm extends Stage {
             datumDP.setDayCellFactory(picker -> new DateCell() {
                 public void updateItem(LocalDate date, boolean empty) {
                     super.updateItem(date, empty);
-                    LocalDate danas = LocalDate.now();
+                    LocalDate danas = now();
 
                     setDisable(empty || date.compareTo(danas) < 0 );
                 }
             });
-            datumDP.setValue(LocalDate.now());
+            datumDP.setValue(now());
             Spinner<Integer> spSatiOd = new Spinner();
             Spinner<Integer> spMinutiOd = new Spinner();
             Spinner<Integer> spSatiDo = new Spinner();
@@ -395,14 +410,14 @@ public class ZaposleniForm extends Stage {
             cmbIspit.getItems().addAll(sviPredmeti.stream().map(Predmet::getNaziv).collect(Collectors.toList()));
             cmbIspit.setValue(sviPredmeti.stream().map(Predmet::getNaziv).collect(Collectors.toList()).get(0));
 
-            TableView<PrijaveIspita> tablePrijave = new TableView();
-            tablePrijave.setItems(prijaveIspita.stream().filter(pi -> pi.getIdPredmeta() == sviPredmeti.stream().filter(p -> p.getNaziv().equals(cmbIspit.getValue())).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0)).collect(Collectors.toCollection(FXCollections::observableArrayList)));
+            TableView<Zapisnik> tablePrijave = new TableView();
+            tablePrijave.setItems(zapisnik.stream().filter(pi -> pi.getIdPredmeta() == sviPredmeti.stream().filter(p -> p.getNaziv().equals(cmbIspit.getValue())).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0)).collect(Collectors.toCollection(FXCollections::observableArrayList)));
 
             cmbIspit.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
 
                 //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                 if (!nova_vrednost.equals(stara_vrednost)) {
-                    tablePrijave.setItems(prijaveIspita.stream().filter(pi -> pi.getIdPredmeta() == sviPredmeti.stream().filter(p -> p.getNaziv().equals(cmbIspit.getValue())).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0)).collect(Collectors.toCollection(FXCollections::observableArrayList)));
+                    tablePrijave.setItems(zapisnik.stream().filter(pi -> pi.getIdPredmeta() == sviPredmeti.stream().filter(p -> p.getNaziv().equals(cmbIspit.getValue())).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0)).collect(Collectors.toCollection(FXCollections::observableArrayList)));
                 }
             });
             cmbIspit.setMinWidth(Region.USE_PREF_SIZE);
@@ -416,30 +431,49 @@ public class ZaposleniForm extends Stage {
             lblPrijave.setFont(font15);
 
             tablePrijave.setEditable(true);
-            tablePrijave.setPlaceholder(new Label("Nema prijava za ispit"));
+            if (getAktivniRok() == 0) {
+                tablePrijave.setPlaceholder(new Label("Ispitni rok nije u toku."));
+            } else {
+                tablePrijave.setPlaceholder(new Label("Nema prijava za ispit"));
+            }
             tablePrijave.getColumns().clear();
             TableColumn colIndex = new TableColumn("Broj indeksa");
-            colIndex.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<PrijaveIspita, String>, ObservableValue<String>>() {
+            colIndex.setStyle("-fx-alignment: center;");
+            colIndex.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Zapisnik, String>, ObservableValue<String>>() {
 
                 @Override
-                public ObservableValue<String> call(TableColumn.CellDataFeatures<PrijaveIspita, String> pi) {
-                    return new SimpleObjectProperty<String>(pi.getValue().getSmer() + "/" + String.valueOf(pi.getValue().getIdStudenta()) + "-" + String.valueOf(pi.getValue().getGodinaUpisa()).substring(2));
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Zapisnik, String> z) {
+                    return new SimpleObjectProperty<String>(z.getValue().getSmer() + "/" + String.valueOf(z.getValue().getIdStudenta()) + "-" + String.valueOf(z.getValue().getGodinaUpisa()).substring(2));
                 }
 
             });
             colIndex.setMinWidth(100);
             TableColumn colOcena = new TableColumn("Ocena");
-            colOcena.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<PrijaveIspita, Integer>, ObservableValue<Integer>>() {
+            colOcena.setStyle("-fx-alignment: center;");
+            colOcena.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Zapisnik, ComboBox>, ObservableValue<ComboBox>>() {
 
                 @Override
-                public ObservableValue<Integer> call(TableColumn.CellDataFeatures<PrijaveIspita, Integer> pi) {
-                    return new SimpleObjectProperty<Integer>(0);
-                }
+                public ObservableValue<ComboBox> call(TableColumn.CellDataFeatures<Zapisnik, ComboBox> z) {
 
+                    ComboBox comboBox = new ComboBox();
+                    comboBox.getItems().addAll(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+                    comboBox.setMinWidth(Region.USE_PREF_SIZE);
+                    comboBox.setValue(z.getValue().getOcena());
+                    comboBox.getSelectionModel().selectedItemProperty().addListener((obs, stara_vrednost, nova_vrednost) -> {
+
+                        if(!stara_vrednost.equals(nova_vrednost)){
+                            z.getValue().setOcena(Integer.valueOf(nova_vrednost.toString()));
+                            Platform.runLater(() -> comboBox.setValue(z.getValue().getOcena()));
+                        }
+                    });
+
+                    return new SimpleObjectProperty<ComboBox>(comboBox);
+
+                }
             });
+
             colOcena.setMinWidth(50);
 
-            //TODO: osvezavanje na serveru i git push
             tablePrijave.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tablePrijave.getColumns().addAll(colIndex, colOcena);
 
@@ -451,6 +485,42 @@ public class ZaposleniForm extends Stage {
             hboxSnimi.setSpacing(5);
 
             Button btnSnimi = new Button("Snimi izmene");
+            btnSnimi.setOnAction(e -> {
+                //ukoliko ima nešto u tabeli
+                if (!tablePrijave.getItems().isEmpty()) {
+
+                    int idPredmeta = sviPredmeti.stream().filter(p -> p.getNaziv().equals(cmbIspit.getValue())).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0);
+                    //ukoliko snimi i zatvori se ispitni rok posle - izmene su moguće samo nakon ponovnog aktiviranja ispitnog roka od strane studentske službe, tj jednom kad se završi i zaključa zapisnik nije moguće snimiti/izmeniti unetu ocenu
+                    for (int i = 0; i < tablePrijave.getItems().stream().count(); i++) {
+
+                        int ocena = Integer.valueOf(((ComboBox)tablePrijave.getColumns().get(1).getCellObservableValue(i).getValue()).getValue().toString());
+                        zapisnik.stream().filter(pi -> pi.getIdPredmeta() == sviPredmeti.stream().filter(p -> p.getIdPredmeta() == idPredmeta).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0)).collect(Collectors.toCollection(FXCollections::observableArrayList)).get(i).setOcena(ocena);
+                        zapisnik.stream().filter(pi -> pi.getIdPredmeta() == sviPredmeti.stream().filter(p -> p.getIdPredmeta() == idPredmeta).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0)).collect(Collectors.toCollection(FXCollections::observableArrayList)).get(i).setIdRoka(getAktivniRok());
+
+                    }
+                    Thread t = new Thread(new RunnableZahtevServeru("unesiOcenuUZapisnik", idPredmeta));
+                    t.setDaemon(true);
+                    t.start();
+
+                } else {
+
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.ERROR);
+
+                            if (getAktivniRok() == 0) {
+                                alert.setContentText("Nije moguće snimiti izmene jer ispitni rok nije u toku");
+                            } else {
+                                alert.setContentText("Nije moguće snimiti izmene jer nema ni jedne prijave");
+                            }
+                            alert.showAndWait();
+                        }
+                    });
+
+                }
+                tablePrijave.refresh();
+            });
             btnSnimi.setFont(font15);
             btnSnimi.setMinWidth(60);
             hboxSnimi.getChildren().add(btnSnimi);
@@ -511,6 +581,12 @@ public class ZaposleniForm extends Stage {
             this.datum = datum;
             this.vremePocetka = vremePocetka;
             this.vremeKraja = vremeKraja;
+        }
+
+        //konstruktor za snimanje ocena u zapisnik
+        public RunnableZahtevServeru(Object zahtev, int idPredmeta) {
+            this.zahtev = zahtev;
+            this.idPredmeta = idPredmeta;
         }
 
         @Override
@@ -587,14 +663,14 @@ public class ZaposleniForm extends Stage {
                     outObj.flush();
                     outObj.writeObject(zaposleni);
                     outObj.flush();
-                    svePrijaveIspita.clear();
+                    zapisnik.clear();
                     while (true) { //nisam sigurna za ovu proveru
                         odgovor = inObj.readObject();
                         if (odgovor.toString().equals("kraj")) {
                             break;
                         } else {
-                            PrijaveIspita prijavaIspita = (PrijaveIspita) odgovor;
-                            svePrijaveIspita.add(prijavaIspita);
+                            Zapisnik pojedinacni = (Zapisnik) odgovor;
+                            zapisnik.add(pojedinacni);
                         }
                     }
                     //update na JavaFx application niti
@@ -604,7 +680,7 @@ public class ZaposleniForm extends Stage {
                         public void run() {
 
                             //azuriranje/ponovno popunjavanje liste
-                            setPrijaveIspita(svePrijaveIspita);
+                            setZapisnik(zapisnik);
                             System.out.println("Osvezeni podaci sa strane servera");
 
                         }
@@ -700,6 +776,57 @@ public class ZaposleniForm extends Stage {
                                 public void run() {
                                     setAlert(Alert.AlertType.ERROR);
                                     alert.setContentText("Ta sala je već zauzeta za izabran datum i vreme!");
+                                    alert.showAndWait();
+                                }
+                            });
+                        }
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                } catch (IOException e) {
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.INFORMATION);
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.showAndWait();
+                        }
+                    });
+                    //e.printStackTrace();
+                }
+            } else if (zahtev.equals("unesiOcenuUZapisnik")) {
+                //ukoliko je pozvan konstruktor za snimanje u zapisnik
+                try {
+                    outObj.writeObject(zahtev + "Zaposleni");
+                    outObj.flush();
+                    for (Zapisnik pojedinacni : zapisnik.stream().filter(pi -> pi.getIdPredmeta() == sviPredmeti.stream().filter(p -> p.getIdPredmeta() == idPredmeta).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0)).collect(Collectors.toCollection(FXCollections::observableArrayList))) {
+                        outObj.writeObject(pojedinacni);
+                    }
+                    outObj.writeObject("kraj");
+                    outObj.flush();
+                    try {
+                        odgovor = inObj.readObject();
+                        if (odgovor.equals("uspelo")) {
+                            Platform.runLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    setAlert(Alert.AlertType.INFORMATION);
+                                    alert.setContentText("Uspešno snimljene ocene u Zapisnik");
+                                    alert.showAndWait();
+                                }
+                            });
+                            //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
+                            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziPrijave"));
+                            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                            runnableZahtevServeru.setDaemon(true);
+                            runnableZahtevServeru.start();
+                        } else {
+                            Platform.runLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    setAlert(Alert.AlertType.ERROR);
+                                    alert.setContentText("Nije uspelo snimanje ocena u zapisnik!");
                                     alert.showAndWait();
                                 }
                             });

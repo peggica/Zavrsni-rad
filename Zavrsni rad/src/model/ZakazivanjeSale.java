@@ -9,7 +9,7 @@ public class ZakazivanjeSale implements Serializable {
     private int idSale;
     private int idPredmeta;
     private int idZaposlenog;
-    private Date datum;
+    private static Date datum;
     private Time vremePocetka;
     private Time vremeKraja;
 

@@ -14,12 +14,13 @@ import model.*;
 import java.io.*;
 import java.net.*;
 import java.sql.*;
-import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 
 import static java.sql.JDBCType.NULL;
 
@@ -255,7 +256,7 @@ public class Server extends Application {
 
                             String query1 = "SELECT * FROM predmet AS p JOIN raspodelapredmeta AS rp ON p.idPredmeta = rp.idPredmeta JOIN zaposleni AS z ON rp.idZaposlenog = z.idZaposlenog WHERE rp.idZaposlenog = '" + idZaposlenog + "'";
                             resultset = statement.executeQuery(query1);
-                            ObservableList<PrijaveIspita> prijaveIspita = FXCollections.observableArrayList();
+                            ObservableList<Zapisnik> zapisnik = FXCollections.observableArrayList();
 
                             while (resultset.next()) {
 
@@ -281,16 +282,27 @@ public class Server extends Application {
                                         idStudenta = resultset2.getInt("idStudenta");
                                         smer = resultset2.getString("smer");
                                         godinaUpisa = resultset2.getInt("godinaUpisa");
-                                        prijaveIspita.add(new PrijaveIspita(idPredmeta, idStudenta, PrijaveIspita.tipSmera.valueOf(smer), godinaUpisa, idRoka));
+                                        String query4 = "SELECT ocena FROM zapisnik WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "' AND idPredmeta = '" + idPredmeta + "' AND idRoka = '" + idRoka + "'";
+                                        Statement statement3 = connection.createStatement();
+                                        ResultSet resultset3 = statement3.executeQuery(query4);
+                                        //ukoliko već ne postoji u zapisniku
+                                        if (!resultset3.next()) {
+                                            zapisnik.add(new Zapisnik(idPredmeta, 0, idStudenta, Zapisnik.tipSmera.valueOf(smer), godinaUpisa, 0));
+
+                                        //ukoliko postoji u zapisniku
+                                        } else {
+                                            int ocena = resultset3.getInt("ocena");
+                                            zapisnik.add(new Zapisnik(idPredmeta, ocena, idStudenta, Zapisnik.tipSmera.valueOf(smer), godinaUpisa, 0));
+                                        }
                                     }
                                 }
                             }
 
-                            outObj.writeObject("prijaveIspita");
+                            outObj.writeObject("zapisnik");
                             outObj.flush();
 
-                            for (PrijaveIspita pi : prijaveIspita) {
-                                outObj.writeObject(pi);
+                            for (Zapisnik z : zapisnik) {
+                                outObj.writeObject(z);
                                 outObj.flush();
                             }
 
@@ -1398,7 +1410,7 @@ public class Server extends Application {
                         Zaposleni zaposleni = (Zaposleni) inObj.readObject();
                         String query1 = "SELECT * FROM predmet AS p JOIN raspodelapredmeta AS rp ON p.idPredmeta = rp.idPredmeta JOIN zaposleni AS z ON rp.idZaposlenog = z.idZaposlenog WHERE rp.idZaposlenog = '" + zaposleni.getIdZaposlenog() + "'";
                         resultset = statement.executeQuery(query1);
-                        ObservableList<PrijaveIspita> prijaveIspita = FXCollections.observableArrayList();
+                        ObservableList<Zapisnik> zapisnik = FXCollections.observableArrayList();
 
                         while (resultset.next()) {
 
@@ -1419,13 +1431,24 @@ public class Server extends Application {
                                     int idStudenta = resultset2.getInt("idStudenta");
                                     String smer = resultset2.getString("smer");
                                     int godinaUpisa = resultset2.getInt("godinaUpisa");
-                                    prijaveIspita.add(new PrijaveIspita(idPredmeta, idStudenta, PrijaveIspita.tipSmera.valueOf(smer), godinaUpisa, idRoka));
+                                    String query4 = "SELECT ocena FROM zapisnik WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "' AND idPredmeta = '" + idPredmeta + "' AND idRoka = '" + idRoka + "'";
+                                    Statement statement3 = connection.createStatement();
+                                    ResultSet resultset3 = statement3.executeQuery(query4);
+                                    //ukoliko već ne postoji u zapisniku
+                                    if (!resultset3.next()) {
+                                        zapisnik.add(new Zapisnik(idPredmeta, 0, idStudenta, Zapisnik.tipSmera.valueOf(smer), godinaUpisa, 0));
+
+                                    //ukoliko postoji u zapisniku
+                                    } else {
+                                        int ocena = resultset3.getInt("ocena");
+                                        zapisnik.add(new Zapisnik(idPredmeta, ocena, idStudenta, Zapisnik.tipSmera.valueOf(smer), godinaUpisa, 0));
+                                    }
                                 }
                             }
                         }
 
-                        for (PrijaveIspita pi : prijaveIspita) {
-                            outObj.writeObject(pi);
+                        for (Zapisnik z : zapisnik) {
+                            outObj.writeObject(z);
                             outObj.flush();
                         }
 
@@ -1479,6 +1502,65 @@ public class Server extends Application {
                         outObj.writeObject("nijeUspelo");
                         outObj.flush();
                     }
+                } else if (zahtev.equals("unesiOcenuUZapisnikZaposleni")) {
+
+                    ArrayList<Zapisnik> zapisnik = new ArrayList<>();
+                    while (true) { //nisam sigurna za ovu proveru
+                        odgovor = inObj.readObject();
+                        if (odgovor.toString().equals("kraj")) {
+                            break;
+                        } else {
+                            Zapisnik pojedinacni = (Zapisnik) odgovor;
+                            zapisnik.add(pojedinacni);
+                        }
+                    }
+
+                    PreparedStatement preparedStatementInsert = connection.prepareStatement("INSERT INTO Zapisnik(idPredmeta, datum, ocena, idStudenta, smer, godinaUpisa, idRoka) VALUES (?, ?, ?, ?, ?, ?, ?);");
+                    PreparedStatement preparedStatementUpdate = connection.prepareStatement("UPDATE Zapisnik SET ocena = ? WHERE idPredmeta = ? AND idStudenta = ? AND smer = ? AND godinaUpisa = ? AND idRoka = ?");
+                    connection.setAutoCommit(false);
+
+                    for (Iterator<Zapisnik> iterator = zapisnik.iterator(); iterator.hasNext();) {
+
+                        //ukoliko već postoji u zapisniku radi se update, u suprotnom se upisuje
+                        Zapisnik pojedinacni = (Zapisnik) iterator.next();
+                        String query1 = "SELECT * FROM Zapisnik WHERE idPredmeta = '" + pojedinacni.getIdPredmeta() + "' AND idStudenta = '" + pojedinacni.getIdStudenta() + "' AND smer = '" + pojedinacni.getSmer() + "' AND godinaUpisa = '" + pojedinacni.getGodinaUpisa() + "' AND idRoka = '" + pojedinacni.getIdRoka() + "'";
+                        resultset = statement.executeQuery(query1);
+                        
+                        if (resultset.next()) {
+                            preparedStatementUpdate.setInt(1, pojedinacni.getOcena());
+                            preparedStatementUpdate.setInt(2, pojedinacni.getIdPredmeta());
+                            preparedStatementUpdate.setInt(3, pojedinacni.getIdStudenta());
+                            preparedStatementUpdate.setString(4, pojedinacni.getSmer());
+                            preparedStatementUpdate.setInt(5, pojedinacni.getGodinaUpisa());
+                            preparedStatementUpdate.setInt(6, pojedinacni.getIdRoka());
+                            preparedStatementUpdate.addBatch();
+                        } else {
+                            preparedStatementInsert.setInt(1, pojedinacni.getIdPredmeta());
+                            preparedStatementInsert.setDate(2, pojedinacni.getDatum());
+                            preparedStatementInsert.setInt(3, pojedinacni.getOcena());
+                            preparedStatementInsert.setInt(4, pojedinacni.getIdStudenta());
+                            preparedStatementInsert.setString(5, pojedinacni.getSmer());
+                            preparedStatementInsert.setInt(6, pojedinacni.getGodinaUpisa());
+                            preparedStatementInsert.setInt(7, pojedinacni.getIdRoka());
+                            preparedStatementInsert.addBatch();
+                        }
+
+                    }
+
+                    int[] brojac1 = preparedStatementInsert.executeBatch();
+                    int[] brojac2 = preparedStatementUpdate.executeBatch();
+                    if ((Arrays.stream(brojac1).count() + Arrays.stream(brojac2).count()) != zapisnik.size()) {
+
+                        outObj.writeObject("nijeUspelo");
+                        outObj.flush();
+                    } else {
+
+                        outObj.writeObject("uspelo");
+                        outObj.flush();
+                    }
+                    connection.commit();
+                    connection.setAutoCommit(true);
+
                 }
 
                 //ZATVARANJE KONEKCIJE SA BAZOM

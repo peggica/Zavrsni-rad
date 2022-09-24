@@ -312,6 +312,7 @@ public class StudentskaSluzbaForm extends Stage {
             colPrezime.setMinWidth(150);
             TableColumn colIndex = new TableColumn("Broj indeksa");
             colIndex.setCellValueFactory(new PropertyValueFactory<Student, String>("brojIndeksa"));
+            colIndex.setStyle("-fx-alignment: center;");
             colIndex.setMinWidth(50);
             TableColumn<Student, ComboBox> colFinansiranje = new TableColumn("Finansiranje");
             colFinansiranje.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Student, ComboBox>, ObservableValue<ComboBox>>() {
@@ -1171,6 +1172,7 @@ public class StudentskaSluzbaForm extends Stage {
 
             });
             colSmer.setMinWidth(50);
+            colSmer.setStyle("-fx-alignment: center;");
             TableColumn<Map.Entry<Predmet, Zaposleni>, Spinner> colSemestar = new TableColumn<>("Semestar");
             colSemestar.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<Predmet, Zaposleni>, Spinner>, ObservableValue<Spinner>>() {
 

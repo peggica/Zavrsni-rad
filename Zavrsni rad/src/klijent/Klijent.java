@@ -191,6 +191,7 @@ public class Klijent extends Application {
             Platform.exit();
             System.exit(0);
         });
+        scene.getRoot().requestFocus();
         loginStage.show();
 
     }
@@ -363,20 +364,20 @@ public class Klijent extends Application {
                     ObservableList<Predmet> predmeti = FXCollections.observableArrayList();
                     while (true) {
                         odgovor = inObj.readObject();
-                        if (odgovor.equals("prijaveIspita")) {
+                        if (odgovor.equals("zapisnik")) {
                             break;
                         }
                         Predmet predmet = (Predmet) odgovor;
                         predmeti.add(predmet);
                     }
-                    ObservableList<PrijaveIspita> prijaveIspita = FXCollections.observableArrayList();
+                    ObservableList<Zapisnik> zapisnik = FXCollections.observableArrayList();
                     while (true) {
                         odgovor = inObj.readObject();
                         if (odgovor.equals("kraj")) {
                             break;
                         }
-                        PrijaveIspita prijavaIspita = (PrijaveIspita) odgovor;
-                        prijaveIspita.add(prijavaIspita);
+                        Zapisnik pojedinacni = (Zapisnik) odgovor;
+                        zapisnik.add(pojedinacni);
                     }
 
                     //update na JavaFx application niti
@@ -386,7 +387,7 @@ public class Klijent extends Application {
                         public void run() {
 
                             //prikaz forme za zaposlenog
-                            zaposleniForm = new ZaposleniForm(getStage(), ovajZaposleni, sviIspitniRokovi, predmeti, sveSlobodneSale, prijaveIspita);
+                            zaposleniForm = new ZaposleniForm(getStage(), ovajZaposleni, sviIspitniRokovi, predmeti, sveSlobodneSale, zapisnik);
                             getStage().close();
                             zaposleniForm.show();
 
