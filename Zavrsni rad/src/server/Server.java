@@ -1062,6 +1062,19 @@ public class Server extends Application {
 
                     try {
                         Student student = (Student) inObj.readObject();
+
+                        ArrayList<Login> logini = new ArrayList<>();
+                        query = "SELECT * FROM Login";
+                        resultset = statement.executeQuery(query);
+                        while (resultset.next()) {
+
+                            String korisnickoIme = resultset.getString("korisnickoIme");
+                            String lozinka = resultset.getString("lozinka");
+                            Login login = new Login(korisnickoIme, lozinka);
+                            logini.add(login);
+                        }
+                        String[] noviLogin;
+                        noviLogin = Login.getKorisnickoImeLozinka(logini, student);
                         query = "INSERT INTO Student(idStudenta, smer, godinaUpisa, ime, prezime, finansiranje, adresa, email, telefon, vidljiv) VALUES ('" + student.getIdStudenta() + "', '" + student.getSmer() + "', '" + student.getGodinaUpisa() + "', '" + student.getIme() + "', '" + student.getPrezime() + "', '" + student.getFinansiranje() + "', '" + student.getAdresa() + "', '" + student.getEmail() + "', '" + student.getBrojTelefona() + "', '" + (student.isVidljiv() ? 1 : 0) + "')";
                         int izmena = statement.executeUpdate(query);
                         if (izmena != 0) {
@@ -1075,15 +1088,19 @@ public class Server extends Application {
                                     break;
                                 }
                             }
-                            query = "INSERT INTO uplataIliZaduzenje(opis, idStudenta, smer, godinaUpisa, datum, iznos) VALUES ('" + "školarina" + "', '" + student.getIdStudenta() + "', '" + student.getSmer() + "', '" + student.getGodinaUpisa() + "', '" + Date.valueOf(LocalDate.now()) + "', '" + iznos + "')";
+                            query = "INSERT INTO Login(idZaposlenog, korisnickoIme, lozinka, idStudenta, smer, godinaUpisa, aktivan) VALUES (" + NULL + ", '" + noviLogin[0] + "', '" + noviLogin[1] + "', '" + student.getIdStudenta() + "', '" + student.getSmer() + "', '" + student.getGodinaUpisa() + "', '" + 1 + "')";
                             System.out.println(query);
                             izmena = statement.executeUpdate(query);
                             if (izmena != 0) {
-                                outObj.writeObject("uspelo");
-                                outObj.flush();
-                            } else {
-                                outObj.writeObject("nijeUspelo");
-                                outObj.flush();
+                                query = "INSERT INTO uplataIliZaduzenje(opis, idStudenta, smer, godinaUpisa, datum, iznos) VALUES ('" + "školarina" + "', '" + student.getIdStudenta() + "', '" + student.getSmer() + "', '" + student.getGodinaUpisa() + "', '" + Date.valueOf(LocalDate.now()) + "', '" + iznos + "')";
+                                izmena = statement.executeUpdate(query);
+                                if (izmena != 0) {
+                                    outObj.writeObject("uspelo");
+                                    outObj.flush();
+                                } else {
+                                    outObj.writeObject("nijeUspelo");
+                                    outObj.flush();
+                                }
                             }
                         } else {
                             outObj.writeObject("vecPostoji");
@@ -1095,11 +1112,29 @@ public class Server extends Application {
                 } else if (zahtev.equals("dodajZaposlenog")) {
 
                     Zaposleni zaposleni = (Zaposleni) inObj.readObject();
+
+                    ArrayList<Login> logini = new ArrayList<>();
+                    query = "SELECT * FROM Login";
+                    resultset = statement.executeQuery(query);
+                    while (resultset.next()) {
+
+                        String korisnickoIme = resultset.getString("korisnickoIme");
+                        String lozinka = resultset.getString("lozinka");
+                        Login login = new Login(korisnickoIme, lozinka);
+                        logini.add(login);
+                    }
+                    String[] noviLogin;
+                    noviLogin = Login.getKorisnickoImeLozinka(logini, zaposleni);
+
                     query = "INSERT INTO Zaposleni(idZaposlenog, pozicija, ime, prezime, adresa, email, telefon, vidljiv) VALUES ('" + zaposleni.getIdZaposlenog() + "', '" + zaposleni.getPozicija() + "', '" + zaposleni.getIme() + "', '" + zaposleni.getPrezime() + "', '" + zaposleni.getAdresa() + "', '" + zaposleni.getEmail() + "', '" + zaposleni.getBrojTelefona() + "', '" + (zaposleni.isVidljiv() ? 1 : 0) + "')";
                     int izmena = statement.executeUpdate(query);
                     if (izmena != 0) {
-                        outObj.writeObject("uspelo");
-                        outObj.flush();
+                        query = "INSERT INTO Login(idZaposlenog, korisnickoIme, lozinka, idStudenta, smer, godinaUpisa, aktivan) VALUES (" + zaposleni.getIdZaposlenog() + ", '" + noviLogin[0] + "', '" + noviLogin[1] + "', " + NULL + ", " + NULL + ", " + NULL + ", '" + 1 + "')";
+                        izmena = statement.executeUpdate(query);
+                        if (izmena != 0) {
+                            outObj.writeObject("uspelo");
+                            outObj.flush();
+                        }
                     } else {
                         outObj.writeObject("vecPostoji");
                         outObj.flush();
