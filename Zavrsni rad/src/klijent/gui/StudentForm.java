@@ -20,6 +20,7 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.sql.Date;
 import java.util.*;
 
 /** Klasa namenjena za prikaz Studentske Forme u JavaFx-u
@@ -34,6 +35,7 @@ public class StudentForm extends Stage {
     private HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
     private ObservableList<Predmet> nepolozeniPredmeti = FXCollections.observableArrayList();
     private HashMap<Predmet, ArrayList> prijavaIspita = new HashMap<>();
+    private ObservableList<UplataIliZaduzenje> sveUplateIZaduzenja = FXCollections.observableArrayList();
     private static Alert alert = new Alert(Alert.AlertType.NONE);
 
     public void setStudent(Student student) {
@@ -54,6 +56,10 @@ public class StudentForm extends Stage {
 
     public void setPrijavaIspita(HashMap<Predmet, ArrayList> prijavaIspita) {
         this.prijavaIspita = prijavaIspita;
+    }
+
+    public void setSveUplate(ObservableList<UplataIliZaduzenje> sveUplateIZaduzenja) {
+        this.sveUplateIZaduzenja = sveUplateIZaduzenja;
     }
 
     public Student getStudent() {
@@ -108,11 +114,12 @@ public class StudentForm extends Stage {
         root.setCenter(null);
     }
 
-    public StudentForm(Stage stage, Student student, ObservableList<IspitniRok> sviIspitniRokovi, HashMap<Predmet, Integer> polozeni, ObservableList<Predmet> nepolozeni, HashMap<Predmet, ArrayList> prijave) {
+    public StudentForm(Stage stage, Student student, ObservableList<UplataIliZaduzenje> sveUplateIZaduzenja, ObservableList<IspitniRok> sviIspitniRokovi, HashMap<Predmet, Integer> polozeni, ObservableList<Predmet> nepolozeni, HashMap<Predmet, ArrayList> prijave) {
 
         super();
         initOwner(stage);
         setStudent(student);
+        setSveUplate(sveUplateIZaduzenja);
         setSviIspitniRokovi(sviIspitniRokovi);
         setPolozeniPredmeti(polozeni);
         setNepolozeniPredmeti(nepolozeni);
@@ -253,7 +260,6 @@ public class StudentForm extends Stage {
             tableNeplozeni.getColumns().addAll(colSifraNe, colNazivNe, colEspbNe, colSemestarNe);
 
             vbox.getChildren().addAll(lblPolozeni, tablePolozeni, lblNepolozeni, tableNeplozeni);
-
             root.setCenter(vbox);
 
         });
@@ -368,10 +374,10 @@ public class StudentForm extends Stage {
         lblSkolarine.setOnMouseClicked(mouseEvent -> {
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            /*Thread runnableZahtevServeru = new Thread(new StudentskaSluzbaForm("osveziSkolarine"));
+            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziUplateIZaduzenja"));
             //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
             runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru.start();*/
+            runnableZahtevServeru.start();
 
             ocistiPane(root);
 
@@ -383,24 +389,62 @@ public class StudentForm extends Stage {
             lblSkolarineIspis.setAlignment(Pos.CENTER_LEFT);
             lblSkolarineIspis.setPadding(new Insets(0,10,5,0));
 
-            TableView<String> tableSkolarine = new TableView<String>();
-            tableSkolarine.setPlaceholder(new Label("Nema podataka za školarinu"));
+            TableView<UplataIliZaduzenje> tableSkolarine = new TableView<>();
+            tableSkolarine.setPlaceholder(new Label("Nema podataka o prethodnim uplatama i zaduženjima"));
             tableSkolarine.getColumns().clear();
 
-            TableColumn<String, String> colDatum = new TableColumn("Datum");
-            colDatum.setMinWidth(250);
-            TableColumn<String, String> colZaduzenja = new TableColumn("Zaduženja");
-            colZaduzenja.setMinWidth(150);
-            TableColumn<String, String> colUplata = new TableColumn("Uplata");
-            colUplata.setMinWidth(150);
-            TableColumn<String, String> colSvrha = new TableColumn("Svrha uplate");
-            colSvrha.setMinWidth(250);
+            TableColumn colDatum = new TableColumn("Datum");
+            colDatum.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<UplataIliZaduzenje, Date>, ObservableValue<Date>>() {
 
+                @Override
+                public ObservableValue<Date> call(TableColumn.CellDataFeatures<UplataIliZaduzenje, Date> uz) {
+                    return new SimpleObjectProperty<Date>(uz.getValue().getDatum());
+                }
+
+            });
+            colDatum.setMinWidth(200);
+            colDatum.setStyle("-fx-alignment: center;");
+            TableColumn colIznos = new TableColumn("Iznos");
+            colIznos.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<UplataIliZaduzenje, Double>, ObservableValue<Double>>() {
+
+                @Override
+                public ObservableValue<Double> call(TableColumn.CellDataFeatures<UplataIliZaduzenje, Double> uz) {
+                    return new SimpleObjectProperty<Double>(uz.getValue().getIznos());
+                }
+
+            });
+            colIznos.setMinWidth(200);
+            colIznos.setStyle("-fx-alignment: center;");
+            TableColumn colOpis = new TableColumn("Opis");
+            colOpis.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<UplataIliZaduzenje, String>, ObservableValue<String>>() {
+
+                @Override
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<UplataIliZaduzenje, String> uz) {
+                    return new SimpleObjectProperty<String>(uz.getValue().getOpis());
+                }
+
+            });
+            colOpis.setMinWidth(350);
+            colOpis.setStyle("-fx-alignment: center;");
+
+            ObservableList<UplataIliZaduzenje> stavke = FXCollections.observableArrayList(sveUplateIZaduzenja);
+            tableSkolarine.setItems(stavke);
             tableSkolarine.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableSkolarine.setPrefHeight(550);
-            tableSkolarine.getColumns().addAll(colDatum, colZaduzenja, colUplata, colSvrha);
+            tableSkolarine.getColumns().addAll(colDatum, colIznos, colOpis);
 
-            Label lblUkupniDug = new Label("Ukupan dug: ");
+            double dug = 0;
+            for (UplataIliZaduzenje uplataIliZaduzenje : sveUplateIZaduzenja) {
+                //TODO: datum*
+                if (uplataIliZaduzenje.getOpis().toLowerCase().trim().equals("upis")) {
+                    dug += uplataIliZaduzenje.getIznos();
+                } else if (uplataIliZaduzenje.getOpis().toLowerCase().trim().equals("školarina")) {
+                    dug -= uplataIliZaduzenje.getIznos();
+                }
+
+            }
+            Label lblUkupniDug = new Label();
+            lblUkupniDug.setText("Ukupan dug: " + String.valueOf(dug));
             lblUkupniDug.setFont(font15);
             lblUkupniDug.setAlignment(Pos.CENTER_LEFT);
             lblUkupniDug.setPadding(new Insets(10,10,0,0));
@@ -632,8 +676,51 @@ public class StudentForm extends Stage {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
-            } else if (zahtev.equals("osveziSkolarine")) {
+            } else if (zahtev.equals("osveziUplateIZaduzenja")) {
+                try {
+                    outObj.writeObject("osvezi" + "Studenta");
+                    outObj.flush();
+                    outObj.writeObject(zahtev);
+                    outObj.flush();
+                    outObj.writeObject(getStudent());
+                    outObj.flush();
 
+                    sveUplateIZaduzenja.clear();
+                    while (true) {
+                        odgovor = inObj.readObject();
+                        if (odgovor.equals("kraj")) {
+                            break;
+                        }
+                        UplataIliZaduzenje uplataIliZaduzenje = (UplataIliZaduzenje) odgovor;
+                        sveUplateIZaduzenja.add(uplataIliZaduzenje);
+                    }
+
+                    //update na JavaFx application niti
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+
+                            //azuriranje/ponovno popunjavanje liste
+                            setSveUplate(sveUplateIZaduzenja);
+                            System.out.println("Osvezeni podaci sa strane servera");
+
+                        }
+                    });
+                } catch (IOException e) {
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.INFORMATION);
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.showAndWait();
+                        }
+                    });
+                    //e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

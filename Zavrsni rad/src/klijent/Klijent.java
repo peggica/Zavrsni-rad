@@ -399,9 +399,19 @@ public class Klijent extends Application {
                     odgovor = inObj.readObject();
                     ovajStudent = (Student) odgovor;
 
+                    ObservableList<UplataIliZaduzenje> sveUplate = FXCollections.observableArrayList();
+                    while (true) {
+                        odgovor = inObj.readObject();
+                        if (odgovor.equals("krajuplata")) {
+                            break;
+                        }
+                        UplataIliZaduzenje uplataIliZaduzenje = (UplataIliZaduzenje) odgovor;
+                        sveUplate.add(uplataIliZaduzenje);
+
+                    }
+
                     odgovor = inObj.readObject();
                     polozeniPredmeti = (HashMap) odgovor;
-
                     while (true) {
                         odgovor = inObj.readObject();
                         if (odgovor.equals("sviispitnirokovi")) {
@@ -430,7 +440,7 @@ public class Klijent extends Application {
                         public void run() {
 
                             //prikaz forme za studenta
-                            studentForm = new StudentForm(getStage(), ovajStudent, sviIspitniRokovi, polozeniPredmeti, nepolozeniPredmeti, prijavaIspita);
+                            studentForm = new StudentForm(getStage(), ovajStudent, sveUplate, sviIspitniRokovi, polozeniPredmeti, nepolozeniPredmeti, prijavaIspita);
                             getStage().close();
                             studentForm.show();
 

@@ -14,7 +14,7 @@ public class Student implements Serializable {
     private String smer;
     private String ime;
     private String prezime;
-    public enum tipFinansiranja { budzet, saf };
+    public enum tipFinansiranja { budzet, saf }
     public String finansiranje;
     private String adresa;
     private String email;
