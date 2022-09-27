@@ -37,6 +37,8 @@ public class StudentForm extends Stage {
     private HashMap<Predmet, ArrayList> prijavaIspita = new HashMap<>();
     private ObservableList<UplataIliZaduzenje> sveUplateIZaduzenja = FXCollections.observableArrayList();
     private static Alert alert = new Alert(Alert.AlertType.NONE);
+    private int aktivniRok;
+    private TableView tabela;
 
     public void setStudent(Student student) {
         this.student = student;
@@ -66,6 +68,22 @@ public class StudentForm extends Stage {
         return student;
     }
 
+    public int getAktivniRok() {
+        return aktivniRok;
+    }
+
+    public void setAktivniRok(int aktivniRok) {
+        this.aktivniRok = aktivniRok;
+    }
+
+    public void setTabela(TableView tabela) {
+        this.tabela = tabela;
+    }
+
+    public TableView getTabela() {
+
+        return tabela;
+    }
     /**
      * Setuje tip i naslov statičkog alerta u zavisnosti od prosleđenog tipa
      */
@@ -88,6 +106,7 @@ public class StudentForm extends Stage {
         for (IspitniRok ispitniRok:this.sviIspitniRokovi) {
             if (ispitniRok.isAktivnost()) {
                 aktivan = true;
+                setAktivniRok(ispitniRok.getIdRoka());
                 break;
             }
         }
@@ -286,7 +305,7 @@ public class StudentForm extends Stage {
             lblPrijavaIspita.setPadding(new Insets(0,10,5,0));
 
             TableView<HashMap.Entry<Predmet, ArrayList>> tablePrijava = new TableView();
-            tablePrijava.setPlaceholder(new Label("Ne postoji nijedan ispit za prijavu"));
+            tablePrijava.setPlaceholder(new Label(""));
             tablePrijava.getColumns().clear();
 
             TableColumn<Map.Entry<Predmet, ArrayList>, Integer> colSifra = new TableColumn<>("Šifra");
@@ -345,18 +364,48 @@ public class StudentForm extends Stage {
             btnPrijavi.setMinWidth(100);
             btnPrijavi.setFont(font15);
             btnPrijavi.setOnMouseClicked(e -> {
-                if (tablePrijava.getSelectionModel().getSelectedItem() != null) {
-                    HashMap.Entry<Predmet, ArrayList> izabraniIspit = tablePrijava.getSelectionModel().getSelectedItem();
-                    //setTabela(tablePrijava);
-                    /*Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabraniIspit));
-                    t.setDaemon(true);
-                    t.start();*/
+
+                if (!tablePrijava.getItems().isEmpty()) {
+
+                    if (tablePrijava.getSelectionModel().getSelectedItem() != null) {
+
+                        Map.Entry<Predmet, ArrayList> izabraniIspit = tablePrijava.getSelectionModel().getSelectedItem();
+                        //ukoliko je prijava besplatna
+                        if (Double.parseDouble(izabraniIspit.getValue().get(1).toString()) == ((double) 0)) {
+
+                            setTabela(tablePrijava);
+                            Thread t = new Thread(new RunnableZahtevServeru("prijavaIspita", izabraniIspit.getKey()));
+                            t.setDaemon(true);
+                            t.start();
+                        } else {
+
+                            Platform.runLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    setAlert(Alert.AlertType.INFORMATION);
+                                    alert.setContentText("Nedovoljno stanje na računu");
+                                    alert.showAndWait();
+                                }
+                            });
+                        }
+                    } else {
+
+                        Platform.runLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setAlert(Alert.AlertType.ERROR);
+                                alert.setContentText("Molim vas izaberite neki ispit u tabeli");
+                                alert.showAndWait();
+                            }
+                        });
+                    }
                 } else {
+
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            setAlert(Alert.AlertType.ERROR);
-                            alert.setContentText("Molim vas izaberite neki ispit u tabeli");
+                            setAlert(Alert.AlertType.INFORMATION);
+                            alert.setContentText("Tabela za prijavu ispita je prazna");
                             alert.showAndWait();
                         }
                     });
@@ -516,10 +565,17 @@ public class StudentForm extends Stage {
         private ObjectOutputStream outObj;
         private Object zahtev;
         private Object odgovor;
+        private Predmet izabraniIspit;
 
         //konstuktor za osvezavanje podataka
         public RunnableZahtevServeru(Object zahtev) {
             this.zahtev = zahtev;
+        }
+
+        //konstruktor za prijavu ispita
+        public RunnableZahtevServeru(Object zahtev, Predmet izabraniIspit) {
+            this.zahtev = zahtev;
+            this.izabraniIspit = izabraniIspit;
         }
 
         @Override
@@ -707,6 +763,60 @@ public class StudentForm extends Stage {
 
                         }
                     });
+                } catch (IOException e) {
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.INFORMATION);
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.showAndWait();
+                        }
+                    });
+                    //e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            } else if (zahtev.equals("prijavaIspita")) {
+                try {
+                    outObj.writeObject(zahtev + "Student");
+                    outObj.flush();
+                    outObj.writeObject(getStudent());
+                    outObj.flush();
+                    HashMap<Integer, Predmet> ispit = new HashMap<>();
+                    ispit.put(getAktivniRok(), izabraniIspit);
+                    outObj.writeObject(ispit);
+                    outObj.flush();
+                    odgovor = inObj.readObject();
+
+                    if (odgovor.equals("uspelo")) {
+
+                        Platform.runLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setAlert(Alert.AlertType.INFORMATION);
+                                alert.setContentText("Uspesno ste prijavili izabrani ispit");
+                                alert.showAndWait();
+                            }
+                        });
+                        //TODO: sto nece odmah refresh?
+                        //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
+                        Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziPrijave"));
+                        //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
+                        runnableZahtevServeru.setDaemon(true);
+                        runnableZahtevServeru.start();
+                        getTabela().refresh();
+
+                    } else {
+                        Platform.runLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                setAlert(Alert.AlertType.ERROR);
+                                alert.setContentText("Nije uspela prijava ispita");
+                                alert.showAndWait();
+                            }
+                        });
+                    }
                 } catch (IOException e) {
                     Platform.runLater(new Runnable() {
 

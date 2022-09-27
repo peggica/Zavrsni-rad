@@ -1,6 +1,7 @@
 package model;
 
 import java.io.Serializable;
+import java.sql.Date;
 
 public class PrijaveIspita implements Serializable {
 
@@ -11,6 +12,7 @@ public class PrijaveIspita implements Serializable {
     private String smer;
     private int godinaUpisa;
     private int idRoka;
+    private Date datum;
 
     public PrijaveIspita(int idPredmeta, int idStudenta, tipSmera tip, int godinaUpisa, int idRoka) {
 
