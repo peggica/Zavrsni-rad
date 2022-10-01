@@ -373,12 +373,16 @@ public class Klijent extends Application {
                     ObservableList<Zapisnik> zapisnik = FXCollections.observableArrayList();
                     while (true) {
                         odgovor = inObj.readObject();
-                        if (odgovor.equals("kraj")) {
+                        if (odgovor.equals("raspored")) {
                             break;
                         }
                         Zapisnik pojedinacni = (Zapisnik) odgovor;
                         zapisnik.add(pojedinacni);
                     }
+
+                    //TODO: prepraviti sva slanja, može i cela lista odjednom
+                    odgovor = inObj.readObject();
+                    ArrayList<ArrayList> rasporedIspita = (ArrayList<ArrayList>) odgovor;
 
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
@@ -387,7 +391,7 @@ public class Klijent extends Application {
                         public void run() {
 
                             //prikaz forme za zaposlenog
-                            zaposleniForm = new ZaposleniForm(getStage(), ovajZaposleni, sviIspitniRokovi, predmeti, sveSlobodneSale, zapisnik);
+                            zaposleniForm = new ZaposleniForm(getStage(), ovajZaposleni, sviIspitniRokovi, predmeti, sveSlobodneSale, zapisnik, rasporedIspita);
                             getStage().close();
                             zaposleniForm.show();
 
@@ -433,6 +437,10 @@ public class Klijent extends Application {
                     odgovor = inObj.readObject();
                     prijavaIspita = (HashMap) odgovor;
 
+                    //TODO: prepraviti sva slanja, može i cela lista odjednom
+                    odgovor = inObj.readObject();
+                    ArrayList<ArrayList> rasporedIspita = (ArrayList<ArrayList>) odgovor;
+
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
 
@@ -440,7 +448,7 @@ public class Klijent extends Application {
                         public void run() {
 
                             //prikaz forme za studenta
-                            studentForm = new StudentForm(getStage(), ovajStudent, sveUplate, sviIspitniRokovi, polozeniPredmeti, nepolozeniPredmeti, prijavaIspita);
+                            studentForm = new StudentForm(getStage(), ovajStudent, sveUplate, sviIspitniRokovi, polozeniPredmeti, nepolozeniPredmeti, prijavaIspita, rasporedIspita);
                             getStage().close();
                             studentForm.show();
 

@@ -22,6 +22,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.sql.Date;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /** Klasa namenjena za prikaz Studentske Forme u JavaFx-u
  *   @author Biljana Stanojevic  */
@@ -36,9 +37,10 @@ public class StudentForm extends Stage {
     private ObservableList<Predmet> nepolozeniPredmeti = FXCollections.observableArrayList();
     private HashMap<Predmet, ArrayList> prijavaIspita = new HashMap<>();
     private ObservableList<UplataIliZaduzenje> sveUplateIZaduzenja = FXCollections.observableArrayList();
-    private static Alert alert = new Alert(Alert.AlertType.NONE);
+    private ArrayList<ArrayList> rasporedIspita = new ArrayList<>();
     private int aktivniRok;
     private TableView tabela;
+    private static Alert alert = new Alert(Alert.AlertType.NONE);
 
     public void setStudent(Student student) {
         this.student = student;
@@ -62,6 +64,14 @@ public class StudentForm extends Stage {
 
     public void setSveUplate(ObservableList<UplataIliZaduzenje> sveUplateIZaduzenja) {
         this.sveUplateIZaduzenja = sveUplateIZaduzenja;
+    }
+
+    public void setRasporedIspita(ArrayList<ArrayList> rasporedIspita) {
+        this.rasporedIspita = rasporedIspita;
+    }
+
+    public ArrayList<ArrayList> getRasporedIspita() {
+        return rasporedIspita;
     }
 
     public Student getStudent() {
@@ -113,9 +123,21 @@ public class StudentForm extends Stage {
 
         String poruka;
         if (aktivan) {
-            poruka = "Ispitni rok je u toku.";
+            poruka = "Ispitni rok je u toku.\n\n";
         } else {
-            poruka = "Nijedan ispitni rok trenutno nije u toku.";
+            poruka = "Nijedan ispitni rok trenutno nije u toku.\n\n";
+        }
+        if (!getRasporedIspita().isEmpty()) {
+
+            //TODO: srediti malo prikaz
+            poruka += "Sala Predmet Datum Vreme";
+            for (ArrayList ri: getRasporedIspita()) {
+
+                poruka += "\n" + ri.get(0).toString() + " " + ri.get(1).toString() + " " + ri.get(2).toString() + " " + ri.get(3).toString();
+            }
+        } else {
+
+            poruka += "\nJoš uvek nije napravljen raspored ispita.";
         }
         Label lblPrikaz = new Label(poruka);
         lblPrikaz.setFont(font20);
@@ -133,7 +155,7 @@ public class StudentForm extends Stage {
         root.setCenter(null);
     }
 
-    public StudentForm(Stage stage, Student student, ObservableList<UplataIliZaduzenje> sveUplateIZaduzenja, ObservableList<IspitniRok> sviIspitniRokovi, HashMap<Predmet, Integer> polozeni, ObservableList<Predmet> nepolozeni, HashMap<Predmet, ArrayList> prijave) {
+    public StudentForm(Stage stage, Student student, ObservableList<UplataIliZaduzenje> sveUplateIZaduzenja, ObservableList<IspitniRok> sviIspitniRokovi, HashMap<Predmet, Integer> polozeni, ObservableList<Predmet> nepolozeni, HashMap<Predmet, ArrayList> prijave, ArrayList<ArrayList> rasporedIspita) {
 
         super();
         initOwner(stage);
@@ -143,6 +165,7 @@ public class StudentForm extends Stage {
         setPolozeniPredmeti(polozeni);
         setNepolozeniPredmeti(nepolozeni);
         setPrijavaIspita(prijave);
+        setRasporedIspita(rasporedIspita);
 
         BorderPane root = new BorderPane();
         MenuBar menuBar = new MenuBar();
@@ -159,11 +182,15 @@ public class StudentForm extends Stage {
         Label lblPocetna = new Label("POČETNA");
         lblPocetna.setOnMouseClicked(mouseEvent -> {
 
+            //TODO, eventualno spojiti u jedan zahtev Serveru, da osvezi oba odjednom
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
             Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziIspitneRokove"));
+            Thread runnableZahtevServeru1 = new Thread(new RunnableZahtevServeru("osveziRasporedIspita"));
             //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
             runnableZahtevServeru.setDaemon(true);
+            runnableZahtevServeru1.setDaemon(true);
             runnableZahtevServeru.start();
+            runnableZahtevServeru1.start();
 
             ocistiPane(root);
             pocetniPrikaz(root);
@@ -644,6 +671,43 @@ public class StudentForm extends Stage {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
+            } else if (zahtev.equals("osveziRasporedIspita")) {
+                try {
+                    outObj.writeObject("osvezi" + "Studenta");
+                    outObj.flush();
+                    outObj.writeObject(zahtev);
+                    outObj.flush();
+                    outObj.writeObject(getStudent());
+                    outObj.flush();
+                    rasporedIspita.clear();
+                    odgovor = inObj.readObject();
+                    rasporedIspita = (ArrayList<ArrayList>) odgovor;
+                    //update na JavaFx application niti
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+
+                            //azuriranje/ponovno popunjavanje liste
+                            setRasporedIspita(rasporedIspita);
+                            System.out.println("Osvezeni podaci sa strane servera");
+
+                        }
+                    });
+                } catch (IOException e) {
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.INFORMATION);
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.showAndWait();
+                        }
+                    });
+                    //e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
             } else if (zahtev.equals("osveziPredmete")) {
                 try {
                     outObj.writeObject("osvezi" + "Studenta");
@@ -784,7 +848,8 @@ public class StudentForm extends Stage {
                     outObj.writeObject(getStudent());
                     outObj.flush();
                     HashMap<Integer, Predmet> ispit = new HashMap<>();
-                    ispit.put(getAktivniRok(), izabraniIspit);
+                    System.out.println(sviIspitniRokovi.stream().filter(ir -> ir.isAktivnaPrijava()).map(ir -> ir.getIdRoka()).collect(Collectors.toList()).get(0));
+                    ispit.put(sviIspitniRokovi.stream().filter(ir -> ir.isAktivnaPrijava()).map(ir -> ir.getIdRoka()).collect(Collectors.toList()).get(0), izabraniIspit);
                     outObj.writeObject(ispit);
                     outObj.flush();
                     odgovor = inObj.readObject();

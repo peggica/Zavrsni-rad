@@ -11,14 +11,16 @@ public class IspitniRok implements Serializable {
     private Date datumPocetka;
     private Date datumKraja;
     private boolean aktivnost;
+    private boolean aktivnaPrijava;
 
-    public IspitniRok(int idRoka, String naziv, Date datumPocetka, Date datumKraja, boolean aktivnost) {
+    public IspitniRok(int idRoka, String naziv, Date datumPocetka, Date datumKraja, boolean aktivnost, boolean aktivnaPrijava) {
 
         this.idRoka = idRoka;
         this.naziv = naziv;
         this.datumPocetka = datumPocetka;
         this.datumKraja = datumKraja;
         this.aktivnost = aktivnost;
+        this.aktivnaPrijava = aktivnaPrijava;
 
     }
 
@@ -28,6 +30,7 @@ public class IspitniRok implements Serializable {
         this.datumPocetka = datumPocetka;
         this.datumKraja = datumKraja;
         this.aktivnost = aktivnost;
+        this.aktivnaPrijava = aktivnaPrijava;
 
     }
 
@@ -65,6 +68,14 @@ public class IspitniRok implements Serializable {
 
     public void setAktivnost(boolean aktivnost) {
         this.aktivnost = aktivnost;
+    }
+
+    public boolean isAktivnaPrijava() {
+        return aktivnaPrijava;
+    }
+
+    public void setAktivnaPrijava(boolean aktivnaPrijava) {
+        this.aktivnaPrijava = aktivnaPrijava;
     }
 
 }

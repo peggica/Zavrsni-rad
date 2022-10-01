@@ -43,6 +43,7 @@ public class ZaposleniForm extends Stage {
     private ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
     private ObservableList<Zapisnik> zapisnik = FXCollections.observableArrayList();
     private ObservableList<Sala> sveSlobodneSale = FXCollections.observableArrayList();
+    private ArrayList<ArrayList> rasporedIspita = new ArrayList<>();
     private static Alert alert = new Alert(Alert.AlertType.NONE);
     private TableView tabela;
     private int aktivniRok;
@@ -83,6 +84,14 @@ public class ZaposleniForm extends Stage {
         this.aktivniRok = aktivniRok;
     }
 
+    public ArrayList<ArrayList> getRasporedIspita() {
+        return rasporedIspita;
+    }
+
+    public void setRasporedIspita(ArrayList<ArrayList> rasporedIspita) {
+        this.rasporedIspita = rasporedIspita;
+    }
+
     /**
      * Setuje tip i naslov statičkog alerta u zavisnosti od prosleđenog tipa
      */
@@ -113,9 +122,21 @@ public class ZaposleniForm extends Stage {
 
         String poruka;
         if (aktivan) {
-            poruka = "Ispitni rok je u toku.";
+            poruka = "Ispitni rok je u toku.\n\n";
         } else {
-            poruka = "Nijedan ispitni rok trenutno nije u toku.";
+            poruka = "Nijedan ispitni rok trenutno nije u toku.\n\n";
+        }
+        if (!getRasporedIspita().isEmpty()) {
+
+            //TODO: srediti malo prikaz
+            poruka += "Sala Predmet Datum Vreme";
+            for (ArrayList ri: getRasporedIspita()) {
+
+                poruka += "\n" + ri.get(0).toString() + " " + ri.get(1).toString() + " " + ri.get(2).toString() + " " + ri.get(3).toString();
+            }
+        } else {
+
+            poruka += "\nJoš uvek nije napravljen raspored ispita.";
         }
         Label lblPrikaz = new Label(poruka);
         lblPrikaz.setFont(font20);
@@ -134,7 +155,7 @@ public class ZaposleniForm extends Stage {
     }
 
     /*TODO: konstruktor sta prima*/
-    public ZaposleniForm(Stage stage, Zaposleni zaposleni, ObservableList<IspitniRok> ispitniRokovi, ObservableList<Predmet> sviPredmeti, ObservableList<Sala> sveSale, ObservableList<Zapisnik> zapisnik) {
+    public ZaposleniForm(Stage stage, Zaposleni zaposleni, ObservableList<IspitniRok> ispitniRokovi, ObservableList<Predmet> sviPredmeti, ObservableList<Sala> sveSale, ObservableList<Zapisnik> zapisnik, ArrayList<ArrayList> rasporedIspita) {
 
         super();
         initOwner(stage);
@@ -143,6 +164,7 @@ public class ZaposleniForm extends Stage {
         setSviPredmeti(sviPredmeti);
         setSveSlobodneSale(sveSale);
         setZapisnik(zapisnik);
+        setRasporedIspita(rasporedIspita);
 
         BorderPane root = new BorderPane();
         MenuBar menuBar = new MenuBar();
@@ -167,9 +189,12 @@ public class ZaposleniForm extends Stage {
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
             Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziIspitneRokove"));
+            Thread runnableZahtevServeru2 = new Thread(new RunnableZahtevServeru("osveziRasporedIspita"));
             //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
             runnableZahtevServeru.setDaemon(true);
+            runnableZahtevServeru2.setDaemon(true);
             runnableZahtevServeru.start();
+            runnableZahtevServeru2.start();
 
             ocistiPane(root);
             pocetniPrikaz(root);
@@ -724,6 +749,45 @@ public class ZaposleniForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setSveSlobodneSale(sveSlobodneSale);
+                            System.out.println("Osvezeni podaci sa strane servera");
+
+                        }
+                    });
+                } catch (IOException e) {
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.INFORMATION);
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.showAndWait();
+                        }
+                    });
+                    //e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            } else if (zahtev.equals("osveziRasporedIspita")) {
+                try {
+                    outObj.writeObject("osvezi" + "Zaposlenog");
+                    outObj.flush();
+                    outObj.writeObject(zahtev);
+                    outObj.flush();
+                    outObj.writeObject(zaposleni);
+                    outObj.flush();
+                    rasporedIspita.clear();
+                    //TODO: prepraviti sva slanja, može i cela lista odjednom
+                    odgovor = inObj.readObject();
+                    ArrayList<ArrayList> rasporedIspita = (ArrayList<ArrayList>) odgovor;
+
+                    //update na JavaFx application niti
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+
+                            //azuriranje/ponovno popunjavanje liste
+                            setRasporedIspita(rasporedIspita);
                             System.out.println("Osvezeni podaci sa strane servera");
 
                         }
