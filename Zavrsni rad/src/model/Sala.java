@@ -36,7 +36,6 @@ public class Sala implements Serializable {
 
     }
 
-
     public Sala(String naziv, int brojMesta, tipOpreme tip, boolean vidljiv) {
 
         this.naziv = naziv;

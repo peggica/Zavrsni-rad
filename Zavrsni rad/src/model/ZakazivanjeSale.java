@@ -5,11 +5,11 @@ import java.sql.*;
 
 public class ZakazivanjeSale implements Serializable {
 
-    private static final long serialVersionUID = 9L;
+    private static final long serialVersionUID = 11L;
     private int idSale;
     private int idPredmeta;
     private int idZaposlenog;
-    private static Date datum;
+    private Date datum;
     private Time vremePocetka;
     private Time vremeKraja;
 

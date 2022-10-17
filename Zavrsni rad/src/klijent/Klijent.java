@@ -20,7 +20,7 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-/** Klase Klijent i RunnableKlijent namenjene za povezivanje klijenta sa serverom i razmenu zahteva/odgovora,
+/** Klase Klijent i ZahtevServeru namenjene za povezivanje klijenta sa serverom i razmenu zahteva/odgovora,
  *  kao i prikaza forme za Login u JavaFx-u
  *  @author Biljana Stanojevic  */
 
@@ -128,10 +128,8 @@ public class Klijent extends Application {
                     //prosledjeni uneti podaci sa forme na pritisnut ENTER na tastaturi
                     if (!txtKorisnickoIme.getText().isEmpty() && !pfLozinka.getText().isEmpty()) {
 
-                        Thread runnableKlijent = new Thread(new RunnableKlijent(txtKorisnickoIme.getText(), pfLozinka.getText()));
-                        //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                        runnableKlijent.setDaemon(true);
-                        runnableKlijent.start();
+                        ZahtevServeru zahtevServeru = new ZahtevServeru(txtKorisnickoIme.getText(), pfLozinka.getText());
+                        zahtevServeru.KomunikacijaSaServerom();
 
                     } else {
 
@@ -157,10 +155,8 @@ public class Klijent extends Application {
                 //prosledjeni uneti podaci sa forme na klik dugmeta
                 if (!txtKorisnickoIme.getText().isEmpty() && !pfLozinka.getText().isEmpty()) {
 
-                    Thread runnableKlijent = new Thread(new RunnableKlijent(txtKorisnickoIme.getText(), pfLozinka.getText()));
-                    //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                    runnableKlijent.setDaemon(true);
-                    runnableKlijent.start();
+                    ZahtevServeru zahtevServeru = new ZahtevServeru(txtKorisnickoIme.getText(), pfLozinka.getText());
+                    zahtevServeru.KomunikacijaSaServerom();
 
                 } else {
 
@@ -202,7 +198,7 @@ public class Klijent extends Application {
 
     }
 
-    private class RunnableKlijent implements Runnable {
+    private class ZahtevServeru {
 
         private Socket socket = null;
         private ObjectInputStream inObj;
@@ -213,14 +209,13 @@ public class Klijent extends Application {
         private Zaposleni ovajZaposleni;
         private Student ovajStudent;
 
-        public RunnableKlijent(String korisnickoIme, String lozinka) {
+        public ZahtevServeru(String korisnickoIme, String lozinka) {
 
             this.korisnickoIme = korisnickoIme;
             this.lozinka = lozinka;
         }
 
-        @Override
-        public void run() {
+        public void KomunikacijaSaServerom() {
 
             //OTVARANJE KONEKCIJE
             try {
@@ -373,16 +368,15 @@ public class Klijent extends Application {
                     ObservableList<Zapisnik> zapisnik = FXCollections.observableArrayList();
                     while (true) {
                         odgovor = inObj.readObject();
-                        if (odgovor.equals("raspored")) {
+                        if (odgovor.equals("kraj")) {
                             break;
                         }
                         Zapisnik pojedinacni = (Zapisnik) odgovor;
                         zapisnik.add(pojedinacni);
                     }
 
-                    //TODO: prepraviti sva slanja, može i cela lista odjednom
                     odgovor = inObj.readObject();
-                    ArrayList<ArrayList> rasporedIspita = (ArrayList<ArrayList>) odgovor;
+                    HashMap<ZakazivanjeSale, ArrayList> rasporedIspita = (HashMap) odgovor;
 
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
@@ -437,9 +431,8 @@ public class Klijent extends Application {
                     odgovor = inObj.readObject();
                     prijavaIspita = (HashMap) odgovor;
 
-                    //TODO: prepraviti sva slanja, može i cela lista odjednom
                     odgovor = inObj.readObject();
-                    ArrayList<ArrayList> rasporedIspita = (ArrayList<ArrayList>) odgovor;
+                    HashMap<ZakazivanjeSale, ArrayList> rasporedIspita = (HashMap) odgovor;
 
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {

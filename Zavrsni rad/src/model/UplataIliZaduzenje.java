@@ -5,7 +5,7 @@ import java.sql.Date;
 
 public class UplataIliZaduzenje implements Serializable {
 
-    private static final long serialVersionUID = 13L;
+    private static final long serialVersionUID = 10L;
     private int idUplate;
     private String opis;
     private int idStudenta;

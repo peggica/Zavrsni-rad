@@ -25,7 +25,7 @@ import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.time.LocalDate.now;
@@ -43,7 +43,7 @@ public class ZaposleniForm extends Stage {
     private ObservableList<Predmet> sviPredmeti = FXCollections.observableArrayList();
     private ObservableList<Zapisnik> zapisnik = FXCollections.observableArrayList();
     private ObservableList<Sala> sveSlobodneSale = FXCollections.observableArrayList();
-    private ArrayList<ArrayList> rasporedIspita = new ArrayList<>();
+    private HashMap<ZakazivanjeSale, ArrayList> rasporedIspita = new HashMap<>();
     private static Alert alert = new Alert(Alert.AlertType.NONE);
     private TableView tabela;
     private int aktivniRok;
@@ -84,12 +84,12 @@ public class ZaposleniForm extends Stage {
         this.aktivniRok = aktivniRok;
     }
 
-    public ArrayList<ArrayList> getRasporedIspita() {
-        return rasporedIspita;
+    public void setRasporedIspita(HashMap<ZakazivanjeSale, ArrayList> rasporedIspita) {
+        this.rasporedIspita = rasporedIspita;
     }
 
-    public void setRasporedIspita(ArrayList<ArrayList> rasporedIspita) {
-        this.rasporedIspita = rasporedIspita;
+    public HashMap<ZakazivanjeSale, ArrayList> getRasporedIspita() {
+        return rasporedIspita;
     }
 
     /**
@@ -128,11 +128,14 @@ public class ZaposleniForm extends Stage {
         }
         if (!getRasporedIspita().isEmpty()) {
 
-            //TODO: srediti malo prikaz
-            poruka += "Sala Predmet Datum Vreme";
-            for (ArrayList ri: getRasporedIspita()) {
+            //TODO: srediti prikaz i sortirati po datumu i vremenu*
+            poruka += "Raspored zakazanih predmeta\n";
+            poruka += "Sala" + " ".repeat(24) + "Predmet" + " ".repeat(33) + "Datum" + " ".repeat(11) + "Vreme" + " ".repeat(6);
+            for(Map.Entry<ZakazivanjeSale, ArrayList> entry : getRasporedIspita().entrySet()) {
 
-                poruka += "\n" + ri.get(0).toString() + " " + ri.get(1).toString() + " " + ri.get(2).toString() + " " + ri.get(3).toString();
+                ZakazivanjeSale zakazanaSala = entry.getKey();
+                ArrayList podaci = entry.getValue();
+                poruka += "\n" + podaci.get(0).toString() + " ".repeat((int) Math.floor(30 - podaci.get(0).toString().split("").length * 1.58)) + podaci.get(1).toString() + " ".repeat((int) Math.floor(45 - (podaci.get(1).toString().split("").length) * 1.62)) + zakazanaSala.getDatum() + " ".repeat((int) Math.ceil((17 - zakazanaSala.getDatum().toString().split("").length) / 2)) + zakazanaSala.getVremePocetka() + " ".repeat((int) Math.ceil((17 - zakazanaSala.getVremePocetka().toString().split("").length) / 2));
             }
         } else {
 
@@ -154,8 +157,7 @@ public class ZaposleniForm extends Stage {
         root.setCenter(null);
     }
 
-    /*TODO: konstruktor sta prima*/
-    public ZaposleniForm(Stage stage, Zaposleni zaposleni, ObservableList<IspitniRok> ispitniRokovi, ObservableList<Predmet> sviPredmeti, ObservableList<Sala> sveSale, ObservableList<Zapisnik> zapisnik, ArrayList<ArrayList> rasporedIspita) {
+    public ZaposleniForm(Stage stage, Zaposleni zaposleni, ObservableList<IspitniRok> ispitniRokovi, ObservableList<Predmet> sviPredmeti, ObservableList<Sala> sveSale, ObservableList<Zapisnik> zapisnik, HashMap<ZakazivanjeSale, ArrayList> rasporedIspita) {
 
         super();
         initOwner(stage);
@@ -188,13 +190,10 @@ public class ZaposleniForm extends Stage {
         lblPocetna.setOnMouseClicked(mouseEvent -> {
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziIspitneRokove"));
-            Thread runnableZahtevServeru2 = new Thread(new RunnableZahtevServeru("osveziRasporedIspita"));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru2.setDaemon(true);
-            runnableZahtevServeru.start();
-            runnableZahtevServeru2.start();
+            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziIspitneRokove");
+            ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziRasporedIspita");
+            zahtevServeru.KomunikacijaSaServerom();
+            zahtevServeru1.KomunikacijaSaServerom();
 
             ocistiPane(root);
             pocetniPrikaz(root);
@@ -206,10 +205,8 @@ public class ZaposleniForm extends Stage {
         lblZakaziSalu.setOnMouseClicked(mouseEvent -> {
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", Date.valueOf(now()), Time.valueOf(LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1)), Time.valueOf(LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1).plusMinutes(15))));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru.start();
+            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(now()), Time.valueOf(LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1)), Time.valueOf(LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1).plusMinutes(15))));
+            zahtevServeru.KomunikacijaSaServerom();
 
             ocistiPane(root);
             VBox vBox = new VBox();
@@ -259,9 +256,8 @@ public class ZaposleniForm extends Stage {
                 //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                 if (!nova_vrednost.equals(stara_vrednost)) {
                     //poslati zahtev za proveru slobodnih sala serveru
-                    Thread t = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", Date.valueOf(nova_vrednost), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(nova_vrednost), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
+                    zahtevServeru1.KomunikacijaSaServerom();
 
                     tableSale.refresh();
                 }
@@ -277,9 +273,8 @@ public class ZaposleniForm extends Stage {
                 //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                 if (!nova_vrednost.equals(stara_vrednost)) {
                     //poslati zahtev za proveru slobodnih sala serveru
-                    Thread t = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(nova_vrednost) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(nova_vrednost) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
+                    zahtevServeru1.KomunikacijaSaServerom();
 
                     tableSale.refresh();
                 }
@@ -297,9 +292,8 @@ public class ZaposleniForm extends Stage {
                 //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                 if (!nova_vrednost.equals(stara_vrednost)) {
                     //poslati zahtev za proveru slobodnih sala serveru
-                    Thread t = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(nova_vrednost) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(nova_vrednost) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
+                    zahtevServeru1.KomunikacijaSaServerom();
 
                     tableSale.refresh();
                 }
@@ -317,9 +311,8 @@ public class ZaposleniForm extends Stage {
                 //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                 if (!nova_vrednost.equals(stara_vrednost)) {
                     //poslati zahtev za proveru slobodnih sala serveru
-                    Thread t = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(nova_vrednost) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(nova_vrednost) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
+                    zahtevServeru1.KomunikacijaSaServerom();
 
                     tableSale.refresh();
                 }
@@ -337,9 +330,8 @@ public class ZaposleniForm extends Stage {
                 //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                 if (!nova_vrednost.equals(stara_vrednost)) {
                     //poslati zahtev za proveru slobodnih sala serveru
-                    Thread t = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(nova_vrednost) + ":00")));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(nova_vrednost) + ":00")));
+                    zahtevServeru1.KomunikacijaSaServerom();
 
                     tableSale.refresh();
                 }
@@ -385,17 +377,25 @@ public class ZaposleniForm extends Stage {
                     Sala izabranaSala = (Sala) tableSale.getSelectionModel().getSelectedItem();
                     setTabela(tableSale);
                     int idPredmeta = sviPredmeti.stream().filter(p -> p.getNaziv().equals(cmbPredmet.getValue())).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0);
-                    Thread t = new Thread(new RunnableZahtevServeru("zakaziSalu", idPredmeta, izabranaSala, Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
-                    t.setDaemon(true);
-                    t.start();
-
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("zakaziSalu", idPredmeta, izabranaSala, Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00"));
+                    zahtevServeru1.KomunikacijaSaServerom();
                     tableSale.refresh();
+
                 } else {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
+
                             setAlert(Alert.AlertType.ERROR);
-                            alert.setContentText("Molim vas izaberite neku salu u tabeli");
+
+                            if (tableSale.getItems().isEmpty()) {
+
+                                alert.setContentText("Tabela sa salama za zakazivanje je prazna.");
+                            } else {
+
+                                alert.setContentText("Molim vas izaberite neku salu u tabeli.");
+                            }
+
                             alert.showAndWait();
                         }
                     });
@@ -415,10 +415,8 @@ public class ZaposleniForm extends Stage {
         lblDodajUZapisnik.setOnMouseClicked(mouseEvent -> {
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziPrijave"));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru.start();
+            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziPrijave");
+            zahtevServeru.KomunikacijaSaServerom();
 
             ocistiPane(root);
             VBox vBox = new VBox();
@@ -523,9 +521,8 @@ public class ZaposleniForm extends Stage {
                         zapisnik.stream().filter(pi -> pi.getIdPredmeta() == sviPredmeti.stream().filter(p -> p.getIdPredmeta() == idPredmeta).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0)).collect(Collectors.toCollection(FXCollections::observableArrayList)).get(i).setIdRoka(getAktivniRok());
 
                     }
-                    Thread t = new Thread(new RunnableZahtevServeru("unesiOcenuUZapisnik", idPredmeta));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("unesiOcenuUZapisnik", idPredmeta);
+                    zahtevServeru1.KomunikacijaSaServerom();
 
                 } else {
 
@@ -535,9 +532,9 @@ public class ZaposleniForm extends Stage {
                             setAlert(Alert.AlertType.ERROR);
 
                             if (getAktivniRok() == 0) {
-                                alert.setContentText("Nije moguće snimiti izmene jer ispitni rok nije u toku");
+                                alert.setContentText("Nije moguće snimiti izmene jer ispitni rok nije u toku.");
                             } else {
-                                alert.setContentText("Nije moguće snimiti izmene jer nema ni jedne prijave");
+                                alert.setContentText("Nije moguće snimiti izmene jer nema ni jedne prijave.");
                             }
                             alert.showAndWait();
                         }
@@ -568,10 +565,10 @@ public class ZaposleniForm extends Stage {
 
     }
 
-    /** Klasa RunnableZahtevServeru namenjena za razmenjivanje objekata sa serverom.
+    /** Klasa ZahtevServeru namenjena za razmenjivanje objekata sa serverom.
      * Za osvezavanje podataka na formi, zakazivanje sale i unos ocena nakon ispita.
      * @author Biljana Stanojevic   */
-    private class RunnableZahtevServeru implements Runnable {
+    private class ZahtevServeru {
 
         private static final int TCP_PORT = 9000;
         private Socket socket = null;
@@ -579,27 +576,27 @@ public class ZaposleniForm extends Stage {
         private ObjectOutputStream outObj;
         private Object zahtev;
         private Object odgovor;
+
         private Date datum;
         private Time vremePocetka;
         private Time vremeKraja;
         private int idPredmeta;
         private Sala sala;
+        private ZakazivanjeSale zakazivanjeSale;
 
         //konstuktor za osvezavanje podataka
-        public RunnableZahtevServeru(Object zahtev) {
+        public ZahtevServeru(Object zahtev) {
             this.zahtev = zahtev;
         }
 
         //konstruktor za osvezavanje slobodnih sala
-        public RunnableZahtevServeru(Object zahtev, Date datum, Time vremePocetka, Time vremeKraja) {
+        public ZahtevServeru(Object zahtev, ZakazivanjeSale zakazivanjeSale) {
             this.zahtev = zahtev;
-            this.datum = datum;
-            this.vremePocetka = vremePocetka;
-            this.vremeKraja = vremeKraja;
+            this.zakazivanjeSale = zakazivanjeSale;
         }
 
         //konstruktor za zakazivanje sale
-        public RunnableZahtevServeru(Object zahtev, int idPredmeta, Sala sala, Date datum, Time vremePocetka, Time vremeKraja) {
+        public ZahtevServeru(Object zahtev, int idPredmeta, Sala sala, Date datum, Time vremePocetka, Time vremeKraja) {
             this.zahtev = zahtev;
             this.idPredmeta = idPredmeta;
             this.sala = sala;
@@ -609,13 +606,12 @@ public class ZaposleniForm extends Stage {
         }
 
         //konstruktor za snimanje ocena u zapisnik
-        public RunnableZahtevServeru(Object zahtev, int idPredmeta) {
+        public ZahtevServeru(Object zahtev, int idPredmeta) {
             this.zahtev = zahtev;
             this.idPredmeta = idPredmeta;
         }
 
-        @Override
-        public void run() {
+        public void KomunikacijaSaServerom() {
 
             //OTVARANJE KONEKCIJE
             try {
@@ -623,13 +619,14 @@ public class ZaposleniForm extends Stage {
                 Socket socket = new Socket(addr, TCP_PORT);
                 inObj = new ObjectInputStream(socket.getInputStream());
                 outObj = new ObjectOutputStream(socket.getOutputStream());
+
             } catch (UnknownHostException e) {
                 Platform.runLater(new Runnable() {
 
                     @Override
                     public void run() {
                         setAlert(Alert.AlertType.INFORMATION);
-                        alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                        alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                         alert.showAndWait();
                     }
                 });
@@ -672,7 +669,7 @@ public class ZaposleniForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -706,7 +703,7 @@ public class ZaposleniForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setZapisnik(zapisnik);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -716,7 +713,7 @@ public class ZaposleniForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -730,7 +727,7 @@ public class ZaposleniForm extends Stage {
                     outObj.flush();
                     outObj.writeObject(zahtev);
                     outObj.flush();
-                    outObj.writeObject(new ZakazivanjeSale(datum, vremePocetka, vremeKraja));
+                    outObj.writeObject(zakazivanjeSale);
                     outObj.flush();
                     sveSlobodneSale.clear();
                     while (true) {
@@ -749,7 +746,7 @@ public class ZaposleniForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setSveSlobodneSale(sveSlobodneSale);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -759,7 +756,7 @@ public class ZaposleniForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -776,9 +773,8 @@ public class ZaposleniForm extends Stage {
                     outObj.writeObject(zaposleni);
                     outObj.flush();
                     rasporedIspita.clear();
-                    //TODO: prepraviti sva slanja, može i cela lista odjednom
                     odgovor = inObj.readObject();
-                    ArrayList<ArrayList> rasporedIspita = (ArrayList<ArrayList>) odgovor;
+                    rasporedIspita = (HashMap) odgovor;
 
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
@@ -788,7 +784,7 @@ public class ZaposleniForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setRasporedIspita(rasporedIspita);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -798,7 +794,7 @@ public class ZaposleniForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -825,15 +821,14 @@ public class ZaposleniForm extends Stage {
                                     getTabela().setItems(stavke);
                                     getTabela().refresh();
                                     setAlert(Alert.AlertType.INFORMATION);
-                                    alert.setContentText("Uspešno zakazana sala u Bazi");
+                                    alert.setContentText("Uspešno zakazana sala u Bazi.");
                                     alert.showAndWait();
                                 }
                             });
                             //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziSlobodneSale", datum, vremePocetka, vremeKraja));
-                            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                            runnableZahtevServeru.setDaemon(true);
-                            runnableZahtevServeru.start();
+                            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(datum, vremePocetka, vremeKraja));
+                            zahtevServeru.KomunikacijaSaServerom();
+
                         } else {
                             Platform.runLater(new Runnable() {
                                 @Override
@@ -853,7 +848,7 @@ public class ZaposleniForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -876,15 +871,14 @@ public class ZaposleniForm extends Stage {
                                 @Override
                                 public void run() {
                                     setAlert(Alert.AlertType.INFORMATION);
-                                    alert.setContentText("Uspešno snimljene ocene u Zapisnik");
+                                    alert.setContentText("Uspešno snimljene ocene u Zapisnik.");
                                     alert.showAndWait();
                                 }
                             });
                             //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziPrijave"));
-                            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                            runnableZahtevServeru.setDaemon(true);
-                            runnableZahtevServeru.start();
+                            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziPrijave");
+                            zahtevServeru.KomunikacijaSaServerom();
+
                         } else {
                             Platform.runLater(new Runnable() {
                                 @Override
@@ -904,7 +898,7 @@ public class ZaposleniForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });

@@ -6,7 +6,6 @@ import java.io.Serializable;
 
 public class Predmet implements Serializable {
 
-    //TODO: profesor za predmet, 1 ili lista?
     private static final long serialVersionUID = 4L;
     private int idPredmeta;
     private String naziv;

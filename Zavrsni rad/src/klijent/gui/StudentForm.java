@@ -37,7 +37,7 @@ public class StudentForm extends Stage {
     private ObservableList<Predmet> nepolozeniPredmeti = FXCollections.observableArrayList();
     private HashMap<Predmet, ArrayList> prijavaIspita = new HashMap<>();
     private ObservableList<UplataIliZaduzenje> sveUplateIZaduzenja = FXCollections.observableArrayList();
-    private ArrayList<ArrayList> rasporedIspita = new ArrayList<>();
+    private HashMap<ZakazivanjeSale, ArrayList> rasporedIspita = new HashMap<>();
     private int aktivniRok;
     private TableView tabela;
     private static Alert alert = new Alert(Alert.AlertType.NONE);
@@ -66,12 +66,12 @@ public class StudentForm extends Stage {
         this.sveUplateIZaduzenja = sveUplateIZaduzenja;
     }
 
-    public void setRasporedIspita(ArrayList<ArrayList> rasporedIspita) {
-        this.rasporedIspita = rasporedIspita;
+    public HashMap<ZakazivanjeSale, ArrayList> getRasporedIspita() {
+        return rasporedIspita;
     }
 
-    public ArrayList<ArrayList> getRasporedIspita() {
-        return rasporedIspita;
+    public void setRasporedIspita(HashMap<ZakazivanjeSale, ArrayList> rasporedIspita) {
+        this.rasporedIspita = rasporedIspita;
     }
 
     public Student getStudent() {
@@ -112,28 +112,35 @@ public class StudentForm extends Stage {
     /** Proverava da li ima aktivnih ispitnih rokova ili ne, pa postavlja prikaz za stavku Pocetna iz Menija    */
     private void pocetniPrikaz(BorderPane root){
 
-        boolean aktivan = false;
-        for (IspitniRok ispitniRok:this.sviIspitniRokovi) {
+        boolean aktivanRok = false;
+        boolean aktivnaPrijava = false;
+        for (IspitniRok ispitniRok : sviIspitniRokovi) {
+
             if (ispitniRok.isAktivnost()) {
-                aktivan = true;
-                setAktivniRok(ispitniRok.getIdRoka());
-                break;
+                aktivanRok = true;
+            } else if (ispitniRok.isAktivnaPrijava()) {
+                aktivnaPrijava = true;
             }
         }
 
         String poruka;
-        if (aktivan) {
-            poruka = "Ispitni rok je u toku.\n\n";
+        if (aktivanRok) {
+            poruka = "Ispitni rok je u toku.";
+        } else if (aktivnaPrijava) {
+            poruka = "Prijava ispita je u toku.";
         } else {
-            poruka = "Nijedan ispitni rok trenutno nije u toku.\n\n";
+            poruka = "Nijedan ispitni rok, kao ni prijava ispita, nije trenutno u toku.";
         }
         if (!getRasporedIspita().isEmpty()) {
 
-            //TODO: srediti malo prikaz
-            poruka += "Sala Predmet Datum Vreme";
-            for (ArrayList ri: getRasporedIspita()) {
+            //TODO: srediti prikaz i sortirati po datumu i vremenu*
+            poruka += "Raspored prijavljenih ispita\n";
+            poruka += "Sala" + " ".repeat(24) + "Predmet" + " ".repeat(33) + "Datum" + " ".repeat(11) + "Vreme" + " ".repeat(6);
+            for(Map.Entry<ZakazivanjeSale, ArrayList> entry : getRasporedIspita().entrySet()) {
 
-                poruka += "\n" + ri.get(0).toString() + " " + ri.get(1).toString() + " " + ri.get(2).toString() + " " + ri.get(3).toString();
+                ZakazivanjeSale zakazanaSala = entry.getKey();
+                ArrayList podaci = entry.getValue();
+                poruka += "\n" + podaci.get(0).toString() + " ".repeat((int) Math.floor(30 - podaci.get(0).toString().split("").length * 1.58)) + podaci.get(1).toString() + " ".repeat((int) Math.floor(45 - (podaci.get(1).toString().split("").length) * 1.62)) + zakazanaSala.getDatum() + " ".repeat((int) Math.ceil((17 - zakazanaSala.getDatum().toString().split("").length) / 2)) + zakazanaSala.getVremePocetka() + " ".repeat((int) Math.ceil((17 - zakazanaSala.getVremePocetka().toString().split("").length) / 2));
             }
         } else {
 
@@ -155,7 +162,7 @@ public class StudentForm extends Stage {
         root.setCenter(null);
     }
 
-    public StudentForm(Stage stage, Student student, ObservableList<UplataIliZaduzenje> sveUplateIZaduzenja, ObservableList<IspitniRok> sviIspitniRokovi, HashMap<Predmet, Integer> polozeni, ObservableList<Predmet> nepolozeni, HashMap<Predmet, ArrayList> prijave, ArrayList<ArrayList> rasporedIspita) {
+    public StudentForm(Stage stage, Student student, ObservableList<UplataIliZaduzenje> sveUplateIZaduzenja, ObservableList<IspitniRok> sviIspitniRokovi, HashMap<Predmet, Integer> polozeni, ObservableList<Predmet> nepolozeni, HashMap<Predmet, ArrayList> prijave, HashMap<ZakazivanjeSale, ArrayList> rasporedIspita) {
 
         super();
         initOwner(stage);
@@ -182,15 +189,12 @@ public class StudentForm extends Stage {
         Label lblPocetna = new Label("POČETNA");
         lblPocetna.setOnMouseClicked(mouseEvent -> {
 
-            //TODO, eventualno spojiti u jedan zahtev Serveru, da osvezi oba odjednom
+            //TODO - eventualno spojiti u jedan zahtev Serveru, da osvezi oba odjednom
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziIspitneRokove"));
-            Thread runnableZahtevServeru1 = new Thread(new RunnableZahtevServeru("osveziRasporedIspita"));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru1.setDaemon(true);
-            runnableZahtevServeru.start();
-            runnableZahtevServeru1.start();
+            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziIspitneRokove");
+            ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziRasporedIspita");
+            zahtevServeru.KomunikacijaSaServerom();
+            zahtevServeru1.KomunikacijaSaServerom();
 
             ocistiPane(root);
             pocetniPrikaz(root);
@@ -201,11 +205,12 @@ public class StudentForm extends Stage {
         Label lblPredmeti = new Label("PREDMETI");
         lblPredmeti.setOnMouseClicked(mouseEvent -> {
 
+            TableView<HashMap.Entry<Predmet, Integer>> tablePolozeni = new TableView<>();
+            setTabela(tablePolozeni);
+
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziPredmete"));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru.start();
+            ZahtevServeru zahtevServeru  = new ZahtevServeru("osveziPredmete");
+            zahtevServeru.KomunikacijaSaServerom();
 
             ocistiPane(root);
             VBox vbox = new VBox();
@@ -216,7 +221,6 @@ public class StudentForm extends Stage {
             lblPolozeni.setAlignment(Pos.CENTER_LEFT);
             lblPolozeni.setPadding(new Insets(0,10,5,0));
 
-            TableView<HashMap.Entry<Predmet, Integer>> tablePolozeni = new TableView<>();
             tablePolozeni.setPlaceholder(new Label("Nije položen nijedan ispit"));
             tablePolozeni.getColumns().clear();
 
@@ -315,11 +319,12 @@ public class StudentForm extends Stage {
         Label lblPrijava = new Label("PRIJAVA ISPITA");
         lblPrijava.setOnMouseClicked(mouseEvent -> {
 
+            TableView<HashMap.Entry<Predmet, ArrayList>> tablePrijava = new TableView();
+            setTabela(tablePrijava);
+
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziPrijave"));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru.start();
+            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziPrijave");
+            zahtevServeru.KomunikacijaSaServerom();
 
             ocistiPane(root);
 
@@ -331,7 +336,6 @@ public class StudentForm extends Stage {
             lblPrijavaIspita.setAlignment(Pos.CENTER_LEFT);
             lblPrijavaIspita.setPadding(new Insets(0,10,5,0));
 
-            TableView<HashMap.Entry<Predmet, ArrayList>> tablePrijava = new TableView();
             tablePrijava.setPlaceholder(new Label(""));
             tablePrijava.getColumns().clear();
 
@@ -401,9 +405,8 @@ public class StudentForm extends Stage {
                         if (Double.parseDouble(izabraniIspit.getValue().get(1).toString()) == ((double) 0)) {
 
                             setTabela(tablePrijava);
-                            Thread t = new Thread(new RunnableZahtevServeru("prijavaIspita", izabraniIspit.getKey()));
-                            t.setDaemon(true);
-                            t.start();
+                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("prijavaIspita", izabraniIspit.getKey());
+                            zahtevServeru1.KomunikacijaSaServerom();
                         } else {
 
                             Platform.runLater(new Runnable() {
@@ -450,10 +453,8 @@ public class StudentForm extends Stage {
         lblSkolarine.setOnMouseClicked(mouseEvent -> {
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziUplateIZaduzenja"));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru.start();
+            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziUplateIZaduzenja");
+            zahtevServeru.KomunikacijaSaServerom();
 
             ocistiPane(root);
 
@@ -567,7 +568,15 @@ public class StudentForm extends Stage {
             lblStatus.setPadding(new Insets(10,0,0,0));
             lblStatus.setFont(font15);
 
-            Label lblSemestar = new Label("Semestar: " + student.getSemestar());
+            int brojUpisa = 0;
+            for (UplataIliZaduzenje uplataIliZaduzenje : sveUplateIZaduzenja) {
+                //može da piše školarina, upis ili obnova
+                if (uplataIliZaduzenje.getOpis().toLowerCase().trim().equals("upis")) {
+                    brojUpisa++;
+                }
+
+            }
+            Label lblSemestar = new Label("Semestar: " + student.getSemestar(brojUpisa));
             lblSemestar.setPadding(new Insets(10,0,0,0));
             lblSemestar.setFont(font15);
 
@@ -581,10 +590,10 @@ public class StudentForm extends Stage {
 
     }
 
-    /** Klasa RunnableZahtevServeru namenjena za razmenjivanje objekata sa serverom.
+    /** Klasa ZahtevServeru namenjena za razmenjivanje objekata sa serverom.
      * Za osvezavanje podataka na formi i prijavu ispita.
      * @author Biljana Stanojevic   */
-    private class RunnableZahtevServeru implements Runnable {
+    private class ZahtevServeru {
 
         private static final int TCP_PORT = 9000;
         private Socket socket = null;
@@ -592,21 +601,21 @@ public class StudentForm extends Stage {
         private ObjectOutputStream outObj;
         private Object zahtev;
         private Object odgovor;
+
         private Predmet izabraniIspit;
 
         //konstuktor za osvezavanje podataka
-        public RunnableZahtevServeru(Object zahtev) {
+        public ZahtevServeru(Object zahtev) {
             this.zahtev = zahtev;
         }
 
         //konstruktor za prijavu ispita
-        public RunnableZahtevServeru(Object zahtev, Predmet izabraniIspit) {
+        public ZahtevServeru(Object zahtev, Predmet izabraniIspit) {
             this.zahtev = zahtev;
             this.izabraniIspit = izabraniIspit;
         }
 
-        @Override
-        public void run() {
+        public void KomunikacijaSaServerom() {
 
             //OTVARANJE KONEKCIJE
             try {
@@ -614,13 +623,14 @@ public class StudentForm extends Stage {
                 Socket socket = new Socket(addr, TCP_PORT);
                 inObj = new ObjectInputStream(socket.getInputStream());
                 outObj = new ObjectOutputStream(socket.getOutputStream());
+
             } catch (UnknownHostException e) {
                 Platform.runLater(new Runnable() {
 
                     @Override
                     public void run() {
                         setAlert(Alert.AlertType.INFORMATION);
-                        alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                        alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                         alert.showAndWait();
                     }
                 });
@@ -653,7 +663,7 @@ public class StudentForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setSviIspitniRokovi(sviIspitniRokovi);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -663,7 +673,7 @@ public class StudentForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -681,7 +691,7 @@ public class StudentForm extends Stage {
                     outObj.flush();
                     rasporedIspita.clear();
                     odgovor = inObj.readObject();
-                    rasporedIspita = (ArrayList<ArrayList>) odgovor;
+                    rasporedIspita = (HashMap) odgovor;
                     //update na JavaFx application niti
                     Platform.runLater(new Runnable() {
 
@@ -690,7 +700,7 @@ public class StudentForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setRasporedIspita(rasporedIspita);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -700,7 +710,7 @@ public class StudentForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -738,8 +748,11 @@ public class StudentForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setPolozeniPredmeti(polozeniPredmeti);
+                            ObservableList<HashMap.Entry<Predmet, Integer>> stavke = FXCollections.observableArrayList(polozeniPredmeti.entrySet());
+                            getTabela().setItems(stavke);
+                            getTabela().refresh();
                             setNepolozeniPredmeti(nepolozeniPredmeti);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -749,7 +762,7 @@ public class StudentForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -778,7 +791,10 @@ public class StudentForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setPrijavaIspita(prijavaIspita);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            ObservableList<HashMap.Entry<Predmet, ArrayList>> stavke = FXCollections.observableArrayList(prijavaIspita.entrySet());
+                            getTabela().setItems(stavke);
+                            getTabela().refresh();
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -788,7 +804,7 @@ public class StudentForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -823,7 +839,7 @@ public class StudentForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setSveUplate(sveUplateIZaduzenja);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -833,7 +849,7 @@ public class StudentForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -848,7 +864,6 @@ public class StudentForm extends Stage {
                     outObj.writeObject(getStudent());
                     outObj.flush();
                     HashMap<Integer, Predmet> ispit = new HashMap<>();
-                    System.out.println(sviIspitniRokovi.stream().filter(ir -> ir.isAktivnaPrijava()).map(ir -> ir.getIdRoka()).collect(Collectors.toList()).get(0));
                     ispit.put(sviIspitniRokovi.stream().filter(ir -> ir.isAktivnaPrijava()).map(ir -> ir.getIdRoka()).collect(Collectors.toList()).get(0), izabraniIspit);
                     outObj.writeObject(ispit);
                     outObj.flush();
@@ -860,16 +875,13 @@ public class StudentForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Uspesno ste prijavili izabrani ispit");
+                                alert.setContentText("Uspesno ste prijavili izabrani ispit.");
                                 alert.showAndWait();
                             }
                         });
-                        //TODO: sto nece odmah refresh?
                         //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                        Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziPrijave"));
-                        //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                        runnableZahtevServeru.setDaemon(true);
-                        runnableZahtevServeru.start();
+                        ZahtevServeru zahtevServeru = new ZahtevServeru("osveziPrijave");
+                        zahtevServeru.KomunikacijaSaServerom();
                         getTabela().refresh();
 
                     } else {
@@ -877,7 +889,7 @@ public class StudentForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.ERROR);
-                                alert.setContentText("Nije uspela prijava ispita");
+                                alert.setContentText("Nije uspela prijava ispita.");
                                 alert.showAndWait();
                             }
                         });
@@ -888,7 +900,7 @@ public class StudentForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });

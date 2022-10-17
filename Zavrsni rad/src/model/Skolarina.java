@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class Skolarina implements Serializable {
 
-    private static final long serialVersionUID = 12L;
+    private static final long serialVersionUID = 8L;
     public enum tipSmera { avt, asuv, eko, elite, epo, ist, net, nrt, rt }
     private String smer;
     private double iznos;

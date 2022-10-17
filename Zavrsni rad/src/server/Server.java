@@ -234,7 +234,7 @@ public class Server extends Application {
                             outObj.writeObject("slobodneSale");
                             outObj.flush();
 
-                            query = "SELECT * FROM Sala s WHERE s.idSale NOT IN (SELECT idSale FROM zakazivanjeSale WHERE datum = ' " + LocalDate.now() + "' AND ('" + LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1) + "'>= vremePocetka AND '" + LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1).plusMinutes(15) + "' < vremeKraja) OR ('" + LocalTime.now().truncatedTo(ChronoUnit.HOURS) + "' > vremePocetka AND '" + LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusMinutes(1) + "' <= vremeKraja))";
+                            query = "SELECT * FROM Sala s WHERE s.vidljiv = '1' AND s.idSale NOT IN (SELECT idSale FROM zakazivanjeSale WHERE datum = ' " + LocalDate.now() + "' AND ('" + LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1) + "'>= vremePocetka AND '" + LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1).plusMinutes(15) + "' < vremeKraja) OR ('" + LocalTime.now().truncatedTo(ChronoUnit.HOURS) + "' > vremePocetka AND '" + LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusMinutes(1) + "' <= vremeKraja))";
                             resultset = statement.executeQuery(query);
 
                             while (resultset.next()) {
@@ -306,10 +306,10 @@ public class Server extends Application {
                                 outObj.flush();
                             }
 
-                            outObj.writeObject("raspored");
+                            outObj.writeObject("kraj");
                             outObj.flush();
 
-                            ArrayList<ArrayList> rasporedIspita = new ArrayList();
+                            HashMap<ZakazivanjeSale, ArrayList> rasporedIspita = new HashMap<>();
                             //sve zakazane sale za datum jednak ili veći od današnjeg za predmete koje zaposleni drži
                             query = "SELECT zs.datum, zs.vremePocetka, p.naziv, s.naziv FROM ZakazivanjeSale zs JOIN Predmet p ON zs.idPredmeta = p.idPredmeta JOIN Sala s ON zs.idSale = s.idSale JOIN raspodelaPredmeta AS rp ON p.idPredmeta = rp.idPredmeta JOIN Zaposleni AS z ON rp.idZaposlenog = z.idZaposlenog WHERE rp.idZaposlenog = '" + idZaposlenog + "' AND zs.datum >= CURDATE()";
                             resultset = statement.executeQuery(query);
@@ -317,16 +317,36 @@ public class Server extends Application {
 
                                 Date datum = resultset.getDate("zs.datum");
                                 Time vremePocetka = resultset.getTime("zs.vremePocetka");
-                                String nazivPredmeta = resultset.getString("p.naziv");
                                 String nazivSale = resultset.getString("s.naziv");
+                                String nazivPredmeta = resultset.getString("p.naziv");
+                                ZakazivanjeSale zakazanaSala = new ZakazivanjeSale(datum, vremePocetka);
                                 ArrayList podaci = new ArrayList();
                                 podaci.add(nazivSale);
                                 podaci.add(nazivPredmeta);
-                                podaci.add(datum);
-                                podaci.add(vremePocetka);
-                                rasporedIspita.add(podaci);
+                                rasporedIspita.put(zakazanaSala, podaci);
 
                             }
+
+                            //sortiranje zakazanih ispita po datumu i vremenu
+                            List<Map.Entry<ZakazivanjeSale, ArrayList> > list =
+                                    new LinkedList<Map.Entry<ZakazivanjeSale, ArrayList>>(rasporedIspita.entrySet());
+
+                            Collections.sort(list, new Comparator<Map.Entry<ZakazivanjeSale, ArrayList> >() {
+                                public int compare(Map.Entry<ZakazivanjeSale, ArrayList> o1,
+                                                   Map.Entry<ZakazivanjeSale, ArrayList> o2) {
+                                    int o;
+                                    o = o1.getKey().getDatum().compareTo(o2.getKey().getDatum());
+                                    if (o == 0)
+                                        o1.getKey().getVremePocetka().compareTo(o2.getKey().getVremePocetka());
+                                    return o;
+                                }
+                            });
+
+                            HashMap<ZakazivanjeSale, ArrayList> temp = new LinkedHashMap<ZakazivanjeSale, ArrayList>();
+                            for (Map.Entry<ZakazivanjeSale, ArrayList> value : list) {
+                                temp.put(value.getKey(), value.getValue());
+                            }
+                            rasporedIspita = temp;
 
                             odgovor = rasporedIspita;
                             outObj.writeObject(odgovor);
@@ -485,25 +505,45 @@ public class Server extends Application {
                             outObj.writeObject(odgovor);
                             outObj.flush();
 
-                            ArrayList<ArrayList> rasporedIspita = new ArrayList();
+                            HashMap<ZakazivanjeSale, ArrayList> rasporedIspita = new HashMap<>();
 
                             //sve zakazane sale za datum između trajanja aktivnog ispitnog roka za predmete koje student sluša, a nije položio
-                            query = "SELECT zs.datum, zs.vremePocetka, p.naziv, s.naziv FROM ZakazivanjeSale zs JOIN Predmet p ON zs.idPredmeta = p.idPredmeta JOIN Sala s ON zs.idSale = s.idSale WHERE zs.idPredmeta = (SELECT idPredmeta FROM prijaveIspita WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "') AND zs.datum >= '" + datumPocetka + "' AND '" + datumKraja + "' AND p.idPredmeta NOT IN (SELECT idPredmeta FROM Zapisnik WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "' AND ocena > 5" + ")";
+                            query = "SELECT zs.datum, zs.vremePocetka, p.naziv, s.naziv FROM ZakazivanjeSale zs JOIN Predmet p ON zs.idPredmeta = p.idPredmeta JOIN Sala s ON zs.idSale = s.idSale WHERE zs.idPredmeta IN (SELECT idPredmeta FROM prijaveIspita WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "') AND zs.datum >= '" + datumPocetka + "' AND '" + datumKraja + "' AND p.idPredmeta NOT IN (SELECT idPredmeta FROM Zapisnik WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "' AND ocena > 5" + ")";
                             resultset = statement.executeQuery(query);
                             while (resultset.next()) {
 
                                 Date datum = resultset.getDate("zs.datum");
                                 Time vremePocetka = resultset.getTime("zs.vremePocetka");
-                                String nazivPredmeta = resultset.getString("p.naziv");
                                 String nazivSale = resultset.getString("s.naziv");
+                                String nazivPredmeta = resultset.getString("p.naziv");
+                                ZakazivanjeSale zakazanaSala = new ZakazivanjeSale(datum, vremePocetka);
                                 ArrayList podaci = new ArrayList();
                                 podaci.add(nazivSale);
                                 podaci.add(nazivPredmeta);
-                                podaci.add(datum);
-                                podaci.add(vremePocetka);
-                                rasporedIspita.add(podaci);
+                                rasporedIspita.put(zakazanaSala, podaci);
 
                             }
+
+                            //sortiranje zakazanih ispita po datumu i vremenu
+                            List<Map.Entry<ZakazivanjeSale, ArrayList> > list =
+                                    new LinkedList<Map.Entry<ZakazivanjeSale, ArrayList>>(rasporedIspita.entrySet());
+
+                            Collections.sort(list, new Comparator<Map.Entry<ZakazivanjeSale, ArrayList> >() {
+                                public int compare(Map.Entry<ZakazivanjeSale, ArrayList> o1,
+                                                   Map.Entry<ZakazivanjeSale, ArrayList> o2) {
+                                    int o;
+                                    o = o1.getKey().getDatum().compareTo(o2.getKey().getDatum());
+                                    if (o == 0)
+                                        o1.getKey().getVremePocetka().compareTo(o2.getKey().getVremePocetka());
+                                    return o;
+                                }
+                            });
+
+                            HashMap<ZakazivanjeSale, ArrayList> temp = new LinkedHashMap<ZakazivanjeSale, ArrayList>();
+                            for (Map.Entry<ZakazivanjeSale, ArrayList> value : list) {
+                                temp.put(value.getKey(), value.getValue());
+                            }
+                            rasporedIspita = temp;
 
                             odgovor = rasporedIspita;
                             outObj.writeObject(odgovor);
@@ -582,7 +622,6 @@ public class Server extends Application {
                             odgovor = "svipredmeti";
                             outObj.writeObject(odgovor);
                             outObj.flush();
-                            //TODO: sta je sa nerasporedjenim predmetima?
                             query = "SELECT p.idPredmeta, p.naziv, p.studijskiSmer, p.semestar, p.espb, p.vidljiv, z.idZaposlenog, z.pozicija, z.ime, z.prezime FROM Predmet p LEFT JOIN raspodelaPredmeta rp ON p.idPredmeta = rp.idPredmeta LEFT JOIN Zaposleni z ON rp.idZaposlenog = z.idZaposlenog";
                             resultset = statement.executeQuery(query);
                             HashMap<Predmet, Zaposleni> sviPredmeti = new HashMap<>();
@@ -971,8 +1010,11 @@ public class Server extends Application {
                     if (student.isVidljiv()) {
                         //vraćanje login prava u slučaju da je student bio "obrisan" pre toga
                         query = "UPDATE Login SET `aktivan` = '1' WHERE (`idStudenta` = '" + student.getIdStudenta() + "' AND `smer` = '" + student.getSmer() + "' AND `godinaUpisa` = '" + student.getGodinaUpisa() + "')";
-                        izmene += statement.executeUpdate(query);
+                    } else {
+                        //uklanjanje login prava u slučaju da je student "obrisan"
+                        query = "UPDATE Login SET `aktivan` = '0' WHERE (`idStudenta` = '" + student.getIdStudenta() + "' AND `smer` = '" + student.getSmer() + "' AND `godinaUpisa` = '" + student.getGodinaUpisa() + "')";
                     }
+                    izmene += statement.executeUpdate(query);
                     if (izmene != 0) {
                         outObj.writeObject("uspelo");
                         outObj.flush();
@@ -1004,8 +1046,11 @@ public class Server extends Application {
                     if (zaposleni.isVidljiv()) {
                         //vraćanje login prava u slučaju da je zaposleni bio "obrisan" pre toga
                         query = "UPDATE Login SET `aktivan` = '1' WHERE (`idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "')";
-                        izmene += statement.executeUpdate(query);
+                    } else {
+                    //uklanjanje login prava u slučaju da je zaposleni "obrisan"
+                        query = "UPDATE Login SET `aktivan` = '0' WHERE (`idZaposlenog` = '" + zaposleni.getIdZaposlenog() + "')";
                     }
+                    izmene += statement.executeUpdate(query);
                     if (izmene != 0) {
                         outObj.writeObject("uspelo");
                         outObj.flush();
@@ -1065,9 +1110,9 @@ public class Server extends Application {
                         query += "'" + ispitniRok.getDatumPocetka() + "', `datumKraja` = ";
                     }
                     if (ispitniRok.getDatumKraja() == null) {
-                        query += NULL + ", `aktivnost` = '" + (ispitniRok.isAktivnost() ? 1 : 0) + "' WHERE `idRoka` = '" + ispitniRok.getIdRoka() + "'";
+                        query += NULL + ", `aktivnost` = '" + (ispitniRok.isAktivnost() ? 1 : 0) + "', `aktivnaPrijava` = '" + (ispitniRok.isAktivnaPrijava() ? 1 : 0) + "' WHERE `idRoka` = '" + ispitniRok.getIdRoka() + "'";
                     } else {
-                        query += "'" + ispitniRok.getDatumKraja() + "', `aktivnost` = '" + (ispitniRok.isAktivnost() ? 1 : 0) + "' WHERE `idRoka` = '" + ispitniRok.getIdRoka() + "'";
+                        query += "'" + ispitniRok.getDatumKraja() + "', `aktivnost` = '" + (ispitniRok.isAktivnost() ? 1 : 0) + "', `aktivnaPrijava` = '" + (ispitniRok.isAktivnaPrijava() ? 1 : 0) + "' WHERE `idRoka` = '" + ispitniRok.getIdRoka() + "'";
                     }
                     int izmena = statement.executeUpdate(query);
                     if (izmena != 0) {
@@ -1150,10 +1195,9 @@ public class Server extends Application {
                                 }
                             }
                             query = "INSERT INTO Login(idZaposlenog, korisnickoIme, lozinka, idStudenta, smer, godinaUpisa, aktivan) VALUES (" + NULL + ", '" + noviLogin[0] + "', '" + noviLogin[1] + "', '" + student.getIdStudenta() + "', '" + student.getSmer() + "', '" + student.getGodinaUpisa() + "', '" + 1 + "')";
-                            System.out.println(query);
                             izmena = statement.executeUpdate(query);
                             if (izmena != 0) {
-                                query = "INSERT INTO uplataIliZaduzenje(opis, idStudenta, smer, godinaUpisa, datum, iznos) VALUES ('" + "školarina" + "', '" + student.getIdStudenta() + "', '" + student.getSmer() + "', '" + student.getGodinaUpisa() + "', '" + Date.valueOf(LocalDate.now()) + "', '" + iznos + "')";
+                                query = "INSERT INTO uplataIliZaduzenje(opis, idStudenta, smer, godinaUpisa, datum, iznos) VALUES ('" + "upis" + "', '" + student.getIdStudenta() + "', '" + student.getSmer() + "', '" + student.getGodinaUpisa() + "', '" + Date.valueOf(LocalDate.now()) + "', '" + iznos + "')";
                                 izmena = statement.executeUpdate(query);
                                 if (izmena != 0) {
                                     outObj.writeObject("uspelo");
@@ -1435,7 +1479,7 @@ public class Server extends Application {
 
                     } else if (zahtev.equals("osveziRasporedIspita")) {
 
-                        ArrayList<ArrayList> rasporedIspita = new ArrayList();
+                        HashMap<ZakazivanjeSale, ArrayList> rasporedIspita = new HashMap<>();
 
                         query = "SELECT * FROM ispitnirok WHERE aktivnaPrijava = '1' LIMIT 1";
                         statement = connection.createStatement();
@@ -1449,23 +1493,44 @@ public class Server extends Application {
                         }
                         Student student = (Student) inObj.readObject();
                         //sve zakazane sale za datum između trajanja aktivnog ispitnog roka za predmete koje student sluša, a nije položio
-                        query = "SELECT zs.datum, zs.vremePocetka, p.naziv, s.naziv FROM ZakazivanjeSale zs JOIN Predmet p ON zs.idPredmeta = p.idPredmeta JOIN Sala s ON zs.idSale = s.idSale WHERE zs.idPredmeta = (SELECT idPredmeta FROM prijaveIspita WHERE idStudenta = '" + student.getIdStudenta() + "' AND smer = '" + student.getSmer() + "' AND godinaUpisa = '" + student.getGodinaUpisa() + "') AND zs.datum >= '" + datumPocetka + "' AND '" + datumKraja + "' AND p.idPredmeta NOT IN (SELECT idPredmeta FROM Zapisnik WHERE idStudenta = '" + student.getIdStudenta() + "' AND smer = '" + student.getSmer() + "' AND godinaUpisa = '" + student.getGodinaUpisa() + "' AND ocena > 5" + ")";
+                        query = "SELECT zs.datum, zs.vremePocetka, p.naziv, s.naziv FROM ZakazivanjeSale zs JOIN Predmet p ON zs.idPredmeta = p.idPredmeta JOIN Sala s ON zs.idSale = s.idSale WHERE zs.idPredmeta IN (SELECT idPredmeta FROM prijaveIspita WHERE idStudenta = '" + student.getIdStudenta() + "' AND smer = '" + student.getSmer() + "' AND godinaUpisa = '" + student.getGodinaUpisa() + "') AND zs.datum >= '" + datumPocetka + "' AND '" + datumKraja + "' AND p.idPredmeta NOT IN (SELECT idPredmeta FROM Zapisnik WHERE idStudenta = '" + student.getIdStudenta() + "' AND smer = '" + student.getSmer() + "' AND godinaUpisa = '" + student.getGodinaUpisa() + "' AND ocena > 5" + ")";
                         Statement statement1 = connection.createStatement();
                         ResultSet resultset1 = statement1.executeQuery(query);
                         while (resultset1.next()) {
 
                             Date datum = resultset1.getDate("zs.datum");
                             Time vremePocetka = resultset1.getTime("zs.vremePocetka");
-                            String nazivPredmeta = resultset1.getString("p.naziv");
                             String nazivSale = resultset1.getString("s.naziv");
+                            String nazivPredmeta = resultset1.getString("p.naziv");
+                            ZakazivanjeSale zakazanaSala = new ZakazivanjeSale(datum, vremePocetka);
                             ArrayList podaci = new ArrayList();
                             podaci.add(nazivSale);
                             podaci.add(nazivPredmeta);
-                            podaci.add(datum);
-                            podaci.add(vremePocetka);
-                            rasporedIspita.add(podaci);
+                            rasporedIspita.put(zakazanaSala, podaci);
 
                         }
+
+                        //sortiranje zakazanih ispita po datumu i vremenu
+                        List<Map.Entry<ZakazivanjeSale, ArrayList> > list =
+                                new LinkedList<Map.Entry<ZakazivanjeSale, ArrayList>>(rasporedIspita.entrySet());
+
+                        Collections.sort(list, new Comparator<Map.Entry<ZakazivanjeSale, ArrayList> >() {
+                            public int compare(Map.Entry<ZakazivanjeSale, ArrayList> o1,
+                                               Map.Entry<ZakazivanjeSale, ArrayList> o2) {
+                                int o;
+                                o = o1.getKey().getDatum().compareTo(o2.getKey().getDatum());
+                                if (o == 0)
+                                    o1.getKey().getVremePocetka().compareTo(o2.getKey().getVremePocetka());
+                                return o;
+                            }
+                        });
+
+                        HashMap<ZakazivanjeSale, ArrayList> temp = new LinkedHashMap<ZakazivanjeSale, ArrayList>();
+                        for (Map.Entry<ZakazivanjeSale, ArrayList> value : list) {
+                            temp.put(value.getKey(), value.getValue());
+                        }
+                        rasporedIspita = temp;
+
                         odgovor = rasporedIspita;
                         outObj.writeObject(odgovor);
                         outObj.flush();
@@ -1662,7 +1727,7 @@ public class Server extends Application {
                     } else if (zahtev.equals("osveziSlobodneSale")) {
 
                         ZakazivanjeSale zakazivanjeSale = (ZakazivanjeSale) inObj.readObject();
-                        query = "SELECT * FROM Sala s WHERE s.idSale NOT IN (SELECT idSale FROM zakazivanjeSale WHERE datum = ' " + zakazivanjeSale.getDatum().toLocalDate() + "' AND ('" + zakazivanjeSale.getVremePocetka() + "'>= vremePocetka AND '" + zakazivanjeSale.getVremePocetka() + "' < vremeKraja) OR ('" + zakazivanjeSale.getVremeKraja() + "' > vremePocetka AND '" + zakazivanjeSale.getVremeKraja() + "' <= vremeKraja))";
+                        query = "SELECT * FROM Sala s WHERE s.vidljiv = '1' AND s.idSale NOT IN (SELECT idSale FROM zakazivanjeSale WHERE datum = ' " + zakazivanjeSale.getDatum().toLocalDate() + "' AND ('" + zakazivanjeSale.getVremePocetka() + "'>= vremePocetka AND '" + zakazivanjeSale.getVremePocetka() + "' < vremeKraja) OR ('" + zakazivanjeSale.getVremeKraja() + "' > vremePocetka AND '" + zakazivanjeSale.getVremeKraja() + "' <= vremeKraja))";
                         resultset = statement.executeQuery(query);
 
                         while (resultset.next()) {
@@ -1685,7 +1750,8 @@ public class Server extends Application {
                     } else if (zahtev.equals("osveziRasporedIspita")) {
 
                         Zaposleni zaposleni = (Zaposleni) inObj.readObject();
-                        ArrayList<ArrayList> rasporedIspita = new ArrayList();
+                        HashMap<ZakazivanjeSale, ArrayList> rasporedIspita = new HashMap<>();
+
                         //sve zakazane sale za datum jednak ili veći od današnjeg za predmete koje zaposleni drži
                         query = "SELECT zs.datum, zs.vremePocetka, p.naziv, s.naziv FROM ZakazivanjeSale zs JOIN Predmet p ON zs.idPredmeta = p.idPredmeta JOIN Sala s ON zs.idSale = s.idSale JOIN raspodelaPredmeta AS rp ON p.idPredmeta = rp.idPredmeta JOIN Zaposleni AS z ON rp.idZaposlenog = z.idZaposlenog WHERE rp.idZaposlenog = '" + zaposleni.getIdZaposlenog() + "'AND zs.datum >= CURDATE()";
                         resultset = statement.executeQuery(query);
@@ -1693,16 +1759,36 @@ public class Server extends Application {
 
                             Date datum = resultset.getDate("zs.datum");
                             Time vremePocetka = resultset.getTime("zs.vremePocetka");
-                            String nazivPredmeta = resultset.getString("p.naziv");
                             String nazivSale = resultset.getString("s.naziv");
+                            String nazivPredmeta = resultset.getString("p.naziv");
+                            ZakazivanjeSale zakazanaSala = new ZakazivanjeSale(datum, vremePocetka);
                             ArrayList podaci = new ArrayList();
                             podaci.add(nazivSale);
                             podaci.add(nazivPredmeta);
-                            podaci.add(datum);
-                            podaci.add(vremePocetka);
-                            rasporedIspita.add(podaci);
+                            rasporedIspita.put(zakazanaSala, podaci);
 
                         }
+
+                        //sortiranje zakazanih ispita po datumu i vremenu
+                        List<Map.Entry<ZakazivanjeSale, ArrayList> > list =
+                                new LinkedList<Map.Entry<ZakazivanjeSale, ArrayList>>(rasporedIspita.entrySet());
+
+                        Collections.sort(list, new Comparator<Map.Entry<ZakazivanjeSale, ArrayList> >() {
+                            public int compare(Map.Entry<ZakazivanjeSale, ArrayList> o1,
+                                               Map.Entry<ZakazivanjeSale, ArrayList> o2) {
+                                int o;
+                                o = o1.getKey().getDatum().compareTo(o2.getKey().getDatum());
+                                if (o == 0)
+                                    o1.getKey().getVremePocetka().compareTo(o2.getKey().getVremePocetka());
+                                return o;
+                            }
+                        });
+
+                        HashMap<ZakazivanjeSale, ArrayList> temp = new LinkedHashMap<ZakazivanjeSale, ArrayList>();
+                        for (Map.Entry<ZakazivanjeSale, ArrayList> value : list) {
+                            temp.put(value.getKey(), value.getValue());
+                        }
+                        rasporedIspita = temp;
 
                         odgovor = rasporedIspita;
                         outObj.writeObject(odgovor);
@@ -1839,6 +1925,7 @@ public class Server extends Application {
 
                     }
                 });
+                throwables.printStackTrace();
             } finally {
 
                 //ZATVARANJE KONEKCIJE - ovo treba tek kad se ide na X

@@ -6,7 +6,7 @@ import java.time.LocalDate;
 
 public class Zapisnik implements Serializable {
 
-    private static final long serialVersionUID = 10L;
+    private static final long serialVersionUID = 12L;
     private int idPredmeta;
     private Date datum;
     private int ocena;

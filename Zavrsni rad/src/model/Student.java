@@ -7,7 +7,7 @@ import java.util.Calendar;
 
 public class Student implements Serializable {
 
-    private static final long serialVersionUID = 8L;
+    private static final long serialVersionUID = 9L;
     private int idStudenta;
     private int godinaUpisa;
     public enum tipSmera { avt, asuv, eko, elite, epo, ist, net, nrt, rt }
@@ -125,22 +125,25 @@ public class Student implements Serializable {
         return vidljiv;
     }
 
-    public int getSemestar() {
+    public int getSemestar(int brojUpisa) {
         //ovo je za sada za osnovne studije
-        int semestar = 6;   //najveci moguci je 6 semestar
-        int godine = Calendar.getInstance().get(Calendar.YEAR) - godinaUpisa;
+        int semestar = 0;   //ukoliko ne upiše sledeću godinu - semestar je 0
         int mesec = Calendar.getInstance().get(Calendar.MONTH); //0-11
-        if(godine <= 3) {
-            if (mesec >= 2 && mesec <= 8) {  //od marta do septembra, 1,2,3 godine razlike = 2,4,6 semestar
-                semestar = godine * 2;
-            } else if (mesec <= 1) {    //januar i februar, 1,2,3 godine razlike = 1,3,5 semestar
-                semestar = godine * 2 - 1;
-            } else if (mesec >= 9) {
-                if (godine < 3) {   //oktobar, novembar, decembar, 0,1,2 godine razlike = 1,3,5 semestar
-                    semestar = godine * 2 + 1;
-                } else {    //oktobar, novembar, decembar, 3 godine razlike
-                    semestar = 6;
+        int godina = Calendar.getInstance().get(Calendar.YEAR);
+        int godinaUpisa = getGodinaUpisa();
+
+        if (brojUpisa <= 3) {
+            //ukoliko ne obnavlja godinu
+            if ((godina - godinaUpisa) <= brojUpisa) {
+                if (mesec >= 2 && mesec <= 9) {     //od marta do septembra, 1,2,3 godine razlike = 2,4,6 semestar
+                    semestar = brojUpisa * 2;
+                } else if (mesec <= 1 || mesec >= 10) {    //januar i februar ili oktobar, novembar i decembar 1,2,3 godine razlike = 1,3,5 semestar
+                    semestar = brojUpisa * 2 + 1;
                 }
+            //ukoliko obnavlja godinu
+            } else {
+                //fiksno na 2,4,6 semestar
+                semestar = brojUpisa * 2;
             }
         }
         return semestar;

@@ -37,8 +37,8 @@ public class StudentskaSluzbaForm extends Stage {
     private static final Font font15 = new Font("Arial", 15);
     private static final Font font20 = new Font("Arial", 20);
     private ObservableList<IspitniRok> sviIspitniRokovi = FXCollections.observableArrayList();
-    private static ObservableList<Student> sviStudenti = FXCollections.observableArrayList();
-    private static ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
+    private ObservableList<Student> sviStudenti = FXCollections.observableArrayList();
+    private ObservableList<Zaposleni> sviZaposleni = FXCollections.observableArrayList();
     private HashMap<Predmet, Zaposleni> sviPredmeti = new HashMap<>();
     private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
     private HashMap<ZakazivanjeSale, ArrayList<String>> sveZakazaneSale = new HashMap<>();
@@ -73,7 +73,6 @@ public class StudentskaSluzbaForm extends Stage {
         this.sveSale = sveSale;
     }
 
-    //TODO: refresh za predmete, sve zakazane sale i raspored ispita naizmenicno radi - HashMape
     public void setSveZakazaneSale(HashMap<ZakazivanjeSale, ArrayList<String>> sveZakazaneSale) {
         this.sveZakazaneSale = sveZakazaneSale;
     }
@@ -110,20 +109,24 @@ public class StudentskaSluzbaForm extends Stage {
      */
     private static void pocetniPrikaz(BorderPane root, List<IspitniRok> sviIspitniRokovi) {
 
-        boolean aktivan = false;
+        boolean aktivanRok = false;
+        boolean aktivnaPrijava = false;
         for (IspitniRok ispitniRok : sviIspitniRokovi) {
 
             if (ispitniRok.isAktivnost()) {
-                aktivan = true;
-                break;
+                aktivanRok = true;
+            } else if (ispitniRok.isAktivnaPrijava()) {
+                aktivnaPrijava = true;
             }
         }
 
         String poruka;
-        if (aktivan) {
+        if (aktivanRok) {
             poruka = "Ispitni rok je u toku.";
+        } else if (aktivnaPrijava) {
+            poruka = "Prijava ispita je u toku.";
         } else {
-            poruka = "Nijedan ispitni rok trenutno nije u toku.";
+            poruka = "Nijedan ispitni rok, kao ni prijava ispita, nije trenutno u toku.";
         }
         Label lblPrikaz = new Label(poruka);
         lblPrikaz.setFont(font20);
@@ -176,10 +179,8 @@ public class StudentskaSluzbaForm extends Stage {
         lblPocetna.setOnMouseClicked(mouseEvent -> {
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziIspitneRokove"));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru.start();
+            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziIspitneRokove");
+            zahtevServeru.KomunikacijaSaServerom();
 
             ocistiPane(root);
             pocetniPrikaz(root, sviIspitniRokovi);
@@ -191,10 +192,8 @@ public class StudentskaSluzbaForm extends Stage {
         lblStudenti.setOnMouseClicked(mouseEvent -> {
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziStudente"));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru.start();
+            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziStudente");
+            zahtevServeru.KomunikacijaSaServerom();
 
             ocistiPane(root);
 
@@ -216,7 +215,7 @@ public class StudentskaSluzbaForm extends Stage {
             btnPretrazi.setFont(font15);
             btnPretrazi.setOnMouseClicked(event -> {
                 String trazeno = txtPretraga.getText().toLowerCase();
-                ObservableList<Student> nadjeni = (sviStudenti.stream().filter(s -> s.getIme().toLowerCase().contains(trazeno) || s.getPrezime().toLowerCase().contains(trazeno) || String.valueOf(s.getBrojIndeksa()).contains(trazeno) || String.valueOf(s.getSemestar()).contains(trazeno) || (s.getAdresa() != null && s.getAdresa().toLowerCase().contains(trazeno)) || s.getFinansiranje().toLowerCase().contains(trazeno) || (s.getBrojTelefona() != null && s.getBrojTelefona().toLowerCase().contains(trazeno)) || (s.getEmail() != null && s.getEmail().toLowerCase().contains(trazeno)))).collect(Collectors.toCollection(FXCollections::observableArrayList));
+                ObservableList<Student> nadjeni = (sviStudenti.stream().filter(s -> s.getIme().toLowerCase().contains(trazeno) || s.getPrezime().toLowerCase().contains(trazeno) || String.valueOf(s.getBrojIndeksa()).contains(trazeno) || (s.getAdresa() != null && s.getAdresa().toLowerCase().contains(trazeno)) || s.getFinansiranje().toLowerCase().contains(trazeno) || (s.getBrojTelefona() != null && s.getBrojTelefona().toLowerCase().contains(trazeno)) || (s.getEmail() != null && s.getEmail().toLowerCase().contains(trazeno)))).collect(Collectors.toCollection(FXCollections::observableArrayList));
                 tableStudenti.setItems(nadjeni);
             });
             hBoxPretraga.getChildren().addAll(lblPretraga, txtPretraga, btnPretrazi);
@@ -241,17 +240,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 //AKO JE UNETO IME I NIJE PRAZAN STRING, U SUPROTNOM PORUKA O GRESCI
                                 if (!tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getIme().equals("")) {
 
-                                    Platform.runLater(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            //TODO: obojiti ivice polja umesto osvežavanja podataka i vratiti u prvobitni izgled
-                                            //.setStyle("-fx-border-width: 0;");
-                                        }
-                                    });
                                     Student izabraniStudent = (Student) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniStudent));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniStudent);
+                                    zahtevServeru1.KomunikacijaSaServerom();
 
                                 } else {
                                     //poruka za neispravan unos
@@ -259,9 +250,8 @@ public class StudentskaSluzbaForm extends Stage {
                                         @Override
                                         public void run() {
                                             setAlert(Alert.AlertType.ERROR);
-                                            alert.setContentText("Molim vas unesite ime za studenta");
+                                            alert.setContentText("Molim vas unesite ime za studenta.");
                                             alert.showAndWait();
-                                            //.setStyle("-fx-border-color: red;");
                                         }
                                     });
                                 }
@@ -287,23 +277,22 @@ public class StudentskaSluzbaForm extends Stage {
                                 if (!tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getPrezime().equals("")) {
 
                                     Student izabraniStudent = (Student) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniStudent));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1  = new ZahtevServeru("izmeni", izabraniStudent);
+                                    zahtevServeru1.KomunikacijaSaServerom();
+
                                 } else {
                                     //poruka za neispravan unos
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
                                             setAlert(Alert.AlertType.ERROR);
-                                            alert.setContentText("Molim vas unesite prezime za studenta");
+                                            alert.setContentText("Molim vas unesite prezime za studenta.");
                                             alert.showAndWait();
                                         }
                                     });
                                     //da osvezi podatke na formi
-                                    Thread t = new Thread(new RunnableZahtevServeru("osveziStudente"));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziStudente");
+                                    zahtevServeru1.KomunikacijaSaServerom();
                                 }
                             }
                         }
@@ -332,9 +321,8 @@ public class StudentskaSluzbaForm extends Stage {
                         if (!nova_vrednost.toString().equals(stara_vrednost.toString())) {
                             mp.setFinansiranje(Student.tipFinansiranja.valueOf(nova_vrednost.toString()));
                             Student izabraniStudent = arg0.getValue();
-                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniStudent));
-                            t.setDaemon(true);
-                            t.start();
+                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniStudent);
+                            zahtevServeru1.KomunikacijaSaServerom();
                         }
                     });
 
@@ -357,9 +345,8 @@ public class StudentskaSluzbaForm extends Stage {
                             //UKOLIKO JE NOVA ADRESA RAZLICITA OD PRVOBITNE
                             if ((staraAdresa != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(staraAdresa)) || (staraAdresa == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(""))) {
                                 Student izabraniStudent = (Student) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniStudent));
-                                t.setDaemon(true);
-                                t.start();
+                                ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniStudent);
+                                zahtevServeru1.KomunikacijaSaServerom();
                             }
                         }
                     }
@@ -386,23 +373,22 @@ public class StudentskaSluzbaForm extends Stage {
                                 //AKO JE EMAIL OBRISAN ILI JE UNET ISPRAVNO
                                 if (mail.length() == 0 || validniEmail) {
                                     Student izabraniStudent = (Student) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniStudent));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniStudent);
+                                    zahtevServeru1.KomunikacijaSaServerom();
+
                                 } else {
                                     //poruka za neispravan unos
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
                                             setAlert(Alert.AlertType.ERROR);
-                                            alert.setContentText("Molim vas unesite email ispravno");
+                                            alert.setContentText("Molim vas unesite email ispravno.");
                                             alert.showAndWait();
                                         }
                                     });
                                     //da osvezi podatke na formi
-                                    Thread t = new Thread(new RunnableZahtevServeru("osveziStudente"));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziStudente");
+                                    zahtevServeru1.KomunikacijaSaServerom();
                                 }
                             }
                         }
@@ -430,23 +416,22 @@ public class StudentskaSluzbaForm extends Stage {
                                 //AKO JE TELEFON OBRISAN ILI JE UNET ISPRAVNO
                                 if (telefon.length() == 0 || validniTelefon) {
                                     Student izabraniStudent = (Student) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniStudent));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniStudent);
+                                    zahtevServeru1.KomunikacijaSaServerom();
+
                                 } else {
                                     //poruka za neispravan unos
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
                                             setAlert(Alert.AlertType.ERROR);
-                                            alert.setContentText("Molim vas unesite broj telefona ispravno");
+                                            alert.setContentText("Molim vas unesite broj telefona ispravno.");
                                             alert.showAndWait();
                                         }
                                     });
                                     //da osvezi podatke na formi
-                                    Thread t = new Thread(new RunnableZahtevServeru("osveziStudente"));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziStudente");
+                                    zahtevServeru1.KomunikacijaSaServerom();
                                 }
                             }
                         }
@@ -470,9 +455,8 @@ public class StudentskaSluzbaForm extends Stage {
 
                             mp.setVidljiv(nova_vrednost);
                             Student izabraniStudent = arg0.getValue();
-                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniStudent));
-                            t.setDaemon(true);
-                            t.start();
+                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniStudent);
+                            zahtevServeru1.KomunikacijaSaServerom();
 
                         }
                     });
@@ -502,9 +486,8 @@ public class StudentskaSluzbaForm extends Stage {
                     if(me.getButton() == MouseButton.SECONDARY) {
 
                         Student izabraniStudent = tableStudenti.getFocusModel().getFocusedItem();
-                        Thread t = new Thread(new RunnableZahtevServeru("loginInfo", izabraniStudent));
-                        t.setDaemon(true);
-                        t.start();
+                        ZahtevServeru zahtevServeru1 = new ZahtevServeru("loginInfo", izabraniStudent);
+                        zahtevServeru1.KomunikacijaSaServerom();
                     }
                 }
             });
@@ -546,6 +529,7 @@ public class StudentskaSluzbaForm extends Stage {
             Button btnDodaj = new Button("Dodaj");
             btnDodaj.setMinWidth(60);
             btnDodaj.setOnMouseClicked(e -> {
+
                 String ime = txtIme.getText();
                 String prezime = txtPrezime.getText();
                 String smer = cmbSmer.getValue().toString();
@@ -566,41 +550,39 @@ public class StudentskaSluzbaForm extends Stage {
                 //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
                     setTabela(tableStudenti);
                     Student student = new Student(Student.idNovogStudenta(sviStudenti, smer, godinaUpisa), godinaUpisa, Student.tipSmera.valueOf(smer), ime, prezime, Student.tipFinansiranja.valueOf(finansiranje), adresa, email, brojTelefona, true);
-                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", student, txtIme, txtPrezime, txtAdresa, txtMail, txtTelefon, cmbSmer, cmbFinansiranje));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("dodaj", student, txtIme, txtPrezime, txtAdresa, txtMail, txtTelefon, cmbSmer, cmbFinansiranje);
+                    zahtevServeru1.KomunikacijaSaServerom();
 
                 } else {
-                    //PROVERA KOJI NIJE UNET ISPRAVNO I BOJENJE OKVIRA TOG POLJA
+                    //PROVERA KOJI NIJE UNET ISPRAVNO
                     Platform.runLater(new Runnable() {
+
                         @Override
                         public void run() {
-                            if (ime.length() == 0) {
-                                txtIme.setStyle("-fx-border-color: red;");
-                            } else {
-                                txtIme.setStyle("-fx-border-width: 0;");
-                            }
-                            if (prezime.length() == 0) {
-                                txtPrezime.setStyle("-fx-border-color: red;");
-                            } else {
-                                txtPrezime.setStyle("-fx-border-width: 0;");
-                            }
-                            if (email.length() != 0) {
-                                if (!validniEmail) {
-                                    txtMail.setStyle("-fx-border-color: red;");
-                                } else {
-                                    txtMail.setStyle("-fx-border-width: 0;");
-                                }
-                            }
-                            if (brojTelefona.length() != 0) {
-                                if (!validniTelefon) {
-                                    txtTelefon.setStyle("-fx-border-color: red;");
-                                } else {
-                                    txtTelefon.setStyle("-fx-border-width: 0;");
-                                }
-                            }
+
                             setAlert(Alert.AlertType.ERROR);
-                            alert.setContentText("Molim vas unesite podatke");
+
+                            if (ime.length() == 0 && prezime.length() == 0) {
+
+                                alert.setContentText("Obavezno je popuniti ime i prezime za studenta.");
+                            } else if (ime.length() == 0 && prezime.length() != 0){
+
+                                alert.setContentText("Obavezno je popuniti ime za studenta.");
+                            } else if (prezime.length() == 0 && ime.length() != 0) {
+
+                                alert.setContentText("Obavezno je popuniti prezime za studenta.");
+                            } else if (email.length() != 0) {
+
+                                if (!validniEmail) {
+                                    alert.setContentText("Neispravan unos za e-mail!");
+                                }
+                            } else if (brojTelefona.length() != 0) {
+
+                                if (!validniTelefon) {
+                                    alert.setContentText("Neispravan unos za broj telefona!");
+                                }
+                            }
+
                             alert.showAndWait();
                         }
                     });
@@ -610,18 +592,19 @@ public class StudentskaSluzbaForm extends Stage {
             Button btnObrisi = new Button("Obriši");
             btnObrisi.setMinWidth(60);
             btnObrisi.setOnAction(e -> {
+
                 if (tableStudenti.getSelectionModel().getSelectedItem() != null) {
                     Student izabraniStudent = tableStudenti.getSelectionModel().getSelectedItem();
                     setTabela(tableStudenti);
-                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabraniStudent));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("obrisi", izabraniStudent);
+                    zahtevServeru1.KomunikacijaSaServerom();
+
                 } else {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.ERROR);
-                            alert.setContentText("Molim vas izaberite studenta u tabeli");
+                            alert.setContentText("Molim vas izaberite studenta u tabeli.");
                             alert.showAndWait();
                         }
                     });
@@ -644,10 +627,8 @@ public class StudentskaSluzbaForm extends Stage {
         lblZaposleni.setOnMouseClicked(mouseEvent -> {
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziZaposlene"));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru.start();
+            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziZaposlene");
+            zahtevServeru.KomunikacijaSaServerom();
 
             ocistiPane(root);
 
@@ -698,23 +679,22 @@ public class StudentskaSluzbaForm extends Stage {
                                 if (!tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getIme().equals("")) {
 
                                     Zaposleni izabraniZaposleni = (Zaposleni) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniZaposleni));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniZaposleni);
+                                    zahtevServeru1.KomunikacijaSaServerom();
+
                                 } else {
                                     //poruka za neispravan unos
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
                                             setAlert(Alert.AlertType.ERROR);
-                                            alert.setContentText("Molim vas unesite ime za zaposlenog");
+                                            alert.setContentText("Molim vas unesite ime za zaposlenog.");
                                             alert.showAndWait();
                                         }
                                     });
                                     //da osvezi podatke na formi
-                                    Thread t = new Thread(new RunnableZahtevServeru("osveziZaposlene"));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziZaposlene");
+                                    zahtevServeru1.KomunikacijaSaServerom();
                                 }
                             }
                         }
@@ -738,23 +718,22 @@ public class StudentskaSluzbaForm extends Stage {
                                 if (!tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getPrezime().equals("")) {
 
                                     Zaposleni izabraniZaposleni = (Zaposleni) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniZaposleni));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniZaposleni);
+                                    zahtevServeru1.KomunikacijaSaServerom();
+
                                 } else {
                                     //poruka za neispravan unos
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
                                             setAlert(Alert.AlertType.ERROR);
-                                            alert.setContentText("Molim vas unesite prezime za zaposlenog");
+                                            alert.setContentText("Molim vas unesite prezime za zaposlenog.");
                                             alert.showAndWait();
                                         }
                                     });
                                     //da osvezi podatke na formi
-                                    Thread t = new Thread(new RunnableZahtevServeru("osveziZaposlene"));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziZaposlene");
+                                    zahtevServeru1.KomunikacijaSaServerom();
                                 }
                             }
                         }
@@ -776,9 +755,8 @@ public class StudentskaSluzbaForm extends Stage {
                             if ((staraAdresa != null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(staraAdresa)) || (staraAdresa == null && !tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa().equals(""))) {
                                 if (!staraAdresa.equals(tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getAdresa())) {
                                     Zaposleni izabraniZaposleni = (Zaposleni) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniZaposleni));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniZaposleni);
+                                    zahtevServeru1.KomunikacijaSaServerom();
                                 }
                             }
                         }
@@ -806,23 +784,22 @@ public class StudentskaSluzbaForm extends Stage {
                                 //AKO JE EMAIL OBRISAN ILI JE UNET ISPRAVNO
                                 if (mail.length() == 0 || validniEmail) {
                                     Zaposleni izabraniZaposleni = (Zaposleni) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniZaposleni));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniZaposleni);
+                                    zahtevServeru1.KomunikacijaSaServerom();
+
                                 } else {
                                     //poruka za neispravan unos
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
                                             setAlert(Alert.AlertType.ERROR);
-                                            alert.setContentText("Molim vas unesite email ispravno");
+                                            alert.setContentText("Molim vas unesite email ispravno.");
                                             alert.showAndWait();
                                         }
                                     });
                                     //da osvezi podatke na formi
-                                    Thread t = new Thread(new RunnableZahtevServeru("osveziZaposlene"));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziZaposlene");
+                                    zahtevServeru1.KomunikacijaSaServerom();
                                 }
                             }
                         }
@@ -850,23 +827,22 @@ public class StudentskaSluzbaForm extends Stage {
                                 //AKO JE TELEFON OBRISAN ILI JE UNET ISPRAVNO
                                 if (telefon.length() == 0 || validniTelefon) {
                                     Zaposleni izabraniZaposleni = (Zaposleni) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniZaposleni));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniZaposleni);
+                                    zahtevServeru1.KomunikacijaSaServerom();
+
                                 } else {
                                     //poruka za neispravan unos
                                     Platform.runLater(new Runnable() {
                                         @Override
                                         public void run() {
                                             setAlert(Alert.AlertType.ERROR);
-                                            alert.setContentText("Molim vas unesite broj telefona ispravno");
+                                            alert.setContentText("Molim vas unesite broj telefona ispravno.");
                                             alert.showAndWait();
                                         }
                                     });
                                     //da osvezi podatke na formi
-                                    Thread t = new Thread(new RunnableZahtevServeru("osveziZaposlene"));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziZaposlene");
+                                    zahtevServeru1.KomunikacijaSaServerom();
                                 }
                             }
                         }
@@ -890,9 +866,8 @@ public class StudentskaSluzbaForm extends Stage {
 
                             mp.setVidljiv(nova_vrednost);
                             Zaposleni izabraniZaposleni = arg0.getValue();
-                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniZaposleni));
-                            t.setDaemon(true);
-                            t.start();
+                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniZaposleni);
+                            zahtevServeru1.KomunikacijaSaServerom();
 
                         }
                     });
@@ -917,9 +892,8 @@ public class StudentskaSluzbaForm extends Stage {
                     if(me.getButton() == MouseButton.SECONDARY) {
 
                         Zaposleni izabraniZaposleni = tableZaposleni.getFocusModel().getFocusedItem();
-                        Thread t = new Thread(new RunnableZahtevServeru("loginInfo", izabraniZaposleni));
-                        t.setDaemon(true);
-                        t.start();
+                        ZahtevServeru zahtevServeru1 = new ZahtevServeru("loginInfo", izabraniZaposleni);
+                        zahtevServeru1.KomunikacijaSaServerom();
                     }
                 }
             });
@@ -955,6 +929,7 @@ public class StudentskaSluzbaForm extends Stage {
             Button btnDodaj = new Button("Dodaj");
             btnDodaj.setMinWidth(60);
             btnDodaj.setOnMouseClicked(e -> {
+
                 String pozicija = cmbPozicija.getValue().toString();
                 String ime = txtIme.getText();
                 String prezime = txtPrezime.getText();
@@ -974,40 +949,38 @@ public class StudentskaSluzbaForm extends Stage {
                     //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
                     Zaposleni zaposleni = new Zaposleni(Zaposleni.idNovogZaposlenog(sviZaposleni, pozicija), Zaposleni.tipZaposlenog.valueOf(pozicija), ime, prezime, adresa, email, brojTelefona, true);
                     setTabela(tableZaposleni);
-                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", zaposleni, cmbPozicija, txtIme, txtPrezime, txtMail, txtTelefon, txtAdresa));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("dodaj", zaposleni, cmbPozicija, txtIme, txtPrezime, txtMail, txtTelefon, txtAdresa);
+                    zahtevServeru1.KomunikacijaSaServerom();
                 } else {
-                    //PROVERA KOJI NIJE UNET ISPRAVNO I BOJENJE OKVIRA TOG POLJA
+                    //PROVERA KOJI NIJE UNET ISPRAVNO
                     Platform.runLater(new Runnable() {
+
                         @Override
                         public void run() {
-                            if (ime.length() == 0) {
-                                txtIme.setStyle("-fx-border-color: red;");
-                            } else {
-                                txtIme.setStyle("-fx-border-width: 0;");
-                            }
-                            if (prezime.length() == 0) {
-                                txtPrezime.setStyle("-fx-border-color: red;");
-                            } else {
-                                txtPrezime.setStyle("-fx-border-width: 0;");
-                            }
-                            if (email.length() != 0) {
-                                if (!validniEmail) {
-                                    txtMail.setStyle("-fx-border-color: red;");
-                                } else {
-                                    txtMail.setStyle("-fx-border-width: 0;");
-                                }
-                            }
-                            if (brojTelefona.length() != 0) {
-                                if (!validniTelefon) {
-                                    txtTelefon.setStyle("-fx-border-color: red;");
-                                } else {
-                                    txtTelefon.setStyle("-fx-border-width: 0;");
-                                }
-                            }
+
                             setAlert(Alert.AlertType.ERROR);
-                            alert.setContentText("Molim vas unesite podatke");
+
+                            if (ime.length() == 0 && prezime.length() == 0) {
+
+                                alert.setContentText("Obavezno je popuniti ime i prezime za zaposlenog.");
+                            } else if (ime.length() == 0 && prezime.length() != 0){
+
+                                alert.setContentText("Obavezno je popuniti ime za zaposlenog.");
+                            } else if (prezime.length() == 0 && ime.length() != 0) {
+
+                                alert.setContentText("Obavezno je popuniti prezime za zaposlenog.");
+                            } else if (email.length() != 0) {
+
+                                if (!validniEmail) {
+                                    alert.setContentText("Neispravan unos za e-mail!");
+                                }
+                            } else if (brojTelefona.length() != 0) {
+
+                                if (!validniTelefon) {
+                                    alert.setContentText("Neispravan unos za broj telefona!");
+                                }
+                            }
+
                             alert.showAndWait();
                         }
                     });
@@ -1016,19 +989,19 @@ public class StudentskaSluzbaForm extends Stage {
             Button btnObrisi = new Button("Obriši");
             btnObrisi.setMinWidth(60);
             btnObrisi.setOnAction(e -> {
+
                 if (tableZaposleni.getSelectionModel().getSelectedItem() != null) {
                     setTabela(tableZaposleni);
                     Zaposleni izabraniZaposleni = tableZaposleni.getSelectionModel().getSelectedItem();
-                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabraniZaposleni));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("obrisi", izabraniZaposleni);
+                    zahtevServeru1.KomunikacijaSaServerom();
 
                 } else {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.ERROR);
-                            alert.setContentText("Molim vas izaberite zaposlenog u tabeli");
+                            alert.setContentText("Molim vas izaberite zaposlenog u tabeli.");
                             alert.showAndWait();
                         }
                     });
@@ -1050,11 +1023,12 @@ public class StudentskaSluzbaForm extends Stage {
         Label lblPredmeti = new Label("PREDMETI");
         lblPredmeti.setOnMouseClicked(mouseEvent -> {
 
+            TableView<HashMap.Entry<Predmet, Zaposleni>> tablePredmeti = new TableView<>();
+            setTabela(tablePredmeti);
+
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziPredmete"));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru.start();
+            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziPredmete");
+            zahtevServeru.KomunikacijaSaServerom();
 
             ocistiPane(root);
 
@@ -1070,8 +1044,6 @@ public class StudentskaSluzbaForm extends Stage {
             lblPretraga.setFont(font15);
 
             TextField txtPretraga = new TextField();
-
-            TableView<HashMap.Entry<Predmet, Zaposleni>> tablePredmeti = new TableView<>();
 
             Button btnPretrazi = new Button("pretraži");
             btnPretrazi.setFont(font15);
@@ -1126,23 +1098,22 @@ public class StudentskaSluzbaForm extends Stage {
                         if (!novaVrednost.equals("")) {
                             int red = pozicija.getRow();
                             Predmet izabraniPredmet = entryStringCellEditEvent.getTableView().getItems().get(red).getKey();
-                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
-                            t.setDaemon(true);
-                            t.start();
+                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniPredmet);
+                            zahtevServeru1.KomunikacijaSaServerom();
+
                         } else {
                             //poruka za neispravan unos
                             Platform.runLater(new Runnable() {
                                 @Override
                                 public void run() {
                                     setAlert(Alert.AlertType.ERROR);
-                                    alert.setContentText("Molim vas unesite naziv predmeta");
+                                    alert.setContentText("Molim vas unesite naziv predmeta.");
                                     alert.showAndWait();
                                 }
                             });
                             //da osvezi podatke na formi
-                            Thread t = new Thread(new RunnableZahtevServeru("osveziPredmete"));
-                            t.setDaemon(true);
-                            t.start();
+                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziPredmete");
+                            zahtevServeru1.KomunikacijaSaServerom();
                         }
                     }
                 }
@@ -1195,9 +1166,8 @@ public class StudentskaSluzbaForm extends Stage {
                             spSemestar.setOnMouseReleased(e -> {
                                 Predmet izabraniPredmet = arg0.getValue().getKey();
                                 izabraniPredmet.setSemestar(nova_vrednost);
-                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
-                                t.setDaemon(true);
-                                t.start();
+                                ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniPredmet);
+                                zahtevServeru1.KomunikacijaSaServerom();
                             });
                         }
                     });
@@ -1229,9 +1199,8 @@ public class StudentskaSluzbaForm extends Stage {
                             spEspb.setOnMouseReleased(e -> {
                                 Predmet izabraniPredmet = arg0.getValue().getKey();
                                 izabraniPredmet.setEspb(nova_vrednost);
-                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
-                                t.setDaemon(true);
-                                t.start();
+                                ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniPredmet);
+                                zahtevServeru1.KomunikacijaSaServerom();
                             });
                         }
                     });
@@ -1257,9 +1226,8 @@ public class StudentskaSluzbaForm extends Stage {
 
                             mp.getKey().setVidljiv(nova_vrednost);
                             Predmet izabraniPredmet = arg0.getValue().getKey();
-                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniPredmet));
-                            t.setDaemon(true);
-                            t.start();
+                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniPredmet);
+                            zahtevServeru1.KomunikacijaSaServerom();
 
                         }
                     });
@@ -1344,18 +1312,16 @@ public class StudentskaSluzbaForm extends Stage {
                         predmet = new Predmet(Predmet.idNovogPredmeta(FXCollections.observableArrayList(sviPredmeti.keySet()), smer), naziv, null, semestar, espb, true);
                     }
                     setTabela(tablePredmeti);
-                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", predmet, txtNaziv, cmbSmer, vfSemestar, vfEspb, txtProfesor));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("dodaj", predmet, txtNaziv, cmbSmer, vfSemestar, vfEspb, txtProfesor);
+                    zahtevServeru1.KomunikacijaSaServerom();
 
                 } else {
-                    txtNaziv.setStyle("-fx-border-color: red;");
 
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.ERROR);
-                            alert.setContentText("Molim vas unesite podatke");
+                            alert.setContentText("Molim vas unesite podatke.");
                             alert.showAndWait();
                         }
                     });
@@ -1364,19 +1330,20 @@ public class StudentskaSluzbaForm extends Stage {
             Button btnObrisi = new Button("Obriši");
             btnObrisi.setMinWidth(60);
             btnObrisi.setOnAction(e -> {
+
                         if (tablePredmeti.getSelectionModel().getSelectedItem() != null) {
                             //TODO: srediti za brisanje predmeta da se azurira i profesor u tabeli raspodela predmeta
                             Map.Entry<Predmet, Zaposleni> predmet = tablePredmeti.getSelectionModel().getSelectedItem();
                             setTabela(tablePredmeti);
-                            Thread t = new Thread(new RunnableZahtevServeru("obrisi", predmet.getKey(), predmet.getValue().getIdZaposlenog()));
-                            t.setDaemon(true);
-                            t.start();
+                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("obrisi", predmet.getKey(), predmet.getValue().getIdZaposlenog());
+                            zahtevServeru1.KomunikacijaSaServerom();
+
                         } else {
                             Platform.runLater(new Runnable() {
                                 @Override
                                 public void run() {
                                     setAlert(Alert.AlertType.ERROR);
-                                    alert.setContentText("Molim vas izaberite predmet u tabeli");
+                                    alert.setContentText("Molim vas izaberite predmet u tabeli.");
                                     alert.showAndWait();
                                 }
                             });
@@ -1406,10 +1373,8 @@ public class StudentskaSluzbaForm extends Stage {
         prikazSalaMenuItem.setOnAction(event -> {
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziSale"));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru.start();
+            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziSale");
+            zahtevServeru.KomunikacijaSaServerom();
 
             ocistiPane(root);
 
@@ -1437,17 +1402,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 //AKO JE UNET NAZIV I NIJE PRAZAN STRING, U SUPROTNOM PORUKA O GRESCI
                                 if (!tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getNaziv().isEmpty()) {
 
-                                    Platform.runLater(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            //TODO: obojiti ivice polja umesto osvežavanja podataka i vratiti u prvobitni izgled
-                                            //.setStyle("-fx-border-width: 0;");
-                                        }
-                                    });
                                     Sala izabranaSala = (Sala) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabranaSala));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabranaSala);
+                                    zahtevServeru1.KomunikacijaSaServerom();
 
                                 } else {
                                     //poruka za neispravan unos
@@ -1455,7 +1412,7 @@ public class StudentskaSluzbaForm extends Stage {
                                         @Override
                                         public void run() {
                                             setAlert(Alert.AlertType.ERROR);
-                                            alert.setContentText("Molim vas unesite naziv za salu");
+                                            alert.setContentText("Molim vas unesite naziv za salu.");
                                             alert.showAndWait();
                                             //.setStyle("-fx-border-color: red;");
                                         }
@@ -1479,7 +1436,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.ERROR);
-                                alert.setContentText("Molim vas unesite broj");
+                                alert.setContentText("Molim vas unesite broj.");
                                 alert.showAndWait();
                             }
                         });
@@ -1501,17 +1458,9 @@ public class StudentskaSluzbaForm extends Stage {
                             //UKOLIKO JE NOVI BROJ MESTA RAZLICIT OD PRVOBITNOG
                             if (stariBrojMesta != tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getBrojMesta()) {
 
-                                Platform.runLater(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        //TODO: obojiti ivice polja umesto osvežavanja podataka i vratiti u prvobitni izgled
-                                        //.setStyle("-fx-border-width: 0;");
-                                    }
-                                });
                                 Sala izabranaSala = (Sala) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabranaSala));
-                                t.setDaemon(true);
-                                t.start();
+                                ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabranaSala);
+                                zahtevServeru1.KomunikacijaSaServerom();
                             }
                         }
                     }
@@ -1535,9 +1484,8 @@ public class StudentskaSluzbaForm extends Stage {
                         if (!nova_vrednost.toString().equals(stara_vrednost.toString())) {
                             mp.setOprema(Sala.tipOpreme.valueOf(nova_vrednost.toString().equals("/") ? "ništa" : nova_vrednost.toString()));
                             Sala izabranaSala = arg0.getValue();
-                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabranaSala));
-                            t.setDaemon(true);
-                            t.start();
+                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabranaSala);
+                            zahtevServeru1.KomunikacijaSaServerom();
                         }
                     });
 
@@ -1563,9 +1511,8 @@ public class StudentskaSluzbaForm extends Stage {
 
                             mp.setVidljiv(nova_vrednost);
                             Sala izabranaSala = arg0.getValue();
-                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabranaSala));
-                            t.setDaemon(true);
-                            t.start();
+                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabranaSala);
+                            zahtevServeru1.KomunikacijaSaServerom();
 
                         }
                     });
@@ -1611,24 +1558,16 @@ public class StudentskaSluzbaForm extends Stage {
                     if (naziv.length() != 0 && brojMesta >= 0) {
                         Sala sala = new Sala(naziv, brojMesta, Sala.tipOpreme.valueOf(oprema.equals("/") ? "ništa" : oprema), true);
                         setTabela(tableSale);
-                        Thread t = new Thread(new RunnableZahtevServeru("dodaj", sala, txtNaziv, txtKapacitet, cmbOprema));
-                        t.setDaemon(true);
-                        t.start();
+                        ZahtevServeru zahtevServeru1 = new ZahtevServeru("dodaj", sala, txtNaziv, txtKapacitet, cmbOprema);
+                        zahtevServeru1.KomunikacijaSaServerom();
                     }
-                    //PROVERA KOJI NIJE UNET ISPRAVNO I BOJENJE OKVIRA TOG POLJA
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
                             if (naziv.length() == 0) {
-                                txtNaziv.setStyle("-fx-border-color: red;");
                                 setAlert(Alert.AlertType.ERROR);
-                                alert.setContentText("Molim vas unesite naziv sale");
+                                alert.setContentText("Molim vas unesite naziv sale.");
                                 alert.showAndWait();
-                            } else {
-                                txtNaziv.setStyle("-fx-border-width: 0;");
-                            }
-                            if(brojMesta >= 0) {
-                                txtKapacitet.setStyle("-fx-border-width: 0;");
                             }
                         }
                     });
@@ -1637,14 +1576,11 @@ public class StudentskaSluzbaForm extends Stage {
                         @Override
                         public void run() {
 
-                            txtKapacitet.setStyle("-fx-border-color: red;");
                             setAlert(Alert.AlertType.ERROR);
                             if (naziv.length() == 0) {
-                                txtNaziv.setStyle("-fx-border-color: red;");
-                                alert.setContentText("Molim vas unesite podatke");
+                                alert.setContentText("Molim vas unesite podatke.");
                             } else {
-                                txtNaziv.setStyle("-fx-border-width: 0;");
-                                alert.setContentText("Molim vas unesite broj");
+                                alert.setContentText("Molim vas unesite broj.");
                             }
                             alert.showAndWait();
                         }
@@ -1657,15 +1593,14 @@ public class StudentskaSluzbaForm extends Stage {
                 if (tableSale.getSelectionModel().getSelectedItem() != null) {
                     Sala izabranaSala = tableSale.getSelectionModel().getSelectedItem();
                     setTabela(tableSale);
-                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabranaSala));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("obrisi", izabranaSala);
+                    zahtevServeru1.KomunikacijaSaServerom();
                 } else {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.ERROR);
-                            alert.setContentText("Molim vas izaberite predmet u tabeli");
+                            alert.setContentText("Molim vas izaberite predmet u tabeli.");
                             alert.showAndWait();
                         }
                     });
@@ -1681,17 +1616,17 @@ public class StudentskaSluzbaForm extends Stage {
         //Klikom na podmeni SALE iz Menija i na njegovu stavku Raspored po salama poziva se metoda ocistiPane() za ciscenje svih strana BorderPane-a, nakon cega se u tabeli prikazuju sve informacije vezane za zakazane sale, koji se mogu pretraziti, izmeniti ili otkazati
         rasporedPoSalamaMenuItem.setOnAction(event -> {
 
+            TableView<HashMap.Entry<ZakazivanjeSale, ArrayList<String>>> tableRasporedPoSalama = new TableView<>();
+            setTabela(tableRasporedPoSalama);
+
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziZakazivanjeSala"));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru.start();
+            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziZakazivanjeSala");
+            zahtevServeru.KomunikacijaSaServerom();
 
             ocistiPane(root);
             VBox vbox = new VBox();
             vbox.setPadding(new Insets(5, 10, 10, 10));
 
-            TableView<HashMap.Entry<ZakazivanjeSale, ArrayList<String>>> tableRasporedPoSalama = new TableView<>();
             tableRasporedPoSalama.setPlaceholder(new Label("Ne postoji ni jedna zakazana sala u Bazi Podataka"));
             tableRasporedPoSalama.getColumns().clear();
 
@@ -1751,9 +1686,8 @@ public class StudentskaSluzbaForm extends Stage {
                             mp.setDatum(Date.valueOf(nova_vrednost));
                             ZakazivanjeSale izabranaZakazanaSala = arg0.getValue().getKey();
                             izabranaZakazanaSala.setDatum(Date.valueOf(nova_vrednost));
-                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabranaZakazanaSala));
-                            t.setDaemon(true);
-                            t.start();
+                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabranaZakazanaSala);
+                            zahtevServeru1.KomunikacijaSaServerom();
 
                             tableRasporedPoSalama.refresh();
                         }
@@ -1789,16 +1723,16 @@ public class StudentskaSluzbaForm extends Stage {
                                 spPocetak.setOnMouseReleased(e -> {
                                     ZakazivanjeSale izabranaZakazanaSala = arg0.getValue().getKey();
                                     izabranaZakazanaSala.setVremePocetka(Time.valueOf(nova_vrednost));
-                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabranaZakazanaSala));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabranaZakazanaSala);
+                                    zahtevServeru1.KomunikacijaSaServerom();
                                 });
+
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.ERROR);
-                                        alert.setContentText("Vreme početka mora biti pre vremena kraja");
+                                        alert.setContentText("Vreme početka mora biti pre vremena kraja!");
                                         alert.showAndWait();
                                         //TODO: da osvezi tabelu
 
@@ -1838,16 +1772,16 @@ public class StudentskaSluzbaForm extends Stage {
                                 spKraj.setOnMouseReleased(e -> {
                                     ZakazivanjeSale izabranaZakazanaSala = arg0.getValue().getKey();
                                     izabranaZakazanaSala.setVremeKraja(Time.valueOf(nova_vrednost));
-                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabranaZakazanaSala));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabranaZakazanaSala);
+                                    zahtevServeru1.KomunikacijaSaServerom();
                                 });
+
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.ERROR);
-                                        alert.setContentText("Vreme kraja mora biti posle vremena početka");
+                                        alert.setContentText("Vreme kraja mora biti posle vremena početka!");
                                         alert.showAndWait();
                                         //TODO: da osvezi tabelu
                                     }
@@ -1872,7 +1806,7 @@ public class StudentskaSluzbaForm extends Stage {
             Label lblSala = new Label("Sala: ");
             lblSala.setMinWidth(Region.USE_PREF_SIZE);
             ComboBox cmbSala = new ComboBox();
-            cmbSala.getItems().addAll(sveSale.stream().map(Sala::getNaziv).collect(Collectors.toList()));
+            cmbSala.getItems().addAll(sveSale.stream().filter(sala -> sala.isVidljiv()).map(Sala::getNaziv).collect(Collectors.toList()));
             Label lblPredmet = new Label("Predmet: ");
             lblPredmet.setMinWidth(Region.USE_PREF_SIZE);
             ComboBox cmbPredmet = new ComboBox();
@@ -1969,42 +1903,16 @@ public class StudentskaSluzbaForm extends Stage {
                     vrednost.add(nazivPredmeta);
                     vrednost.add(zaposleni);
                     setTabela(tableRasporedPoSalama);
-                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", zakazivanjeSale, vrednost, cmbSala, cmbZaposleni, cmbPredmet, dpDatum, spSatiOd, spMinutiOd, spSatiDo, spMinutiDo));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("dodaj", zakazivanjeSale, vrednost, cmbSala, cmbZaposleni, cmbPredmet, dpDatum, spSatiOd, spMinutiOd, spSatiDo, spMinutiDo);
+                    zahtevServeru1.KomunikacijaSaServerom();
+
                 } else {
-                    //PROVERA KOJE NIJE IZABRANO I BOJENJE OKVIRA TOG POLJA, provera za vreme samo ukoliko je izabrano da vreme pocetka bude iza vremena kraja
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            if (nazivSale == null) {
-                                cmbSala.setStyle("-fx-border-color: red;");
-                            } else {
-                                cmbSala.setStyle("-fx-border-with: 0;");
-                            }
-                            if (zaposleni == null) {
-                                cmbZaposleni.setStyle("-fx-border-color: red;");
-                            } else {
-                                cmbZaposleni.setStyle("-fx-border-with: 0;");
-                            }
-                            if (nazivPredmeta == null) {
-                                cmbPredmet.setStyle("-fx-border-color: red;");
-                            } else {
-                                cmbPredmet.setStyle("-fx-border-with: 0;");
-                            }
-                            if (vremePocetka.compareTo(vremeKraja) >= 0) {
-                                spSatiOd.setStyle("-fx-border-color: red;");
-                                spMinutiOd.setStyle("-fx-border-color: red;");
-                                spSatiDo.setStyle("-fx-border-color: red;");
-                                spMinutiDo.setStyle("-fx-border-color: red;");
-                            } else {
-                                spSatiOd.setStyle("-fx-border-with: 0;");
-                                spMinutiOd.setStyle("-fx-border-with: 0;");
-                                spSatiDo.setStyle("-fx-border-with: 0;");
-                                spMinutiDo.setStyle("-fx-border-with: 0;");
-                            }
+
                             setAlert(Alert.AlertType.ERROR);
-                            alert.setContentText("Molim vas izaberite sve podatke");
+                            alert.setContentText("Molim vas izaberite sve podatke.");
                             alert.showAndWait();
                         }
                     });
@@ -2016,15 +1924,15 @@ public class StudentskaSluzbaForm extends Stage {
                 if (tableRasporedPoSalama.getSelectionModel().getSelectedItem() != null) {
                     ZakazivanjeSale izabranaZakazanaSala = tableRasporedPoSalama.getSelectionModel().getSelectedItem().getKey();
                     setTabela(tableRasporedPoSalama);
-                    Thread t = new Thread(new RunnableZahtevServeru("obrisi", izabranaZakazanaSala));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("obrisi", izabranaZakazanaSala);
+                    zahtevServeru1.KomunikacijaSaServerom();
+
                 } else {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.ERROR);
-                            alert.setContentText("Molim vas izaberite zakazanu salu u tabeli");
+                            alert.setContentText("Molim vas izaberite zakazanu salu u tabeli.");
                             alert.showAndWait();
                         }
                     });
@@ -2052,10 +1960,8 @@ public class StudentskaSluzbaForm extends Stage {
         aktivirajMenuItem.setOnAction(event -> {
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziIspitneRokove"));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru.start();
+            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziIspitneRokove");
+            zahtevServeru.KomunikacijaSaServerom();
 
             ocistiPane(root);
             TableView<IspitniRok> tableIspitniRokovi = new TableView<>();
@@ -2079,17 +1985,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 //AKO JE UNET NAZIV I NIJE PRAZAN STRING, U SUPROTNOM PORUKA O GRESCI
                                 if (!tabela.getTableView().getItems().get(tabela.getTablePosition().getRow()).getNaziv().isEmpty()) {
 
-                                    Platform.runLater(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            //TODO: obojiti ivice polja umesto osvežavanja podataka i vratiti u prvobitni izgled
-                                            //.setStyle("-fx-border-width: 0;");
-                                        }
-                                    });
                                     IspitniRok izabraniIspitniRok = (IspitniRok) tabela.getTableView().getItems().get(tabela.getTablePosition().getRow());
-                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniIspitniRok));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniIspitniRok);
+                                    zahtevServeru1.KomunikacijaSaServerom();
 
                                 } else {
                                     //poruka za neispravan unos
@@ -2097,9 +1995,8 @@ public class StudentskaSluzbaForm extends Stage {
                                         @Override
                                         public void run() {
                                             setAlert(Alert.AlertType.ERROR);
-                                            alert.setContentText("Molim vas unesite naziv za ispitni rok");
+                                            alert.setContentText("Molim vas unesite naziv za ispitni rok.");
                                             alert.showAndWait();
-                                            //.setStyle("-fx-border-color: red;");
                                         }
                                     });
                                 }
@@ -2138,18 +2035,17 @@ public class StudentskaSluzbaForm extends Stage {
                             }
 
                             IspitniRok izabraniIspitniRok = arg0.getValue();
-                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniIspitniRok));
-                            t.setDaemon(true);
-                            t.start();
+                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniIspitniRok);
+                            zahtevServeru1.KomunikacijaSaServerom();
+
                         //UKOLIKO NI JEDNA OD VREDNOSTI NIJE NULL
                         } else if (nova_vrednost != null && stara_vrednost != null) {
                             //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                             if (!nova_vrednost.equals(stara_vrednost)) {
                                 mp.setDatumPocetka(Date.valueOf(nova_vrednost));
                                 IspitniRok izabraniIspitniRok = arg0.getValue();
-                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniIspitniRok));
-                                t.setDaemon(true);
-                                t.start();
+                                ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniIspitniRok);
+                                zahtevServeru1.KomunikacijaSaServerom();
                             }
                         }
                     });
@@ -2201,18 +2097,17 @@ public class StudentskaSluzbaForm extends Stage {
                             }
 
                             IspitniRok izabraniIspitniRok = arg0.getValue();
-                            Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniIspitniRok));
-                            t.setDaemon(true);
-                            t.start();
+                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniIspitniRok);
+                            zahtevServeru1.KomunikacijaSaServerom();
+
                         //UKOLIKO NI JEDNA OD VREDNOSTI NIJE NULL
                         } else if (nova_vrednost != null && stara_vrednost != null) {
                             //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                             if (!nova_vrednost.equals(stara_vrednost)) {
                                 mp.setDatumKraja(Date.valueOf(nova_vrednost));
                                 IspitniRok izabraniIspitniRok = arg0.getValue();
-                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniIspitniRok));
-                                t.setDaemon(true);
-                                t.start();
+                                ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniIspitniRok);
+                                zahtevServeru1.KomunikacijaSaServerom();
                             }
                         }
                     });
@@ -2221,7 +2116,7 @@ public class StudentskaSluzbaForm extends Stage {
             });
             colKraj.setMinWidth(100);
             colKraj.setStyle("-fx-alignment: center;");
-            TableColumn<IspitniRok, CheckBox> colAktivan = new TableColumn<>("Aktivan");
+            TableColumn<IspitniRok, CheckBox> colAktivan = new TableColumn<>("Aktivan rok");
             colAktivan.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<IspitniRok, CheckBox>, ObservableValue<CheckBox>>() {
 
                 @Override
@@ -2249,9 +2144,9 @@ public class StudentskaSluzbaForm extends Stage {
                                 if (!aktivan) {
                                     mp.setAktivnost(nova_vrednost);
                                     IspitniRok izabraniIspitniRok = arg0.getValue();
-                                    Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniIspitniRok));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniIspitniRok);
+                                    zahtevServeru1.KomunikacijaSaServerom();
+
                                 } else {
                                     //poruka za nemogucu akciju
                                     Platform.runLater(new Runnable() {
@@ -2260,20 +2155,17 @@ public class StudentskaSluzbaForm extends Stage {
                                             setAlert(Alert.AlertType.ERROR);
                                             alert.setContentText("Ne mogu biti dva ispitna roka u toku!");
                                             alert.showAndWait();
-                                            //.setStyle("-fx-border-color: red;");
                                         }
                                     });
                                     //da osvezi podatke na formi
-                                    Thread t = new Thread(new RunnableZahtevServeru("osveziIspitneRokove"));
-                                    t.setDaemon(true);
-                                    t.start();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziIspitneRokove");
+                                    zahtevServeru1.KomunikacijaSaServerom();
                                 }
                             } else {
                                 mp.setAktivnost(nova_vrednost);
                                 IspitniRok izabraniIspitniRok = arg0.getValue();
-                                Thread t = new Thread(new RunnableZahtevServeru("izmeni", izabraniIspitniRok));
-                                t.setDaemon(true);
-                                t.start();
+                                ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniIspitniRok);
+                                zahtevServeru1.KomunikacijaSaServerom();
                             }
                         }
                     });
@@ -2285,12 +2177,73 @@ public class StudentskaSluzbaForm extends Stage {
             colAktivan.setMinWidth(50);
             colAktivan.setStyle("-fx-alignment: center;");
 
+            TableColumn<IspitniRok, CheckBox> colAktivnaPrijava = new TableColumn<>("Aktivna prijava");
+            colAktivnaPrijava.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<IspitniRok, CheckBox>, ObservableValue<CheckBox>>() {
+
+                @Override
+                public ObservableValue<CheckBox> call(TableColumn.CellDataFeatures<IspitniRok, CheckBox> arg0) {
+                    IspitniRok mp = arg0.getValue();
+
+                    CheckBox checkBox = new CheckBox();
+                    checkBox.selectedProperty().setValue(mp.isAktivnaPrijava());
+
+                    checkBox.selectedProperty().addListener(new ChangeListener<Boolean>() {
+                        public void changed(ObservableValue<? extends Boolean> ov,
+                                            Boolean stara_vrednost, Boolean nova_vrednost) {
+
+                            //ukoliko zeli da aktivira neka prijava
+                            if (nova_vrednost == true) {
+                                //provera da li su sve ostale prijave neaktivne
+                                boolean aktivan = false;
+                                for (IspitniRok ispitniRok : sviIspitniRokovi) {
+
+                                    if (ispitniRok.isAktivnaPrijava()) {
+                                        aktivan = true;
+                                        break;
+                                    }
+                                }
+                                if (!aktivan) {
+                                    mp.setAktivnaPrijava(nova_vrednost);
+                                    IspitniRok izabraniIspitniRok = arg0.getValue();
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniIspitniRok);
+                                    zahtevServeru1.KomunikacijaSaServerom();
+
+                                } else {
+                                    //poruka za nemogucu akciju
+                                    Platform.runLater(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            setAlert(Alert.AlertType.ERROR);
+                                            alert.setContentText("Ne mogu biti aktivne dve prijave roka u isto vreme!");
+                                            alert.showAndWait();
+                                        }
+                                    });
+                                    //da osvezi podatke na formi
+                                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziIspitneRokove");
+                                    zahtevServeru1.KomunikacijaSaServerom();
+                                }
+                            } else {
+                                mp.setAktivnaPrijava(nova_vrednost);
+                                IspitniRok izabraniIspitniRok = arg0.getValue();
+                                ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabraniIspitniRok);
+                                zahtevServeru1.KomunikacijaSaServerom();
+                            }
+                        }
+                    });
+
+                    return new SimpleObjectProperty<CheckBox>(checkBox);
+
+                }
+            });
+            colAktivnaPrijava.setMinWidth(50);
+            colAktivnaPrijava.setStyle("-fx-alignment: center;");
+
             tableIspitniRokovi.setItems(sviIspitniRokovi);
             //sredjuje problem za dodatu kolonu
             tableIspitniRokovi.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableIspitniRokovi.setPrefHeight(550);
             colPocetak.setSortType(TableColumn.SortType.DESCENDING);
-            tableIspitniRokovi.getColumns().addAll(colNaziv, colPocetak, colKraj, colAktivan);
+            tableIspitniRokovi.getColumns().addAll(colNaziv, colPocetak, colKraj, colAktivan, colAktivnaPrijava);
             tableIspitniRokovi.getSortOrder().add(colPocetak);
             tableIspitniRokovi.sort();
 
@@ -2347,32 +2300,16 @@ public class StudentskaSluzbaForm extends Stage {
                     //da doda u bazu, vrati normalnu boju polja i obrise vrednosti
                     setTabela(tableIspitniRokovi);
                     IspitniRok ispitniRok = new IspitniRok(naziv, pocetakRoka, krajRoka, false);
-                    Thread t = new Thread(new RunnableZahtevServeru("dodaj", ispitniRok, txtNaziv, dateOd, dateDo));
-                    t.setDaemon(true);
-                    t.start();
+                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("dodaj", ispitniRok, txtNaziv, dateOd, dateDo);
+                    zahtevServeru1.KomunikacijaSaServerom();
 
                 } else {
-                    //PROVERA KOJI NIJE UNET I BOJENJE OKVIRA TOG POLJA, za datepicker samo ukoliko je jedno izabrano, ali nije i drugo
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            if (naziv.length() == 0) {
-                                txtNaziv.setStyle("-fx-border-color: red;");
-                            } else {
-                                txtNaziv.setStyle("-fx-border-width: 0;");
-                            }
-                            if (dateOd.getValue() != null && dateDo.getValue() == null) {
-                                dateDo.setStyle("-fx-border-color: red;");
-                            } else {
-                                dateDo.setStyle("-fx-border-width: 0;");
-                            }
-                            if (dateDo.getValue() != null && dateOd.getValue() == null) {
-                                dateOd.setStyle("-fx-border-color: red;");
-                            } else {
-                                dateOd.setStyle("-fx-border-width: 0;");
-                            }
+
                             setAlert(Alert.AlertType.ERROR);
-                            alert.setContentText("Molim vas unesite podatke");
+                            alert.setContentText("Molim vas unesite sve podatke.");
                             alert.showAndWait();
                         }
                     });
@@ -2388,11 +2325,12 @@ public class StudentskaSluzbaForm extends Stage {
         //Klikom na podmeni ISPITNI ROK iz Menija i na njegovu stavku Raspored ispita poziva se metoda ocistiPane() za ciscenje svih strana BorderPane-a, nakon cega se u tabeli prikazuje raspored ispita u aktivnom ispitnom roku i informacije iz Baze podataka
         rasporedIspitaMenuItem.setOnAction(event -> {
 
+            TableView<Map.Entry<ZakazivanjeSale, ArrayList<String>>> tableRasporedIspita = new TableView<>();
+            setTabela(tableRasporedIspita);
+
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
-            Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziRasporedIspita"));
-            //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-            runnableZahtevServeru.setDaemon(true);
-            runnableZahtevServeru.start();
+            ZahtevServeru zahtevServeru = new ZahtevServeru("osveziRasporedIspita");
+            zahtevServeru.KomunikacijaSaServerom();
 
             ocistiPane(root);
 
@@ -2407,8 +2345,6 @@ public class StudentskaSluzbaForm extends Stage {
             Label lblPretraga = new Label("Ispiti: ");
             lblPretraga.setFont(font15);
             TextField txtPretraga = new TextField();
-
-            TableView<Map.Entry<ZakazivanjeSale, ArrayList<String>>> tableRasporedIspita = new TableView<>();
 
             Button btnPretrazi = new Button("pretraži");
             btnPretrazi.setFont(font15);
@@ -2502,10 +2438,10 @@ public class StudentskaSluzbaForm extends Stage {
 
     }
 
-    /** Klasa RunnableZahtevServeru namenjena za razmenjivanje objekata sa serverom.
+    /** Klasa ZahtevServeru namenjena za razmenjivanje objekata sa serverom.
      * Za osvezavanje podataka na formi i dodavanje/izmenu/brisanje studenta/zaposlenog/predmeta/sala/ispitnih rokova/zakazanih sala.
      * @author Biljana Stanojevic   */
-    private class RunnableZahtevServeru implements Runnable {
+    private class ZahtevServeru {
 
         private static final int TCP_PORT = 9000;
         private Socket socket = null;
@@ -2513,15 +2449,16 @@ public class StudentskaSluzbaForm extends Stage {
         private ObjectOutputStream outObj;
         private Object zahtev;
         private Object odgovor;
+
         private Student student;
         private Zaposleni zaposleni;
         private Predmet predmet;
         private Sala sala;
         private IspitniRok ispitniRok;
         private ZakazivanjeSale zakazivanjeSale;
+
         private ArrayList vrednosti;
         private int idZaposlenog;
-        //TODO: Obrisati duplikate, nije potrebno za svako posebno da ima
         private TextField txtIme;
         private TextField txtPrezime;
         private TextField txtMail;
@@ -2544,49 +2481,49 @@ public class StudentskaSluzbaForm extends Stage {
         private DatePicker dpDatum;
 
         //konstuktor za osvezavanje podataka
-        public RunnableZahtevServeru(Object zahtev) {
+        public ZahtevServeru(Object zahtev) {
             this.zahtev = zahtev;
         }
 
         //konstruktori za brisanje/izmenu/login podatke
-        public RunnableZahtevServeru(Object zahtev, Student student) {
+        public ZahtevServeru(Object zahtev, Student student) {
             this.zahtev = zahtev;
             this.student = student;
         }
 
-        public RunnableZahtevServeru(Object zahtev, Zaposleni zaposleni) {
+        public ZahtevServeru(Object zahtev, Zaposleni zaposleni) {
             this.zahtev = zahtev;
             this.zaposleni = zaposleni;
         }
 
-        public RunnableZahtevServeru(Object zahtev, Predmet predmet) {
+        public ZahtevServeru(Object zahtev, Predmet predmet) {
             this.zahtev = zahtev;
             this.predmet = predmet;
         }
 
-        public RunnableZahtevServeru(Object zahtev, Predmet predmet, int idZaposlenog) {
+        public ZahtevServeru(Object zahtev, Predmet predmet, int idZaposlenog) {
             this.zahtev = zahtev;
             this.predmet = predmet;
             this.idZaposlenog = idZaposlenog;
         }
 
-        public RunnableZahtevServeru(Object zahtev, Sala sala) {
+        public ZahtevServeru(Object zahtev, Sala sala) {
             this.zahtev = zahtev;
             this.sala = sala;
         }
 
-        public RunnableZahtevServeru(Object zahtev, IspitniRok ispitniRok) {
+        public ZahtevServeru(Object zahtev, IspitniRok ispitniRok) {
             this.zahtev = zahtev;
             this.ispitniRok = ispitniRok;
         }
 
-        public RunnableZahtevServeru(Object zahtev, ZakazivanjeSale zakazivanjeSale) {
+        public ZahtevServeru(Object zahtev, ZakazivanjeSale zakazivanjeSale) {
             this.zahtev = zahtev;
             this.zakazivanjeSale = zakazivanjeSale;
         }
 
         //konstruktori za dodavanje
-        public RunnableZahtevServeru(Object zahtev, Student student, TextField txtIme, TextField txtPrezime, TextField txtAdresa, TextField txtMail, TextField txtTelefon, ComboBox cmbSmer, ComboBox cmbFinansiranje) {
+        public ZahtevServeru(Object zahtev, Student student, TextField txtIme, TextField txtPrezime, TextField txtAdresa, TextField txtMail, TextField txtTelefon, ComboBox cmbSmer, ComboBox cmbFinansiranje) {
             this.zahtev = zahtev;
             this.student = student;
             this.txtIme = txtIme;
@@ -2598,7 +2535,7 @@ public class StudentskaSluzbaForm extends Stage {
             this.cmbFinansiranje = cmbFinansiranje;
         }
 
-        public RunnableZahtevServeru(Object zahtev, Zaposleni zaposleni, ComboBox cmbPozicija, TextField txtIme, TextField txtPrezime, TextField txtMail, TextField txtTelefon, TextField txtAdresa) {
+        public ZahtevServeru(Object zahtev, Zaposleni zaposleni, ComboBox cmbPozicija, TextField txtIme, TextField txtPrezime, TextField txtMail, TextField txtTelefon, TextField txtAdresa) {
             this.zahtev = zahtev;
             this.zaposleni = zaposleni;
             this.cmbPozicija = cmbPozicija;
@@ -2609,7 +2546,7 @@ public class StudentskaSluzbaForm extends Stage {
             this.txtAdresa = txtAdresa;
         }
 
-        public RunnableZahtevServeru(Object zahtev, Predmet predmet, TextField txtNaziv, ComboBox cmbSmer, SpinnerValueFactory<Integer> vfSemestar, SpinnerValueFactory<Integer> vfEspb, TextField txtProfesor) {
+        public ZahtevServeru(Object zahtev, Predmet predmet, TextField txtNaziv, ComboBox cmbSmer, SpinnerValueFactory<Integer> vfSemestar, SpinnerValueFactory<Integer> vfEspb, TextField txtProfesor) {
             this.zahtev = zahtev;
             this.predmet = predmet;
             this.txtNaziv = txtNaziv;
@@ -2619,7 +2556,7 @@ public class StudentskaSluzbaForm extends Stage {
             this.txtProfesor = txtProfesor;
         }
 
-        public RunnableZahtevServeru(Object zahtev, Sala sala, TextField txtNaziv, TextField txtKapacitet, ComboBox cmbOprema) {
+        public ZahtevServeru(Object zahtev, Sala sala, TextField txtNaziv, TextField txtKapacitet, ComboBox cmbOprema) {
             this.zahtev = zahtev;
             this.sala = sala;
             this.txtNaziv = txtNaziv;
@@ -2627,7 +2564,7 @@ public class StudentskaSluzbaForm extends Stage {
             this.cmbOprema = cmbOprema;
         }
 
-        public RunnableZahtevServeru(Object zahtev, IspitniRok ispitniRok, TextField txtNaziv, DatePicker dateOd, DatePicker dateDo) {
+        public ZahtevServeru(Object zahtev, IspitniRok ispitniRok, TextField txtNaziv, DatePicker dateOd, DatePicker dateDo) {
             this.zahtev = zahtev;
             this.ispitniRok = ispitniRok;
             this.txtNaziv = txtNaziv;
@@ -2635,7 +2572,7 @@ public class StudentskaSluzbaForm extends Stage {
             this.dateDo = dateDo;
         }
 
-        public RunnableZahtevServeru(Object zahtev, ZakazivanjeSale zakazivanjeSale, ArrayList vrednosti, ComboBox cmbSala, ComboBox cmbZaposleni, ComboBox cmbPredmet, DatePicker dpDatum, Spinner spSatiOd, Spinner spMinutiOd, Spinner spSatiDo, Spinner spMinutiDo) {
+        public ZahtevServeru(Object zahtev, ZakazivanjeSale zakazivanjeSale, ArrayList vrednosti, ComboBox cmbSala, ComboBox cmbZaposleni, ComboBox cmbPredmet, DatePicker dpDatum, Spinner spSatiOd, Spinner spMinutiOd, Spinner spSatiDo, Spinner spMinutiDo) {
             this.zahtev = zahtev;
             this.zakazivanjeSale = zakazivanjeSale;
             this.vrednosti = vrednosti;
@@ -2646,8 +2583,7 @@ public class StudentskaSluzbaForm extends Stage {
             //*
         }
 
-        @Override
-        public void run() {
+        public void KomunikacijaSaServerom() {
 
             //OTVARANJE KONEKCIJE
             try {
@@ -2655,13 +2591,14 @@ public class StudentskaSluzbaForm extends Stage {
                 Socket socket = new Socket(addr, TCP_PORT);
                 inObj = new ObjectInputStream(socket.getInputStream());
                 outObj = new ObjectOutputStream(socket.getOutputStream());
+
             } catch (UnknownHostException e) {
                 Platform.runLater(new Runnable() {
 
                     @Override
                     public void run() {
                         setAlert(Alert.AlertType.INFORMATION);
-                        alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                        alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                         alert.showAndWait();
                     }
                 });
@@ -2693,7 +2630,7 @@ public class StudentskaSluzbaForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setSviIspitniRokovi(sviIspitniRokovi);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -2703,7 +2640,7 @@ public class StudentskaSluzbaForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -2735,7 +2672,7 @@ public class StudentskaSluzbaForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setSviStudenti(sviStudenti);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -2745,7 +2682,7 @@ public class StudentskaSluzbaForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -2777,7 +2714,7 @@ public class StudentskaSluzbaForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setSviZaposleni(sviZaposleni);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -2787,7 +2724,7 @@ public class StudentskaSluzbaForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -2812,7 +2749,10 @@ public class StudentskaSluzbaForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setSviPredmeti(sviPredmeti);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            ObservableList<HashMap.Entry<Predmet, Zaposleni>> stavke = FXCollections.observableArrayList(sviPredmeti.entrySet());
+                            getTabela().setItems(stavke);
+                            getTabela().refresh();
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -2822,7 +2762,7 @@ public class StudentskaSluzbaForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -2854,7 +2794,7 @@ public class StudentskaSluzbaForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje svih liste
                             setSveSale(sveSale);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -2864,7 +2804,7 @@ public class StudentskaSluzbaForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -2889,7 +2829,10 @@ public class StudentskaSluzbaForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setSveZakazaneSale(sveZakazaneSale);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            ObservableList<HashMap.Entry<ZakazivanjeSale, ArrayList<String>>> stavke = FXCollections.observableArrayList(sveZakazaneSale.entrySet());
+                            getTabela().setItems(stavke);
+                            getTabela().refresh();
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -2899,7 +2842,7 @@ public class StudentskaSluzbaForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -2924,7 +2867,10 @@ public class StudentskaSluzbaForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setRasporedIspita(rasporedIspita);
-                            System.out.println("Osvezeni podaci sa strane servera");
+                            ObservableList<HashMap.Entry<ZakazivanjeSale, ArrayList<String>>> stavke = FXCollections.observableArrayList(rasporedIspita.entrySet());
+                            getTabela().setItems(stavke);
+                            getTabela().refresh();
+                            System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
                     });
@@ -2934,7 +2880,7 @@ public class StudentskaSluzbaForm extends Stage {
                         @Override
                         public void run() {
                             setAlert(Alert.AlertType.INFORMATION);
-                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                             alert.showAndWait();
                         }
                     });
@@ -2966,7 +2912,7 @@ public class StudentskaSluzbaForm extends Stage {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Ne postoje Login podaci za izabranog studenta");
+                                        alert.setContentText("Ne postoje Login podaci za izabranog studenta.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -2980,7 +2926,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3009,7 +2955,7 @@ public class StudentskaSluzbaForm extends Stage {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Ne postoje Login podaci za izabranog zaposlenog");
+                                        alert.setContentText("Ne postoje Login podaci za izabranog zaposlenog.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3023,7 +2969,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3044,21 +2990,19 @@ public class StudentskaSluzbaForm extends Stage {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspesno izmenjeni podaci za studenta");
+                                        alert.setContentText("Uspesno izmenjeni podaci za studenta.");
                                         alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziStudente"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziStudente");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.ERROR);
-                                        alert.setContentText("Nije uspela izmena podataka za studenta");
+                                        alert.setContentText("Nije uspela izmena podataka za studenta.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3072,7 +3016,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3091,21 +3035,19 @@ public class StudentskaSluzbaForm extends Stage {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspešno izmenjeni podaci za zaposlenog");
+                                        alert.setContentText("Uspešno izmenjeni podaci za zaposlenog.");
                                         alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziZaposlene"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziZaposlene");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.ERROR);
-                                        alert.setContentText("Nije uspela izmena podataka za zaposlenog");
+                                        alert.setContentText("Nije uspela izmena podataka za zaposlenog.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3119,7 +3061,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3138,21 +3080,19 @@ public class StudentskaSluzbaForm extends Stage {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspešno izmenjeni podaci za predmet");
+                                        alert.setContentText("Uspešno izmenjeni podaci za predmet.");
                                         alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziPredmete"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziPredmete");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.ERROR);
-                                        alert.setContentText("Nije uspela izmena podataka za predmet");
+                                        alert.setContentText("Nije uspela izmena podataka za predmet.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3166,7 +3106,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3185,21 +3125,19 @@ public class StudentskaSluzbaForm extends Stage {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspešno izmenjeni podaci za salu");
+                                        alert.setContentText("Uspešno izmenjeni podaci za salu.");
                                         alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziSale"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziSale");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.ERROR);
-                                        alert.setContentText("Nije uspela izmena podataka za salu");
+                                        alert.setContentText("Nije uspela izmena podataka za salu.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3213,7 +3151,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3232,21 +3170,19 @@ public class StudentskaSluzbaForm extends Stage {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspesno izmenjeni podaci za ispitni rok");
+                                        alert.setContentText("Uspesno izmenjeni podaci za ispitni rok.");
                                         alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziIspitneRokove"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziIspitneRokove");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.ERROR);
-                                        alert.setContentText("Nije uspela izmena podataka za ispitni rok");
+                                        alert.setContentText("Nije uspela izmena podataka za ispitni rok.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3260,7 +3196,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3279,21 +3215,19 @@ public class StudentskaSluzbaForm extends Stage {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspesno izmenjeni podaci za zakazanu salu");
+                                        alert.setContentText("Uspesno izmenjeni podaci za zakazanu salu.");
                                         alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziSale"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziSale");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.ERROR);
-                                        alert.setContentText("Nije uspela izmena podataka za zakazanu salu");
+                                        alert.setContentText("Nije uspela izmena podataka za zakazanu salu.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3307,7 +3241,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3333,13 +3267,8 @@ public class StudentskaSluzbaForm extends Stage {
                                         getTabela().setItems(sviStudenti);
                                         getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspešno dodat student u Bazu");
+                                        alert.setContentText("Uspešno dodat student u Bazu.");
                                         alert.showAndWait();
-                                        txtIme.setStyle("-fx-border-width: 0;");
-                                        txtPrezime.setStyle("-fx-border-width: 0;");
-                                        txtAdresa.setStyle("-fx-border-width: 0;");
-                                        txtMail.setStyle("-fx-border-width: 0;");
-                                        txtTelefon.setStyle("-fx-border-width: 0;");
                                         txtIme.clear();
                                         txtPrezime.clear();
                                         txtAdresa.clear();
@@ -3350,16 +3279,14 @@ public class StudentskaSluzbaForm extends Stage {
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziStudente"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziStudente");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Taj student već postoji u Bazi");
+                                        alert.setContentText("Taj student već postoji u Bazi.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3373,7 +3300,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3397,12 +3324,8 @@ public class StudentskaSluzbaForm extends Stage {
                                         getTabela().setItems(sviZaposleni);
                                         getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspešno dodat zaposleni u Bazu");
+                                        alert.setContentText("Uspešno dodat zaposleni u Bazu.");
                                         alert.showAndWait();
-                                        txtIme.setStyle("-fx-border-width: 0;");
-                                        txtPrezime.setStyle("-fx-border-width: 0;");
-                                        txtMail.setStyle("-fx-border-width: 0;");
-                                        txtTelefon.setStyle("-fx-border-width: 0;");
                                         txtIme.clear();
                                         txtPrezime.clear();
                                         txtAdresa.clear();
@@ -3412,16 +3335,14 @@ public class StudentskaSluzbaForm extends Stage {
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziZaposlene"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziZaposlene");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Taj zaposleni već postoji u Bazi");
+                                        alert.setContentText("Taj zaposleni već postoji u Bazi.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3435,7 +3356,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3463,9 +3384,8 @@ public class StudentskaSluzbaForm extends Stage {
                                         getTabela().setItems(stavke);
                                         getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspešno dodat predmet u Bazu");
+                                        alert.setContentText("Uspešno dodat predmet u Bazu.");
                                         alert.showAndWait();
-                                        txtNaziv.setStyle("-fx-border-width: 0;");
                                         cmbSmer.setValue(null);
                                         vfSemestar.setValue(0);
                                         vfEspb.setValue(0);
@@ -3474,16 +3394,14 @@ public class StudentskaSluzbaForm extends Stage {
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziPredmete"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziPredmete");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Taj predmet već postoji u Bazi");
+                                        alert.setContentText("Taj predmet već postoji u Bazi.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3497,7 +3415,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3521,26 +3439,22 @@ public class StudentskaSluzbaForm extends Stage {
                                         getTabela().setItems(sveSale);
                                         getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspešno dodata sala u Bazu");
+                                        alert.setContentText("Uspešno dodata sala u Bazu.");
                                         alert.showAndWait();
-                                        txtNaziv.setStyle("-fx-border-width: 0;");
-                                        txtKapacitet.setStyle("-fx-border-width: 0;");
                                         cmbOprema.setValue(Sala.tipOpreme.ništa);
                                         txtNaziv.clear();
                                         txtKapacitet.clear();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziSale"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziSale");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.ERROR);
-                                        alert.setContentText("Nije uspelo dodavanje sale u Bazu");
+                                        alert.setContentText("Nije uspelo dodavanje sale u Bazu.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3554,7 +3468,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3578,27 +3492,22 @@ public class StudentskaSluzbaForm extends Stage {
                                         getTabela().setItems(sviIspitniRokovi);
                                         getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspešno dodat ispitni rok u Bazu");
+                                        alert.setContentText("Uspešno dodat ispitni rok u Bazu.");
                                         alert.showAndWait();
-                                        txtNaziv.setStyle("-fx-border-width: 0;");
-                                        dateOd.setStyle("-fx-border-width: 0;");
-                                        dateDo.setStyle("-fx-border-width: 0;");
                                         txtNaziv.clear();
                                         dateOd.setValue(null);
                                         dateDo.setValue(null);
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziIspitneRokove"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziIspitneRokove");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.ERROR);
-                                        alert.setContentText("Nije uspelo dodavanje ispitnog roka u Bazu");
+                                        alert.setContentText("Nije uspelo dodavanje ispitnog roka u Bazu.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3612,7 +3521,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3636,12 +3545,8 @@ public class StudentskaSluzbaForm extends Stage {
                                         getTabela().setItems(stavke);
                                         getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspešno zakazana sala u Bazi");
+                                        alert.setContentText("Uspešno zakazana sala u Bazi.");
                                         alert.showAndWait();
-                                        cmbSala.setStyle("-fx-border-width: 0;");
-                                        cmbZaposleni.setStyle("-fx-border-width: 0;");
-                                        cmbPredmet.setStyle("-fx-border-width: 0;");
-                                        dpDatum.setStyle("-fx-border-width: 0;");
                                         cmbSala.setValue(null);
                                         cmbZaposleni.setValue(null);
                                         cmbPredmet.setValue(null);
@@ -3649,10 +3554,8 @@ public class StudentskaSluzbaForm extends Stage {
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziZakazivanjeSala"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziZakazivanjeSala");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
@@ -3672,7 +3575,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3697,21 +3600,19 @@ public class StudentskaSluzbaForm extends Stage {
                                         getTabela().setItems(sviStudenti);
                                         getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspešno obrisan student");
+                                        alert.setContentText("Uspešno obrisan student.");
                                         alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziStudente"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziStudente");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Nije uspelo brisanje studenta");
+                                        alert.setContentText("Nije uspelo brisanje studenta.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3725,7 +3626,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3747,21 +3648,19 @@ public class StudentskaSluzbaForm extends Stage {
                                         getTabela().setItems(sviZaposleni);
                                         getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspešno obrisan zaposleni");
+                                        alert.setContentText("Uspešno obrisan zaposleni.");
                                         alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziZaposlene"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziZaposlene");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Nije uspelo brisanje zaposlenog");
+                                        alert.setContentText("Nije uspelo brisanje zaposlenog.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3775,7 +3674,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3798,21 +3697,19 @@ public class StudentskaSluzbaForm extends Stage {
                                         getTabela().setItems(stavke);
                                         getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspešno obrisan predmet");
+                                        alert.setContentText("Uspešno obrisan predmet.");
                                         alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziPredmete"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziPredmete");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Nije uspelo brisanje predmeta");
+                                        alert.setContentText("Nije uspelo brisanje predmeta.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3826,7 +3723,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3848,21 +3745,19 @@ public class StudentskaSluzbaForm extends Stage {
                                         getTabela().setItems(sveSale);
                                         getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspešno obrisana sala");
+                                        alert.setContentText("Uspešno obrisana sala.");
                                         alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziSale"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziSale");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Nije uspelo brisanje sale");
+                                        alert.setContentText("Nije uspelo brisanje sale.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3876,7 +3771,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
@@ -3899,21 +3794,19 @@ public class StudentskaSluzbaForm extends Stage {
                                         getTabela().setItems(stavke);
                                         getTabela().refresh();
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Uspešno oslobođena sala");
+                                        alert.setContentText("Uspešno oslobođena sala.");
                                         alert.showAndWait();
                                     }
                                 });
                                 //kada snimi da osvezi podatke kako bi se odmah prikazali na formi
-                                Thread runnableZahtevServeru = new Thread(new RunnableZahtevServeru("osveziZakazivanjeSala"));
-                                //okoncava nit kada dodje do kraja programa - kada se izadje iz forme
-                                runnableZahtevServeru.setDaemon(true);
-                                runnableZahtevServeru.start();
+                                ZahtevServeru zahtevServeru = new ZahtevServeru("osveziZakazivanjeSala");
+                                zahtevServeru.KomunikacijaSaServerom();
                             } else {
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
                                         setAlert(Alert.AlertType.INFORMATION);
-                                        alert.setContentText("Nije uspelo oslobađanje sale");
+                                        alert.setContentText("Nije uspelo oslobađanje sale.");
                                         alert.showAndWait();
                                     }
                                 });
@@ -3927,7 +3820,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije");
+                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
                                 alert.showAndWait();
                             }
                         });
