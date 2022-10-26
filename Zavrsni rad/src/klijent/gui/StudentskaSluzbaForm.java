@@ -42,7 +42,7 @@ public class StudentskaSluzbaForm extends Stage {
     private HashMap<Predmet, Zaposleni> sviPredmeti = new HashMap<>();
     private ObservableList<Sala> sveSale = FXCollections.observableArrayList();
     private HashMap<ZakazivanjeSale, ArrayList<String>> sveZakazaneSale = new HashMap<>();
-    private HashMap<ZakazivanjeSale, ArrayList<String>> rasporedIspita = new HashMap<>();
+    private HashMap<ZakazivanjeSale, ArrayList<ArrayList>> rasporedIspita = new HashMap<>();
     Pattern patternEmail = Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
     Pattern patternTelefon = Pattern.compile("^(\\+\\d{1,3}( )?)?((\\(\\d{1,3}\\))|\\d{1,3})[- .]?\\d{3,4}[- .]?\\d{4}$");
     private static Alert alert = new Alert(Alert.AlertType.NONE);
@@ -77,7 +77,7 @@ public class StudentskaSluzbaForm extends Stage {
         this.sveZakazaneSale = sveZakazaneSale;
     }
 
-    public void setRasporedIspita(HashMap<ZakazivanjeSale, ArrayList<String>> rasporedIspita) {
+    public void setRasporedIspita(HashMap<ZakazivanjeSale, ArrayList<ArrayList>> rasporedIspita) {
         this.rasporedIspita = rasporedIspita;
     }
 
@@ -146,7 +146,7 @@ public class StudentskaSluzbaForm extends Stage {
         root.setCenter(null);
     }
 
-    public StudentskaSluzbaForm(Stage stage, ObservableList<IspitniRok> ispitniRokovi, ObservableList<Student> sviStudenti, ObservableList<Zaposleni> sviZaposleni, HashMap<Predmet, Zaposleni> predmeti, ObservableList<Sala> sveSale, HashMap<ZakazivanjeSale, ArrayList<String>> zakazaneSale, HashMap<ZakazivanjeSale, ArrayList<String>> ispitiRaspored) {
+    public StudentskaSluzbaForm(Stage stage, ObservableList<IspitniRok> ispitniRokovi, ObservableList<Student> sviStudenti, ObservableList<Zaposleni> sviZaposleni, HashMap<Predmet, Zaposleni> predmeti, ObservableList<Sala> sveSale, HashMap<ZakazivanjeSale, ArrayList<String>> zakazaneSale, HashMap<ZakazivanjeSale, ArrayList<ArrayList>> ispitiRaspored) {
 
         super();
         stage.setOnCloseRequest(event -> {
@@ -2325,7 +2325,8 @@ public class StudentskaSluzbaForm extends Stage {
         //Klikom na podmeni ISPITNI ROK iz Menija i na njegovu stavku Raspored ispita poziva se metoda ocistiPane() za ciscenje svih strana BorderPane-a, nakon cega se u tabeli prikazuje raspored ispita u aktivnom ispitnom roku i informacije iz Baze podataka
         rasporedIspitaMenuItem.setOnAction(event -> {
 
-            TableView<Map.Entry<ZakazivanjeSale, ArrayList<String>>> tableRasporedIspita = new TableView<>();
+            TableView<Map.Entry<ZakazivanjeSale, ArrayList<ArrayList>>> tableRasporedIspita = new TableView<>();
+            //tableRasporedIspita.setSelectionModel(null);
             setTabela(tableRasporedIspita);
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
@@ -2348,9 +2349,10 @@ public class StudentskaSluzbaForm extends Stage {
 
             Button btnPretrazi = new Button("pretraži");
             btnPretrazi.setFont(font15);
+
             btnPretrazi.setOnMouseClicked(e -> {
                 String trazeno = txtPretraga.getText().toLowerCase();
-                ObservableList<HashMap.Entry<ZakazivanjeSale, ArrayList<String>>> nadjeni = FXCollections.observableArrayList(rasporedIspita.entrySet().stream().filter(map -> map.getValue().get(0).toLowerCase().contains(trazeno) || map.getValue().get(1).toLowerCase().contains(trazeno) || map.getValue().get(2).equals(trazeno) || sveSale.stream().anyMatch(s -> s.getNaziv().toLowerCase().contains(trazeno)) || map.getKey().getDatum().toString().contains(trazeno) || map.getKey().getVremePocetka().toString().contains(trazeno)).collect(Collectors.toMap(map -> map.getKey(), map -> map.getValue())).entrySet());
+                ObservableList<HashMap.Entry<ZakazivanjeSale, ArrayList<ArrayList>>> nadjeni = FXCollections.observableArrayList(rasporedIspita.entrySet().stream().filter(map -> map.getValue().get(0).get(0).toString().toLowerCase().contains(trazeno) || map.getValue().get(0).get(1).toString().toLowerCase().contains(trazeno) || sveSale.stream().anyMatch(s -> s.getNaziv().toLowerCase().contains(trazeno)) || map.getKey().getDatum().toString().contains(trazeno) || map.getKey().getVremePocetka().toString().contains(trazeno)).collect(Collectors.toMap(map -> map.getKey(), map -> map.getValue())).entrySet());
                 tableRasporedIspita.setItems(nadjeni);
             });
             hBoxPretraga.getChildren().addAll(lblPretraga, txtPretraga, btnPretrazi);
@@ -2359,74 +2361,112 @@ public class StudentskaSluzbaForm extends Stage {
             tableRasporedIspita.getColumns().clear();
 
             TableColumn colPredmet = new TableColumn("Predmet");
-            colPredmet.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String>, ObservableValue<String>>() {
+            colPredmet.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<ArrayList>>, String>, ObservableValue<String>>() {
 
                 @Override
-                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String> zs) {
-                    return new SimpleObjectProperty<String>(zs.getValue().getValue().get(0));
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<ArrayList>>, String> zs) {
+                    return new SimpleObjectProperty<String>(zs.getValue().getValue().get(0).get(0).toString());
                 }
 
             });
             colPredmet.setMinWidth(300);
             TableColumn colProfesor = new TableColumn("Profesor");
-            colProfesor.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String>, ObservableValue<String>>() {
+            colProfesor.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<ArrayList>>, String>, ObservableValue<String>>() {
 
                 @Override
-                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String> zs) {
-                    return new SimpleObjectProperty<String>(zs.getValue().getValue().get(1));
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<ArrayList>>, String> zs) {
+                    return new SimpleObjectProperty<String>(zs.getValue().getValue().get(0).get(1).toString());
                 }
 
             });
             colProfesor.setMinWidth(300);
             TableColumn colDatum = new TableColumn("Datum");
-            colDatum.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Date>, ObservableValue<Date>>() {
+            colDatum.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<ArrayList>>, Date>, ObservableValue<Date>>() {
 
                 @Override
-                public ObservableValue<Date> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Date> zs) {
+                public ObservableValue<Date> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<ArrayList>>, Date> zs) {
                     return new SimpleObjectProperty<Date>(zs.getValue().getKey().getDatum());
                 }
 
             });
             colDatum.setMinWidth(100);
             TableColumn colVreme = new TableColumn("Vreme");
-            colVreme.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Time>, ObservableValue<Time>>() {
+            colVreme.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<ArrayList>>, Time>, ObservableValue<Time>>() {
 
                 @Override
-                public ObservableValue<Time> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, Time> zs) {
+                public ObservableValue<Time> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<ArrayList>>, Time> zs) {
                     return new SimpleObjectProperty<Time>(zs.getValue().getKey().getVremePocetka());
                 }
 
             });
             colVreme.setMinWidth(50);
             TableColumn colSala = new TableColumn("Sala");
-            colSala.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String>, ObservableValue<String>>() {
+            colSala.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<ArrayList>>, String>, ObservableValue<String>>() {
 
                 @Override
-                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String> zs) {
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<ArrayList>>, String> zs) {
                     return new SimpleObjectProperty<String>(sveSale.stream().filter(s -> s.getIdSale() == zs.getValue().getKey().getIdSale()).map(i -> i.getNaziv()).findFirst().map(Object::toString).orElse(null));
                 }
 
             });
             colSala.setMinWidth(150);
             TableColumn colBrPrijava = new TableColumn("Prijave");
-            colBrPrijava.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String>, ObservableValue<String>>() {
+            colBrPrijava.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<ArrayList>>, String>, ObservableValue<String>>() {
 
                 @Override
-                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<String>>, String> zs) {
-                    return new SimpleObjectProperty<String>(zs.getValue().getValue().get(2));
-                }
+                public ObservableValue<String> call(TableColumn.CellDataFeatures<Map.Entry<ZakazivanjeSale, ArrayList<ArrayList>>, String> zs) {
 
+                    return new SimpleObjectProperty<String>(String.valueOf(zs.getValue().getValue().get(1).size()));
+                }
+            });
+            colBrPrijava.setCellFactory(tc -> {
+
+                TableCell<Object, String> cell = new TableCell<Object, String>() {
+                    @Override
+                    protected void updateItem(String item, boolean empty) {
+                        super.updateItem(item, empty);
+                        setText(item);
+                    }
+                };
+                //na klik broja prijava vide se informacije o studentima koji su prijavili ispit
+                cell.setOnMouseClicked(e -> {
+                    if (! cell.isEmpty()) {
+
+                        Platform.runLater(new Runnable() {
+
+                            @Override
+                            public void run() {
+
+                                setAlert(Alert.AlertType.INFORMATION);
+                                ArrayList studenti = (ArrayList) tableRasporedIspita.getItems().stream().filter(sp -> sp.getKey().equals(tableRasporedIspita.getSelectionModel().getSelectedItem().getKey())).map(i -> i.getValue().get(1)).collect(Collectors.toList());
+                                String poruka = "";
+                                System.out.println(studenti);
+                                if (!studenti.toString().replaceAll("\\[", "").replaceAll("\\]", "").isEmpty()) {
+
+                                    for (Object student : studenti) {
+                                        poruka += sviStudenti.stream().filter(s -> (s.getSmer() + "/" + s.getIdStudenta() + "-" + String.valueOf(s.getGodinaUpisa()).substring(2)).equals(student.toString().replace("[", "").replace("]", ""))).findFirst().orElseThrow().getImePrezime() + " " + student.toString().replace("[", "").replace("]", "") + "\n";
+                                    }
+                                    alert.setContentText("Studenti koji su prijavili ispit " + tableRasporedIspita.getSelectionModel().getSelectedItem().getValue().get(0).get(0).toString() + ":\n" + poruka);
+                                } else {
+
+                                    alert.setContentText("Nema prijava za ispit:  " + tableRasporedIspita.getSelectionModel().getSelectedItem().getValue().get(0).get(0).toString() + ".");
+                                }
+                                alert.showAndWait();
+                            }
+                        });
+                    }
+                });
+                return cell;
             });
             colBrPrijava.setMinWidth(50);
 
-            ObservableList<HashMap.Entry<ZakazivanjeSale, ArrayList<String>>> stavke = FXCollections.observableArrayList(rasporedIspita.entrySet());
+            ObservableList<HashMap.Entry<ZakazivanjeSale, ArrayList<ArrayList>>> stavke = FXCollections.observableArrayList(rasporedIspita.entrySet());
             tableRasporedIspita.setItems(stavke);
             //prijavljeni ispit+br prijava
             //sredjuje problem za dodatu kolonu
             tableRasporedIspita.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             tableRasporedIspita.getColumns().addAll(colPredmet, colProfesor, colDatum, colVreme, colSala, colBrPrijava);
             tableRasporedIspita.setPrefHeight(550);
-            //TODO: na klik broja prijava da vidi detaljno sve brojeve indeksa
 
             vbox.getChildren().addAll(hBoxPretraga, tableRasporedIspita);
             root.setCenter(vbox);
@@ -2671,6 +2711,7 @@ public class StudentskaSluzbaForm extends Stage {
                         public void run() {
 
                             //azuriranje/ponovno popunjavanje liste
+                            sviStudenti.sort(Comparator.comparing(s -> s.getBrojIndeksa()));
                             setSviStudenti(sviStudenti);
                             System.out.println("Osvezeni podaci sa strane servera.");
 
@@ -2867,7 +2908,7 @@ public class StudentskaSluzbaForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setRasporedIspita(rasporedIspita);
-                            ObservableList<HashMap.Entry<ZakazivanjeSale, ArrayList<String>>> stavke = FXCollections.observableArrayList(rasporedIspita.entrySet());
+                            ObservableList<HashMap.Entry<ZakazivanjeSale, ArrayList<ArrayList>>> stavke = FXCollections.observableArrayList(rasporedIspita.entrySet());
                             getTabela().setItems(stavke);
                             getTabela().refresh();
                             System.out.println("Osvezeni podaci sa strane servera.");

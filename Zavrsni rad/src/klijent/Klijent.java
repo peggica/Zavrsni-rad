@@ -18,6 +18,8 @@ import model.*;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 
 /** Klase Klijent i ZahtevServeru namenjene za povezivanje klijenta sa serverom i razmenu zahteva/odgovora,
@@ -35,7 +37,7 @@ public class Klijent extends Application {
     private HashMap<Predmet, Integer> polozeniPredmeti = new HashMap<>();
     private ObservableList<Predmet> nepolozeniPredmeti = FXCollections.observableArrayList();
     private HashMap<ZakazivanjeSale, ArrayList<String>> sveZakazaneSale = new HashMap<>();
-    private HashMap<ZakazivanjeSale, ArrayList<String>> rasporedIspita = new HashMap<>();
+    private HashMap<ZakazivanjeSale, ArrayList<ArrayList>> rasporedIspita = new HashMap<>();
     private HashMap<Predmet, ArrayList> prijavaIspita = new HashMap<>();
     private StudentskaSluzbaForm studentskaSluzbaForm;
     private ZaposleniForm zaposleniForm;
@@ -301,8 +303,6 @@ public class Klijent extends Application {
                         sveZakazaneSale.clear();
                         odgovor = inObj.readObject();
                         sveZakazaneSale = (HashMap) odgovor;
-                    }
-                    if (odgovor.toString().equals("rasporedispita")) {
 
                         rasporedIspita.clear();
                         odgovor = inObj.readObject();
@@ -316,6 +316,7 @@ public class Klijent extends Application {
                         public void run() {
 
                             //prikaz forme za studentsku sluzbu
+                            sviStudenti.sort(Comparator.comparing(s -> s.getBrojIndeksa()));
                             studentskaSluzbaForm = new StudentskaSluzbaForm(getStage(), sviIspitniRokovi, sviStudenti, sviZaposleni, sviPredmeti, sveSale, sveZakazaneSale, rasporedIspita);
                             getStage().close();
                             studentskaSluzbaForm.show();
@@ -441,6 +442,7 @@ public class Klijent extends Application {
                         public void run() {
 
                             //prikaz forme za studenta
+                            nepolozeniPredmeti.sort(Comparator.comparing(p -> p.getSemestar()));
                             studentForm = new StudentForm(getStage(), ovajStudent, sveUplate, sviIspitniRokovi, polozeniPredmeti, nepolozeniPredmeti, prijavaIspita, rasporedIspita);
                             getStage().close();
                             studentForm.show();

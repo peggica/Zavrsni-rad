@@ -46,7 +46,12 @@ public class Student implements Serializable {
         this.prezime = prezime;
         this.finansiranje = tipFin.toString();
         //defaultno su adresa, email i brojTelefona null - za String ako ne dodelim
+    }
 
+    public Student(int idStudenta, int godinaUpisa, tipSmera tipSm) {
+        this.idStudenta = idStudenta;
+        this.godinaUpisa = godinaUpisa;
+        this.smer = tipSm.toString();
     }
 
     public int getIdStudenta() {
@@ -123,6 +128,11 @@ public class Student implements Serializable {
 
     public boolean isVidljiv() {
         return vidljiv;
+    }
+
+    @Override
+    public String toString() {
+        return smer + "/" + idStudenta + "-" + String.valueOf(this.godinaUpisa).substring(2);
     }
 
     public int getSemestar(int brojUpisa) {

@@ -125,16 +125,16 @@ public class StudentForm extends Stage {
 
         String poruka;
         if (aktivanRok) {
-            poruka = "Ispitni rok je u toku.";
+            poruka = "Ispitni rok je u toku.\n\n";
         } else if (aktivnaPrijava) {
-            poruka = "Prijava ispita je u toku.";
+            poruka = "Prijava ispita je u toku.\n\n";
         } else {
-            poruka = "Nijedan ispitni rok, kao ni prijava ispita, nije trenutno u toku.";
+            poruka = "Nijedan ispitni rok, kao ni prijava ispita, nije trenutno u toku.\n\n";
         }
         if (!getRasporedIspita().isEmpty()) {
 
-            //TODO: srediti prikaz i sortirati po datumu i vremenu*
-            poruka += "Raspored prijavljenih ispita\n";
+            //TODO: srediti prikaz
+            poruka += "Raspored ispita\n";
             poruka += "Sala" + " ".repeat(24) + "Predmet" + " ".repeat(33) + "Datum" + " ".repeat(11) + "Vreme" + " ".repeat(6);
             for(Map.Entry<ZakazivanjeSale, ArrayList> entry : getRasporedIspita().entrySet()) {
 
@@ -189,7 +189,6 @@ public class StudentForm extends Stage {
         Label lblPocetna = new Label("POČETNA");
         lblPocetna.setOnMouseClicked(mouseEvent -> {
 
-            //TODO - eventualno spojiti u jedan zahtev Serveru, da osvezi oba odjednom
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
             ZahtevServeru zahtevServeru = new ZahtevServeru("osveziIspitneRokove");
             ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziRasporedIspita");
@@ -206,6 +205,7 @@ public class StudentForm extends Stage {
         lblPredmeti.setOnMouseClicked(mouseEvent -> {
 
             TableView<HashMap.Entry<Predmet, Integer>> tablePolozeni = new TableView<>();
+            tablePolozeni.setSelectionModel(null);
             setTabela(tablePolozeni);
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
@@ -288,6 +288,7 @@ public class StudentForm extends Stage {
             lblNepolozeni.setPadding(new Insets(5,10,5,0));
 
             TableView<Predmet> tableNeplozeni = new TableView<>();
+            tableNeplozeni.setSelectionModel(null);
             tableNeplozeni.setPlaceholder(new Label("Nema nepoloženih ispita"));
             tableNeplozeni.getColumns().clear();
 
@@ -336,7 +337,7 @@ public class StudentForm extends Stage {
             lblPrijavaIspita.setAlignment(Pos.CENTER_LEFT);
             lblPrijavaIspita.setPadding(new Insets(0,10,5,0));
 
-            tablePrijava.setPlaceholder(new Label(""));
+            tablePrijava.setPlaceholder(new Label("Nije moguće prijaviti ispite."));
             tablePrijava.getColumns().clear();
 
             TableColumn<Map.Entry<Predmet, ArrayList>, Integer> colSifra = new TableColumn<>("Šifra");
@@ -467,6 +468,7 @@ public class StudentForm extends Stage {
             lblSkolarineIspis.setPadding(new Insets(0,10,5,0));
 
             TableView<UplataIliZaduzenje> tableSkolarine = new TableView<>();
+            tableSkolarine.setSelectionModel(null);
             tableSkolarine.setPlaceholder(new Label("Nema podataka o prethodnim uplatama i zaduženjima"));
             tableSkolarine.getColumns().clear();
 
@@ -747,6 +749,7 @@ public class StudentForm extends Stage {
                         public void run() {
 
                             //azuriranje/ponovno popunjavanje liste
+                            nepolozeniPredmeti.sort(Comparator.comparing(p -> p.getSemestar()));
                             setPolozeniPredmeti(polozeniPredmeti);
                             ObservableList<HashMap.Entry<Predmet, Integer>> stavke = FXCollections.observableArrayList(polozeniPredmeti.entrySet());
                             getTabela().setItems(stavke);

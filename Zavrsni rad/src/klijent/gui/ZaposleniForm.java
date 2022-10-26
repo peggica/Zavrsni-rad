@@ -206,7 +206,9 @@ public class ZaposleniForm extends Stage {
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
             ZahtevServeru zahtevServeru = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(now()), Time.valueOf(LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1)), Time.valueOf(LocalTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(1).plusMinutes(15))));
+            ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziPredmete");
             zahtevServeru.KomunikacijaSaServerom();
+            zahtevServeru1.KomunikacijaSaServerom();
 
             ocistiPane(root);
             VBox vBox = new VBox();
@@ -256,8 +258,8 @@ public class ZaposleniForm extends Stage {
                 //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                 if (!nova_vrednost.equals(stara_vrednost)) {
                     //poslati zahtev za proveru slobodnih sala serveru
-                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(nova_vrednost), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
-                    zahtevServeru1.KomunikacijaSaServerom();
+                    ZahtevServeru zahtevServeru2 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(nova_vrednost), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
+                    zahtevServeru2.KomunikacijaSaServerom();
 
                     tableSale.refresh();
                 }
@@ -273,8 +275,8 @@ public class ZaposleniForm extends Stage {
                 //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                 if (!nova_vrednost.equals(stara_vrednost)) {
                     //poslati zahtev za proveru slobodnih sala serveru
-                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(nova_vrednost) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
-                    zahtevServeru1.KomunikacijaSaServerom();
+                    ZahtevServeru zahtevServeru2 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(nova_vrednost) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
+                    zahtevServeru2.KomunikacijaSaServerom();
 
                     tableSale.refresh();
                 }
@@ -292,8 +294,8 @@ public class ZaposleniForm extends Stage {
                 //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                 if (!nova_vrednost.equals(stara_vrednost)) {
                     //poslati zahtev za proveru slobodnih sala serveru
-                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(nova_vrednost) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
-                    zahtevServeru1.KomunikacijaSaServerom();
+                    ZahtevServeru zahtevServeru2 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(nova_vrednost) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
+                    zahtevServeru2.KomunikacijaSaServerom();
 
                     tableSale.refresh();
                 }
@@ -311,8 +313,8 @@ public class ZaposleniForm extends Stage {
                 //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                 if (!nova_vrednost.equals(stara_vrednost)) {
                     //poslati zahtev za proveru slobodnih sala serveru
-                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(nova_vrednost) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
-                    zahtevServeru1.KomunikacijaSaServerom();
+                    ZahtevServeru zahtevServeru2 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(nova_vrednost) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00")));
+                    zahtevServeru2.KomunikacijaSaServerom();
 
                     tableSale.refresh();
                 }
@@ -330,8 +332,8 @@ public class ZaposleniForm extends Stage {
                 //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                 if (!nova_vrednost.equals(stara_vrednost)) {
                     //poslati zahtev za proveru slobodnih sala serveru
-                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(nova_vrednost) + ":00")));
-                    zahtevServeru1.KomunikacijaSaServerom();
+                    ZahtevServeru zahtevServeru2 = new ZahtevServeru("osveziSlobodneSale", new ZakazivanjeSale(Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(nova_vrednost) + ":00")));
+                    zahtevServeru2.KomunikacijaSaServerom();
 
                     tableSale.refresh();
                 }
@@ -377,8 +379,8 @@ public class ZaposleniForm extends Stage {
                     Sala izabranaSala = (Sala) tableSale.getSelectionModel().getSelectedItem();
                     setTabela(tableSale);
                     int idPredmeta = sviPredmeti.stream().filter(p -> p.getNaziv().equals(cmbPredmet.getValue())).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0);
-                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("zakaziSalu", idPredmeta, izabranaSala, Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00"));
-                    zahtevServeru1.KomunikacijaSaServerom();
+                    ZahtevServeru zahtevServeru2 = new ZahtevServeru("zakaziSalu", idPredmeta, izabranaSala, Date.valueOf(datumDP.getValue()), Time.valueOf(String.valueOf(spSatiOd.getValue()) + ":" + String.valueOf(spMinutiOd.getValue()) + ":00"), Time.valueOf(String.valueOf(spSatiDo.getValue()) + ":" + String.valueOf(spMinutiDo.getValue()) + ":00"));
+                    zahtevServeru2.KomunikacijaSaServerom();
                     tableSale.refresh();
 
                 } else {
@@ -416,7 +418,9 @@ public class ZaposleniForm extends Stage {
 
             //kada se prebaci na drugu stavku iz menija da osvezi podatke
             ZahtevServeru zahtevServeru = new ZahtevServeru("osveziPrijave");
+            ZahtevServeru zahtevServeru1 = new ZahtevServeru("osveziPredmete");
             zahtevServeru.KomunikacijaSaServerom();
+            zahtevServeru1.KomunikacijaSaServerom();
 
             ocistiPane(root);
             VBox vBox = new VBox();
@@ -521,8 +525,8 @@ public class ZaposleniForm extends Stage {
                         zapisnik.stream().filter(pi -> pi.getIdPredmeta() == sviPredmeti.stream().filter(p -> p.getIdPredmeta() == idPredmeta).mapToInt(Predmet::getIdPredmeta).findFirst().orElse(0)).collect(Collectors.toCollection(FXCollections::observableArrayList)).get(i).setIdRoka(getAktivniRok());
 
                     }
-                    ZahtevServeru zahtevServeru1 = new ZahtevServeru("unesiOcenuUZapisnik", idPredmeta);
-                    zahtevServeru1.KomunikacijaSaServerom();
+                    ZahtevServeru zahtevServeru2 = new ZahtevServeru("unesiOcenuUZapisnik", idPredmeta);
+                    zahtevServeru2.KomunikacijaSaServerom();
 
                 } else {
 
@@ -784,6 +788,60 @@ public class ZaposleniForm extends Stage {
 
                             //azuriranje/ponovno popunjavanje liste
                             setRasporedIspita(rasporedIspita);
+                            System.out.println("Osvezeni podaci sa strane servera.");
+
+                        }
+                    });
+                } catch (IOException e) {
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            setAlert(Alert.AlertType.INFORMATION);
+                            alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
+                            alert.showAndWait();
+                        }
+                    });
+                    //e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            } else if (zahtev.equals("osveziPredmete")) {
+                try {
+                    outObj.writeObject("osvezi" + "Zaposlenog");
+                    outObj.flush();
+                    outObj.writeObject(zahtev);
+                    outObj.flush();
+                    outObj.writeObject(zaposleni);
+                    outObj.flush();
+                    sviPredmeti.clear();
+                    zapisnik.clear();
+                    while (true) {
+                        odgovor = inObj.readObject();
+                        if (odgovor.equals("zapisnik")) {
+                            break;
+                        }
+                        Predmet predmet = (Predmet) odgovor;
+                        sviPredmeti.add(predmet);
+                    }
+                    while (true) {
+                        odgovor = inObj.readObject();
+                        if (odgovor.equals("kraj")) {
+                            break;
+                        }
+                        Zapisnik pojedinacni = (Zapisnik) odgovor;
+                        zapisnik.add(pojedinacni);
+                    }
+
+                    //update na JavaFx application niti
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+
+                            //azuriranje/ponovno popunjavanje liste
+                            setSviPredmeti(sviPredmeti);
+                            setZapisnik(zapisnik);
                             System.out.println("Osvezeni podaci sa strane servera.");
 
                         }
