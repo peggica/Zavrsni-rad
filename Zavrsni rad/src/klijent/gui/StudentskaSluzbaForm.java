@@ -24,6 +24,7 @@ import java.net.*;
 import java.sql.Date;
 import java.sql.Time;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.regex.*;
 import java.util.stream.Collectors;
@@ -49,7 +50,6 @@ public class StudentskaSluzbaForm extends Stage {
     private TableView tabela;
 
     public static Stage getStage() {
-
         return stage;
     }
 
@@ -90,7 +90,7 @@ public class StudentskaSluzbaForm extends Stage {
     }
 
     /**
-     * Setuje tip i naslov statičkog alerta u zavisnosti od prosleđenog tipa
+     * Setuje tip i naslov alerta u zavisnosti od prosleđenog tipa
      */
     public static void setAlert(Alert.AlertType at) {
         if (at == Alert.AlertType.ERROR) {
@@ -582,7 +582,6 @@ public class StudentskaSluzbaForm extends Stage {
                                     alert.setContentText("Neispravan unos za broj telefona!");
                                 }
                             }
-
                             alert.showAndWait();
                         }
                     });
@@ -980,7 +979,6 @@ public class StudentskaSluzbaForm extends Stage {
                                     alert.setContentText("Neispravan unos za broj telefona!");
                                 }
                             }
-
                             alert.showAndWait();
                         }
                     });
@@ -1677,7 +1675,6 @@ public class StudentskaSluzbaForm extends Stage {
                         }
                     });
 
-                    //TODO: proveriti za null
                     datePicker.valueProperty().setValue(LocalDate.parse(mp.getDatum().toString()));
                     datePicker.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
 
@@ -1688,7 +1685,6 @@ public class StudentskaSluzbaForm extends Stage {
                             izabranaZakazanaSala.setDatum(Date.valueOf(nova_vrednost));
                             ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabranaZakazanaSala);
                             zahtevServeru1.KomunikacijaSaServerom();
-
                             tableRasporedPoSalama.refresh();
                         }
                     });
@@ -1718,7 +1714,7 @@ public class StudentskaSluzbaForm extends Stage {
                     //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                     spPocetak.valueProperty().addListener((obs, stara_vrednost, nova_vrednost) -> {
                         if(nova_vrednost != stara_vrednost) {
-                            if (nova_vrednost.compareTo(arg0.getValue().getKey().getVremeKraja().toString()) < 0) {
+                            if (LocalTime.parse(nova_vrednost).compareTo(LocalTime.parse(arg0.getValue().getKey().getVremeKraja().toString())) < 0) {
                                 vfPocetak.setValue(nova_vrednost);
                                 spPocetak.setOnMouseReleased(e -> {
                                     ZakazivanjeSale izabranaZakazanaSala = arg0.getValue().getKey();
@@ -1734,12 +1730,10 @@ public class StudentskaSluzbaForm extends Stage {
                                         setAlert(Alert.AlertType.ERROR);
                                         alert.setContentText("Vreme početka mora biti pre vremena kraja!");
                                         alert.showAndWait();
-                                        //TODO: da osvezi tabelu
-
                                     }
                                 });
                             }
-                            tableRasporedPoSalama.refresh();
+                            //tableRasporedPoSalama.refresh();
                         }
                     });
 
@@ -1766,8 +1760,7 @@ public class StudentskaSluzbaForm extends Stage {
                     //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
                     spKraj.valueProperty().addListener((obs, stara_vrednost, nova_vrednost) -> {
                         if(nova_vrednost != stara_vrednost) {
-                            //vremePocetka.compareTo(vremeKraja) < 0
-                            if (nova_vrednost.compareTo(arg0.getValue().getKey().getVremePocetka().toString()) > 0) {
+                            if (LocalTime.parse(nova_vrednost).compareTo(LocalTime.parse(arg0.getValue().getKey().getVremePocetka().toString())) > 0) {
                                 vfKraj.setValue(nova_vrednost);
                                 spKraj.setOnMouseReleased(e -> {
                                     ZakazivanjeSale izabranaZakazanaSala = arg0.getValue().getKey();
@@ -1783,11 +1776,10 @@ public class StudentskaSluzbaForm extends Stage {
                                         setAlert(Alert.AlertType.ERROR);
                                         alert.setContentText("Vreme kraja mora biti posle vremena početka!");
                                         alert.showAndWait();
-                                        //TODO: da osvezi tabelu
                                     }
                                 });
                             }
-                            tableRasporedPoSalama.refresh();
+                            //tableRasporedPoSalama.refresh();
                         }
                     });
 
@@ -1819,8 +1811,6 @@ public class StudentskaSluzbaForm extends Stage {
                 if (!nova_vrednost.equals(stara_vrednost)) {
                     cmbZaposleni.getItems().clear();
                     cmbZaposleni.getItems().addAll(sviPredmeti.entrySet().stream().filter(sp -> sp.getKey().getNaziv().equals(nova_vrednost.toString())).map(i -> i.getValue().getImePrezime()).collect(Collectors.toList()));
-                    //System.out.println(sviPredmeti.entrySet().stream().filter(sp -> sp.getKey().getNaziv().equals(nova_vrednost.toString())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)).values());
-
                 }
             });
             cmbPredmet.setMinWidth(Region.USE_PREF_SIZE);
@@ -3616,7 +3606,7 @@ public class StudentskaSluzbaForm extends Stage {
                             @Override
                             public void run() {
                                 setAlert(Alert.AlertType.INFORMATION);
-                                alert.setContentText("Server je trenutno nedostupan!\nMolimo vas pokušajte kasnije.");
+                                alert.setContentText("Nije uspelo zakazivanje sale za izabran datum i vreme.");
                                 alert.showAndWait();
                             }
                         });

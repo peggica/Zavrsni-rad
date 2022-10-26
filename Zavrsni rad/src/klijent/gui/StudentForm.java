@@ -95,7 +95,7 @@ public class StudentForm extends Stage {
         return tabela;
     }
     /**
-     * Setuje tip i naslov statičkog alerta u zavisnosti od prosleđenog tipa
+     * Setuje tip i naslov alerta u zavisnosti od prosleđenog tipa
      */
     public static void setAlert(Alert.AlertType at) {
         if (at == Alert.AlertType.ERROR) {

@@ -407,7 +407,23 @@ public class Server extends Application {
                                 polozeniPredmeti.put(predmet, ocena);
                             }
 
-                            odgovor = polozeniPredmeti;
+                            //sortiranje položenih predmeta po idPredmeta
+                            List<Map.Entry<Predmet, Integer> > list =
+                                    new LinkedList<Map.Entry<Predmet, Integer>>(polozeniPredmeti.entrySet());
+
+                            Collections.sort(list, new Comparator<Map.Entry<Predmet, Integer> >() {
+                                public int compare(Map.Entry<Predmet, Integer> o1,
+                                                   Map.Entry<Predmet, Integer> o2) {
+                                    int o = o1.getKey().getIdPredmeta() < o2.getKey().getIdPredmeta() ? -1 : 1;
+                                    return o;
+                                }
+                            });
+
+                            HashMap<Predmet, Integer> temp = new LinkedHashMap<Predmet, Integer>();
+                            for (Map.Entry<Predmet, Integer> value : list) {
+                                temp.put(value.getKey(), value.getValue());
+                            }
+                            odgovor = temp;
                             outObj.writeObject(odgovor);
                             outObj.flush();
 
@@ -465,7 +481,6 @@ public class Server extends Application {
                             if (resultset.next()) {
 
                                 idRoka = resultset.getInt("idRoka");
-                                boolean aktivnaPrijava = resultset.getBoolean("aktivnaPrijava");
                                 datumPocetka = resultset.getDate("datumPocetka");
                                 datumKraja = resultset.getDate("datumKraja");
                                 String query2 = "SELECT p.idPredmeta, p.naziv, z.ime, z.prezime FROM Predmet p JOIN raspodelaPredmeta rp ON p.idPredmeta = rp.idPredmeta JOIN Zaposleni z ON rp.idZaposlenog = z.idZaposlenog WHERE p.idPredmeta IN (SELECT idPredmeta FROM izabraniPredmeti WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "') AND p.idPredmeta NOT IN(SELECT idPredmeta FROM Zapisnik WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "' AND ocena > 5) AND p.idPredmeta NOT IN (SELECT idPredmeta FROM prijaveIspita WHERE idStudenta = '" + idStudenta + "' AND smer = '" + smer + "' AND godinaUpisa = '" + godinaUpisa + "' AND idRoka = '" + idRoka + "') AND z.pozicija = 'profesor' AND p.vidljiv = '1' ORDER BY p.idPredmeta";
@@ -521,10 +536,10 @@ public class Server extends Application {
                             }
 
                             //sortiranje zakazanih ispita po datumu i vremenu
-                            List<Map.Entry<ZakazivanjeSale, ArrayList>> list =
+                            List<Map.Entry<ZakazivanjeSale, ArrayList>> list1 =
                                     new LinkedList<Map.Entry<ZakazivanjeSale, ArrayList>>(rasporedIspita.entrySet());
 
-                            Collections.sort(list, new Comparator<Map.Entry<ZakazivanjeSale, ArrayList>>() {
+                            Collections.sort(list1, new Comparator<Map.Entry<ZakazivanjeSale, ArrayList>>() {
                                 public int compare(Map.Entry<ZakazivanjeSale, ArrayList> o1,
                                                    Map.Entry<ZakazivanjeSale, ArrayList> o2) {
                                     int o;
@@ -535,11 +550,11 @@ public class Server extends Application {
                                 }
                             });
 
-                            HashMap<ZakazivanjeSale, ArrayList> temp = new LinkedHashMap<ZakazivanjeSale, ArrayList>();
-                            for (Map.Entry<ZakazivanjeSale, ArrayList> value : list) {
-                                temp.put(value.getKey(), value.getValue());
+                            HashMap<ZakazivanjeSale, ArrayList> temp1 = new LinkedHashMap<ZakazivanjeSale, ArrayList>();
+                            for (Map.Entry<ZakazivanjeSale, ArrayList> value : list1) {
+                                temp1.put(value.getKey(), value.getValue());
                             }
-                            rasporedIspita = temp;
+                            rasporedIspita = temp1;
 
                             odgovor = rasporedIspita;
                             outObj.writeObject(odgovor);
@@ -1609,7 +1624,23 @@ public class Server extends Application {
                             polozeniPredmeti.put(predmet, ocena);
                         }
 
-                        odgovor = polozeniPredmeti;
+                        //sortiranje položenih predmeta po idPredmeta
+                        List<Map.Entry<Predmet, Integer> > list =
+                                new LinkedList<Map.Entry<Predmet, Integer>>(polozeniPredmeti.entrySet());
+
+                        Collections.sort(list, new Comparator<Map.Entry<Predmet, Integer> >() {
+                            public int compare(Map.Entry<Predmet, Integer> o1,
+                                               Map.Entry<Predmet, Integer> o2) {
+                                int o = o1.getKey().getIdPredmeta() < o2.getKey().getIdPredmeta() ? -1 : 1;
+                                return o;
+                            }
+                        });
+
+                        HashMap<Predmet, Integer> temp = new LinkedHashMap<Predmet, Integer>();
+                        for (Map.Entry<Predmet, Integer> value : list) {
+                            temp.put(value.getKey(), value.getValue());
+                        }
+                        odgovor = temp;
                         outObj.writeObject(odgovor);
                         outObj.flush();
 
