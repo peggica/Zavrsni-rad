@@ -1472,22 +1472,27 @@ public class StudentskaSluzbaForm extends Stage {
                     Sala mp = arg0.getValue();
 
                     ComboBox comboBox = new ComboBox();
-                    comboBox.getItems().addAll(Sala.tipOpreme.values());
-                    comboBox.setMinWidth(Region.USE_PREF_SIZE);
-                    comboBox.setValue((mp.getOprema()));
+                    if (mp != null) {
+                        comboBox.getItems().addAll(Sala.tipOpreme.values());
+                        comboBox.setMinWidth(Region.USE_PREF_SIZE);
+                        comboBox.setValue(mp.getOprema());
 
-                    comboBox.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
+                        comboBox.valueProperty().addListener((ov, stara_vrednost, nova_vrednost) -> {
 
-                        //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
-                        if (!nova_vrednost.toString().equals(stara_vrednost.toString())) {
-                            mp.setOprema(Sala.tipOpreme.valueOf(nova_vrednost.toString().equals("/") ? "ništa" : nova_vrednost.toString()));
-                            Sala izabranaSala = arg0.getValue();
-                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabranaSala);
-                            zahtevServeru1.KomunikacijaSaServerom();
-                        }
-                    });
+                            //UKOLIKO JE NOVA VREDNOST RAZLICITA OD PRVOBITNE
+                            if (!nova_vrednost.toString().equals(stara_vrednost.toString())) {
+                                mp.setOprema(Sala.tipOpreme.valueOf(nova_vrednost.toString().equals("/") ? "ništa" : nova_vrednost.toString()));
+                                Sala izabranaSala = arg0.getValue();
+                                ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabranaSala);
+                                zahtevServeru1.KomunikacijaSaServerom();
+                            }
+                        });
 
-                    return new SimpleObjectProperty<ComboBox>(comboBox);
+                        return new SimpleObjectProperty<ComboBox>(comboBox);
+                    } else {
+
+                        return null;
+                    }
 
                 }
             });
@@ -1501,21 +1506,26 @@ public class StudentskaSluzbaForm extends Stage {
                     Sala mp = arg0.getValue();
 
                     CheckBox checkBox = new CheckBox();
-                    checkBox.selectedProperty().setValue(mp.isVidljiv());
+                    if (mp != null) {
+                        checkBox.selectedProperty().setValue(mp.isVidljiv());
 
-                    checkBox.selectedProperty().addListener(new ChangeListener<Boolean>() {
-                        public void changed(ObservableValue<? extends Boolean> ov,
-                                            Boolean stara_vrednost, Boolean nova_vrednost) {
+                        checkBox.selectedProperty().addListener(new ChangeListener<Boolean>() {
+                            public void changed(ObservableValue<? extends Boolean> ov,
+                                                Boolean stara_vrednost, Boolean nova_vrednost) {
 
-                            mp.setVidljiv(nova_vrednost);
-                            Sala izabranaSala = arg0.getValue();
-                            ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabranaSala);
-                            zahtevServeru1.KomunikacijaSaServerom();
+                                mp.setVidljiv(nova_vrednost);
+                                Sala izabranaSala = arg0.getValue();
+                                ZahtevServeru zahtevServeru1 = new ZahtevServeru("izmeni", izabranaSala);
+                                zahtevServeru1.KomunikacijaSaServerom();
 
-                        }
-                    });
+                            }
+                        });
 
-                    return new SimpleObjectProperty<CheckBox>(checkBox);
+                        return new SimpleObjectProperty<CheckBox>(checkBox);
+                    } else {
+
+                        return null;
+                    }
 
                 }
             });
